@@ -1,0 +1,7 @@
+<RCC>
+  <qresource prefix="ressources">
+    <file>material-dark.qss</file>
+    <file>material-light-old.qss</file>
+    <file>material-light-new.qss</file>
+  </qresource>
+</RCC> 

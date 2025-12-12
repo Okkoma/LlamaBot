@@ -1,0 +1,11 @@
+.cache
+backup/*
+bin/*
+build*/*
+docs/*
+compile_commands.json
+CMakeLists.txt.user
+diagnose*.sh
+create_android_project.sh
+.vscode
+.cursorignore
