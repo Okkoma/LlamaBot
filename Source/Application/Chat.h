@@ -10,6 +10,12 @@ class QTextEdit;
 class QTextBrowser;
 class QPushButton;
 
+struct ChatMessage
+{
+    QString role;
+    QString content;
+};
+
 struct Chat
 {
     Chat(LLMService* service, const QString& name="new_chat", const QString& initialContext="", bool streamed=true);
@@ -42,6 +48,7 @@ struct Chat
     QString rawMessages_;
 
     QStringList messages_;
+    QList<ChatMessage> history_;
     QString currentAIStream_;    
     QJsonObject jsonObject_;
 

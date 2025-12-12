@@ -94,7 +94,7 @@ void LLMService::createDefaultServiceJsonFile()
     qDebug() << "createDefaultServiceJsonFile";
        
     apiEntries_.push_back(LlamaCppService::createDefault(this, "LlamaCpp"));    
-    apiEntries_.push_back(new OllamaService(this, "Ollama", "http://localhost:11434/", "api/version", "api/generate", "", "/usr/local/bin/ollama", QStringList("serve")));
+    apiEntries_.push_back(new OllamaService(this, "Ollama", "http://localhost:11434/", "api/version", "api/chat", "", "/usr/local/bin/ollama", QStringList("serve")));
 
     saveServiceJsonFile();
 }
@@ -172,6 +172,16 @@ void LLMService::receive(LLMAPIEntry* api, Chat* chat, const QByteArray& data)
                 // Met à jour le dernier message IA
                 chat->updateCurrentAIStream(obj["response"].toString());
                 chat->chatView_->setMarkdown(chat->messages_.join("\n\n"));
+            }
+            else if (obj.contains("message"))
+            {
+                 // Handle /api/chat response format
+                 QJsonObject messageObj = obj["message"].toObject();
+                 if (messageObj.contains("content"))
+                 {
+                     chat->updateCurrentAIStream(messageObj["content"].toString());
+                     chat->chatView_->setMarkdown(chat->messages_.join("\n\n"));
+                 }
             }
             else if (obj.contains("error"))
             {

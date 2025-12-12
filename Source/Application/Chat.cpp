@@ -35,6 +35,8 @@ void Chat::initialize()
 
     jsonObject_["model"] = currentModel_;
     jsonObject_["stream"] = streamed_;
+
+    history_.clear();
 }
 
 void Chat::setApi(const QString& api)
@@ -74,6 +76,10 @@ void Chat::addContent(const QString& role, const QString& content)
     if (isUserContent)
         finalizeStream();
 
+    // Add to history
+    if (!content.isEmpty())
+        history_.append({role, content});
+
     if (!content.isEmpty())
     {
         messages_.append(QString("%1 %2\n").arg(isUserContent ? userPrompt_ : aiPrompt_, content));
@@ -97,6 +103,10 @@ void Chat::finalizeStream()
 
         LLMAPIEntry* api = service_->get(currentApi_);
         rawMessages_ += api ? api->formatMessage(this, "assistant", currentAIStream_) : currentAIStream_ + "\n";
+        
+        // Add valid response to history
+        history_.append({"assistant", currentAIStream_});
+        
         currentAIStream_.clear();
     }
 }

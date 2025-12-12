@@ -188,6 +188,9 @@ bool OllamaService::isAPIAccessible() const
 
 void OllamaService::postInternal(Chat* chat, const QString& content, bool streamed)
 {
+    // Use api/chat if available or configured
+    bool useChatApi = api_generate_.contains("chat");
+    
     QNetworkRequest request(url_ + api_generate_);
     request.setHeader(QNetworkRequest::ContentTypeHeader, "application/json");
 
@@ -197,7 +200,33 @@ void OllamaService::postInternal(Chat* chat, const QString& content, bool stream
         chat->stopButton_->setEnabled(true);
 
     // post the request
-    QJsonDocument jsonDoc(chat->jsonObject_);
+    QJsonObject payload = chat->jsonObject_;
+    
+    if (useChatApi)
+    {
+        // Construct messages array for /api/chat
+        QJsonArray messagesArray;
+        for (const ChatMessage& msg : chat->history_)
+        {
+            QJsonObject msgObj;
+            msgObj["role"] = msg.role;
+            msgObj["content"] = msg.content;
+            messagesArray.append(msgObj);
+        }
+        
+        // Add the current user prompt if not already in history (updateContent adds it, but let's be safe)
+        // Actually chat->updateContent() calls addContent() which adds to history.
+        
+        payload["messages"] = messagesArray;
+        payload.remove("prompt"); // Remove 'prompt' if present, as it conflicts with 'messages' in some versions
+    }
+    else
+    {
+        // Fallback or legacy /api/generate
+        // chat->jsonObject_ already contains "prompt" via Chat::updateObject()
+    }
+    
+    QJsonDocument jsonDoc(payload);
     QByteArray data = jsonDoc.toJson();
     QNetworkReply* reply = service_->networkManager_->post(request, data);
     qDebug() << jsonDoc;
@@ -205,8 +234,25 @@ void OllamaService::postInternal(Chat* chat, const QString& content, bool stream
     // connect signals to receive datas
     if (streamed)
     {
-        service_->connect(reply, &QNetworkReply::readyRead, service_, [this, chat, reply]() {
-            qDebug() << "OllamaService::postInternal streamed: received data";
+        service_->connect(reply, &QNetworkReply::readyRead, service_, [this, chat, reply, useChatApi]() {
+            // qDebug() << "OllamaService::postInternal streamed: received data";
+            
+            // For /api/chat, the response format is different:
+            // "message": { "role": "assistant", "content": "..." } instead of "response": "..."
+            // We need to handle this in LLMService::receive or handle it here.
+            // LLMService::receive expects "response".
+            
+            // Let's modify LLMService::receive to handle both or intercept here.
+            // Since LLMService::receive is generic, we should probably intercept or ensure LLMService handles it.
+            // But wait, LLMService::receive parses lines.
+            // If we use /api/chat, the stream chunks look like: { "model": "...", "created_at": "...", "message": { "role": "assistant", "content": "Hello" }, "done": false }
+            
+            // LLMService::receive checks for "response". We need it to check for "message.content" too.
+            // But LLMService::receive is in LLMService.cpp.
+            
+            // Actually, let's keep it simple: pass the raw data to service_->receive, 
+            // and update LLMService::receive to handle "message" object.
+            
             service_->receive(this, chat, reply->readAll());
         });
         service_->connect(reply, &QNetworkReply::finished, service_, [this, chat, reply]() {
