@@ -3,5 +3,6 @@
     <file>material-dark.qss</file>
     <file>material-light-old.qss</file>
     <file>material-light-new.qss</file>
+    <file alias="OllamaModelStoreDialog.qml">OllamaModelStoreDialog.qml</file>
   </qresource>
 </RCC> 

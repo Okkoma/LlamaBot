@@ -3,7 +3,7 @@ set(CMAKE_AUTOUIC ON)
 set(CMAKE_AUTOMOC ON)
 set(CMAKE_AUTORCC ON)
 
-find_package(Qt6 REQUIRED COMPONENTS Core Widgets Network)
+find_package(Qt6 REQUIRED COMPONENTS Core Widgets Network Qml Quick QuickWidgets)
 
 set(PROJECT_SOURCES
         main.cpp
@@ -18,7 +18,9 @@ set(PROJECT_SOURCES
         LlamaCppService.cpp
         LlamaCppService.h 
         OllamaService.cpp
-        OllamaService.h         
+        OllamaService.h
+        OllamaModelStoreDialog.cpp
+        OllamaModelStoreDialog.h         
         MainWindow.cpp
         MainWindow.h
         ChatBotPanel.cpp Chat.cpp
@@ -33,7 +35,7 @@ qt_add_executable(ChatBot MANUAL_FINALIZATION ${PROJECT_SOURCES})
 #                 ${CMAKE_CURRENT_SOURCE_DIR}/android)
 # For more information, see https://doc.qt.io/qt-6/qt-add-executable.html#target-creation
 
-target_link_libraries(ChatBot PRIVATE Qt6::Core Qt6::Network Qt6::Widgets llama)
+target_link_libraries(ChatBot PRIVATE Qt6::Core Qt6::Network Qt6::Widgets Qt6::Qml Qt6::Quick Qt6::QuickWidgets llama)
 
 # Qt for iOS sets MACOSX_BUNDLE_GUI_IDENTIFIER automatically since Qt 6.1.
 # If you are developing for iOS or macOS you should consider setting an

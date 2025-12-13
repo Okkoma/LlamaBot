@@ -23,6 +23,7 @@ private slots:
     void Action_quitApplication();
     void Action_setMaterialDarkStyle();
     void Action_setMaterialLightStyle();
+    void Action_openModelStore();
 
 private:
     void initialize();
@@ -30,7 +31,7 @@ private:
     // Menu Actions
     QAction* materialDarkStyleAction_;
     QAction* materialLightStyleAction_;
-
+    QAction* modelStoreAction_;
     // ChatBot Panel
     ChatBotPanel* chatBotWidget_;
 };

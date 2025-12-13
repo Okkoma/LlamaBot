@@ -8,12 +8,18 @@
 #include <QFont>
 #include <QDockWidget>
 #include <QActionGroup>
-
+#include <QQuickWidget>
+#include <QQuickItem>
+#include <QQmlContext>
+#include <QQmlEngine>
 #include <QDebug>
 
 #include "ApplicationServices.h"
 
 #include "ChatBotPanel.h"
+
+#include "OllamaModelStoreDialog.h"
+
 
 #include "MainWindow.h"
 
@@ -49,6 +55,12 @@ void MainWindow::initialize()
     quitAction->setShortcut(QKeySequence::Quit);
     connect(quitAction, &QAction::triggered, this, &MainWindow::Action_quitApplication);
     fileMenu->addAction(quitAction);
+
+    // Menu Outils
+    QMenu* toolsMenu = menuBar()->addMenu(tr("&Outils"));
+    modelStoreAction_ = new QAction(tr("&Magasin de Modèles"), this);
+    connect(modelStoreAction_, &QAction::triggered, this, &MainWindow::Action_openModelStore);
+    toolsMenu->addAction(modelStoreAction_);
 
     // Menu Affichage
     QMenu* viewMenu = menuBar()->addMenu(tr("&Affichage"));
@@ -106,6 +118,34 @@ void MainWindow::Action_setMaterialLightStyle()
 {
     qDebug() << "Action_setMaterialLightStyle";
     setStyle("Light");
+}
+
+void MainWindow::Action_openModelStore()
+{
+    QDialog* dialog = new QDialog(this);
+    dialog->setWindowTitle("Ollama Model Store");
+    dialog->resize(600, 800);
+    
+    QVBoxLayout* layout = new QVBoxLayout(dialog);
+    QQuickWidget* quickWidget = new QQuickWidget(dialog);
+    quickWidget->setResizeMode(QQuickWidget::SizeRootObjectToView);
+    
+    OllamaModelStoreDialog* client = new OllamaModelStoreDialog(dialog);
+    client->setQmlEngine(quickWidget->engine());
+    quickWidget->engine()->rootContext()->setContextProperty("ollamaModelStoreDialog", client);
+    quickWidget->setSource(QUrl("qrc:/ressources/OllamaModelStoreDialog.qml"));
+    
+    // Connect QML close signal to Dialog close
+    if (quickWidget->rootObject())
+        connect(quickWidget->rootObject(), SIGNAL(closeRequested()), dialog, SLOT(accept()));
+    
+    layout->addWidget(quickWidget);
+    dialog->exec();
+    
+    // Dialog and its children (client, widget) are deleted here automatically because 'dialog' is stack allocated? 
+    // Wait, 'new QDialog(this)' is heap allocated but I didn't delete it in my previous thought.
+    // Let's use deleteLater or manual delete.
+    delete dialog;
 }
 
 

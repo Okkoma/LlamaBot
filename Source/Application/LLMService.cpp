@@ -93,7 +93,12 @@ void LLMService::createDefaultServiceJsonFile()
 {
     qDebug() << "createDefaultServiceJsonFile";
        
-    apiEntries_.push_back(LlamaCppService::createDefault(this, "LlamaCpp"));    
+    apiEntries_.push_back(LlamaCppService::createDefault(this, "LlamaCpp"));
+    // TODO: this only works on Linux if Ollama is installed in /usr/local/bin
+    // find a way to get the path of the ollama binary on other platforms
+    // android ? use internal storage and/or find a way to install ollama on android
+    // windows ? use the path of the ollama binary in the PATH environment variable
+    // mac ? use the path of the ollama binary in the PATH environment variable
     apiEntries_.push_back(new OllamaService(this, "Ollama", "http://localhost:11434/", "api/version", "api/chat", "", "/usr/local/bin/ollama", QStringList("serve")));
 
     saveServiceJsonFile();
