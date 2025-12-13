@@ -311,33 +311,39 @@ void OllamaModelStoreDialog::downloadLayer(const QString& modelName, const QStri
     m_currentDownloadReply = m_manager->get(request);
 
     connect(m_currentDownloadReply, &QNetworkReply::downloadProgress, this, &OllamaModelStoreDialog::downloadProgress);
+
     connect(m_currentDownloadReply, &QNetworkReply::readyRead, this,
         [this]()
         {
-            connect(m_currentDownloadReply, &QNetworkReply::finished, this,
-                [this, savePath]()
-                {
-                    if (m_outputFile)
-                    {
-                        m_outputFile->close();
-                        delete m_outputFile;
-                        m_outputFile = nullptr;
-                    }
+            if (m_outputFile && m_outputFile->isOpen())
+            {
+                m_outputFile->write(m_currentDownloadReply->readAll());
+            }
+        });
 
-                    if (m_currentDownloadReply->error() == QNetworkReply::NoError)
-                    {
-                        emit downloadFinished(true, savePath);
-                    }
-                    else
-                    {
-                        // Delete partial file on error
-                        QFile::remove(savePath);
-                        emit downloadFinished(false, m_currentDownloadReply->errorString());
-                    }
+    connect(m_currentDownloadReply, &QNetworkReply::finished, this,
+        [this, savePath]()
+        {
+            if (m_outputFile)
+            {
+                m_outputFile->close();
+                delete m_outputFile;
+                m_outputFile = nullptr;
+            }
 
-                    m_currentDownloadReply->deleteLater();
-                    m_currentDownloadReply = nullptr;
-                });
+            if (m_currentDownloadReply->error() == QNetworkReply::NoError)
+            {
+                emit downloadFinished(true, savePath);
+            }
+            else
+            {
+                // Delete partial file on error
+                QFile::remove(savePath);
+                emit downloadFinished(false, m_currentDownloadReply->errorString());
+            }
+
+            m_currentDownloadReply->deleteLater();
+            m_currentDownloadReply = nullptr;
         });
 }
 

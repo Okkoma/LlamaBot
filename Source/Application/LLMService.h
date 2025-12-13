@@ -9,8 +9,8 @@ class LLMService : public QObject
     friend class LLMAPIEntry;
     friend class OllamaService;
 
-public:   
-    explicit LLMService(QObject *parent);
+public:
+    explicit LLMService(QObject* parent);
     ~LLMService();
 
     void setWidget(QWidget* widget);
@@ -20,11 +20,12 @@ public:
 
     const std::vector<LLMAPIEntry*>& getAPIs() const { return apiEntries_; }
     std::vector<LLMAPIEntry*> getAvailableAPIs() const;
-    std::vector<LLMModel> getAvailableModels(const LLMAPIEntry* api=nullptr) const;
+    std::vector<LLMModel> getAvailableModels(const LLMAPIEntry* api = nullptr) const;
+    LLMModel* getModel(const QString& name) const;
 
     void addAPI(LLMAPIEntry* info);
 
-    void post(LLMAPIEntry* api, Chat* chat, const QString& content, bool streamed=true);
+    void post(LLMAPIEntry* api, Chat* chat, const QString& content, bool streamed = true);
     void receive(LLMAPIEntry* api, Chat* chat, const QByteArray& data);
     void stopStream(Chat* chat);
 

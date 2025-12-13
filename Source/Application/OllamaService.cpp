@@ -3,22 +3,35 @@
 #include <QJsonArray>
 #include <QJsonDocument>
 #include <QMessageBox>
-#include <QPushButton>
 #include <QNetworkAccessManager>
-#include <QNetworkRequest>
 #include <QNetworkReply>
+#include <QNetworkRequest>
+#include <QPushButton>
 
 #include "Chat.h"
 
-#include "OllamaService.h"
 #include "LLMService.h"
-
+#include "OllamaService.h"
 
 const QString OllamaService::ollamaSystemDir = "/usr/share/ollama/";
 const QString OllamaService::ollamaManifestBaseDir = ".ollama/models/manifests/registry.ollama.ai/library/";
 const QString OllamaService::ollamaBlobsBaseDir = ".ollama/models/blobs/";
 
-OllamaManifest OllamaService::getOllamaManifest(const QString& ollamaDir, const QString& model, const QString& num_params)
+std::vector<LLMModel> OllamaService::getAvailableModels() const
+{
+    std::vector<LLMModel> result;
+
+    if (service_->allowSharedModels_)
+    {
+        OllamaService::getOllamaModels(OllamaService::ollamaSystemDir, result);
+        OllamaService::getOllamaModels(QDir::homePath() + "/", result);
+    }
+
+    return result;
+}
+
+OllamaManifest OllamaService::getOllamaManifest(
+    const QString& ollamaDir, const QString& model, const QString& num_params)
 {
     OllamaManifest manifest;
     QFile manifestFile(ollamaDir + "/" + model + "/" + num_params);
@@ -44,12 +57,14 @@ std::vector<OllamaManifest> OllamaService::getOllamaManifests(const QString& oll
     QDir ollamaManifestDir(ollamaDir);
     if (ollamaManifestDir.exists())
     {
-        QStringList dirs = ollamaManifestDir.entryList(QDir::AllDirs | QDir::NoDotAndDotDot | QDir::NoSymLinks, QDir::SortFlag::Name);
+        QStringList dirs =
+            ollamaManifestDir.entryList(QDir::AllDirs | QDir::NoDotAndDotDot | QDir::NoSymLinks, QDir::SortFlag::Name);
         for (const QString& dir : dirs)
         {
-            QFileInfoList infos = QDir(ollamaDir + "/" + dir).entryInfoList(QDir::Files | QDir::NoSymLinks, QDir::SortFlag::Name);
+            QFileInfoList infos =
+                QDir(ollamaDir + "/" + dir).entryInfoList(QDir::Files | QDir::NoSymLinks, QDir::SortFlag::Name);
             for (QFileInfo& info : infos)
-                manifests.push_back(getOllamaManifest(ollamaDir, dir, info.fileName()));          
+                manifests.push_back(getOllamaManifest(ollamaDir, dir, info.fileName()));
         }
     }
     return manifests;
@@ -68,8 +83,8 @@ void OllamaService::getOllamaModels(const QString& ollamaDir, std::vector<LLMMod
     }
 }
 
-OllamaService::OllamaService(LLMService* service, const QString& name, const QString& url, const QString& ver, const QString& gen, const QString& apiKey, const QString& programPath,
-    const QStringList& programArguments) :
+OllamaService::OllamaService(LLMService* service, const QString& name, const QString& url, const QString& ver,
+    const QString& gen, const QString& apiKey, const QString& programPath, const QStringList& programArguments) :
     LLMAPIEntry(service, name, LLMEnum::LLMType::Ollama),
     url_(url),
     api_version_(ver),
@@ -77,7 +92,8 @@ OllamaService::OllamaService(LLMService* service, const QString& name, const QSt
     apiKey_(apiKey),
     programPath_(programPath),
     programArguments_(programArguments)
-{ }
+{
+}
 
 OllamaService::~OllamaService()
 {
@@ -145,10 +161,11 @@ bool OllamaService::isUrlAccessible() const
 
         // Gestion des erreurs SSL
         QObject::connect(reply, QOverload<const QList<QSslError>&>::of(&QNetworkReply::sslErrors),
-                        [](const QList<QSslError> &errors) {
-            for (const QSslError &error : errors)
-                qDebug() << "SSL Error:" << error.errorString();
-        });
+            [](const QList<QSslError>& errors)
+            {
+                for (const QSslError& error : errors)
+                    qDebug() << "SSL Error:" << error.errorString();
+            });
 
         timer.start(5000); // timeout 5s
         loop.exec();
@@ -163,7 +180,7 @@ bool OllamaService::isUrlAccessible() const
                 qDebug() << " ... Erreur réseau:" << reply->errorString();
                 qDebug() << " ... Code HTTP:" << reply->attribute(QNetworkRequest::HttpStatusCodeAttribute);
             }
-        } 
+        }
         else
         {
             qDebug() << " ... Timeout lors de l'accès à l'URL";
@@ -180,8 +197,7 @@ bool OllamaService::isAPIAccessible() const
 {
     if (!apiKey_.isEmpty())
     {
-    // TODO: check the authorized access to api
-
+        // TODO: check the authorized access to api
     }
     return true;
 }
@@ -190,7 +206,7 @@ void OllamaService::postInternal(Chat* chat, const QString& content, bool stream
 {
     // Use api/chat if available or configured
     bool useChatApi = api_generate_.contains("chat");
-    
+
     QNetworkRequest request(url_ + api_generate_);
     request.setHeader(QNetworkRequest::ContentTypeHeader, "application/json");
 
@@ -201,7 +217,7 @@ void OllamaService::postInternal(Chat* chat, const QString& content, bool stream
 
     // post the request
     QJsonObject payload = chat->jsonObject_;
-    
+
     if (useChatApi)
     {
         // Construct messages array for /api/chat
@@ -213,10 +229,10 @@ void OllamaService::postInternal(Chat* chat, const QString& content, bool stream
             msgObj["content"] = msg.content;
             messagesArray.append(msgObj);
         }
-        
+
         // Add the current user prompt if not already in history (updateContent adds it, but let's be safe)
         // Actually chat->updateContent() calls addContent() which adds to history.
-        
+
         payload["messages"] = messagesArray;
         payload.remove("prompt"); // Remove 'prompt' if present, as it conflicts with 'messages' in some versions
     }
@@ -225,7 +241,7 @@ void OllamaService::postInternal(Chat* chat, const QString& content, bool stream
         // Fallback or legacy /api/generate
         // chat->jsonObject_ already contains "prompt" via Chat::updateObject()
     }
-    
+
     QJsonDocument jsonDoc(payload);
     QByteArray data = jsonDoc.toJson();
     QNetworkReply* reply = service_->networkManager_->post(request, data);
@@ -234,49 +250,56 @@ void OllamaService::postInternal(Chat* chat, const QString& content, bool stream
     // connect signals to receive datas
     if (streamed)
     {
-        service_->connect(reply, &QNetworkReply::readyRead, service_, [this, chat, reply, useChatApi]() {
-            // qDebug() << "OllamaService::postInternal streamed: received data";
-            
-            // For /api/chat, the response format is different:
-            // "message": { "role": "assistant", "content": "..." } instead of "response": "..."
-            // We need to handle this in LLMService::receive or handle it here.
-            // LLMService::receive expects "response".
-            
-            // Let's modify LLMService::receive to handle both or intercept here.
-            // Since LLMService::receive is generic, we should probably intercept or ensure LLMService handles it.
-            // But wait, LLMService::receive parses lines.
-            // If we use /api/chat, the stream chunks look like: { "model": "...", "created_at": "...", "message": { "role": "assistant", "content": "Hello" }, "done": false }
-            
-            // LLMService::receive checks for "response". We need it to check for "message.content" too.
-            // But LLMService::receive is in LLMService.cpp.
-            
-            // Actually, let's keep it simple: pass the raw data to service_->receive, 
-            // and update LLMService::receive to handle "message" object.
-            
-            service_->receive(this, chat, reply->readAll());
-        });
-        service_->connect(reply, &QNetworkReply::finished, service_, [this, chat, reply]() {
-            qDebug() << "OllamaService::postInternal streamed: finished";
-            if (reply->error() == QNetworkReply::NoError)            
-                service_->receive(this, chat, reply->readAll());            
-            else            
-                qDebug() << "Error:" << reply->errorString();                  
-            reply->deleteLater();
-            if (chat->stopButton_)
-                chat->stopButton_->setEnabled(false);
-        });
+        service_->connect(reply, &QNetworkReply::readyRead, service_,
+            [this, chat, reply, useChatApi]()
+            {
+                // qDebug() << "OllamaService::postInternal streamed: received data";
+
+                // For /api/chat, the response format is different:
+                // "message": { "role": "assistant", "content": "..." } instead of "response": "..."
+                // We need to handle this in LLMService::receive or handle it here.
+                // LLMService::receive expects "response".
+
+                // Let's modify LLMService::receive to handle both or intercept here.
+                // Since LLMService::receive is generic, we should probably intercept or ensure LLMService handles it.
+                // But wait, LLMService::receive parses lines.
+                // If we use /api/chat, the stream chunks look like: { "model": "...", "created_at": "...", "message": {
+                // "role": "assistant", "content": "Hello" }, "done": false }
+
+                // LLMService::receive checks for "response". We need it to check for "message.content" too.
+                // But LLMService::receive is in LLMService.cpp.
+
+                // Actually, let's keep it simple: pass the raw data to service_->receive,
+                // and update LLMService::receive to handle "message" object.
+
+                service_->receive(this, chat, reply->readAll());
+            });
+        service_->connect(reply, &QNetworkReply::finished, service_,
+            [this, chat, reply]()
+            {
+                qDebug() << "OllamaService::postInternal streamed: finished";
+                if (reply->error() == QNetworkReply::NoError)
+                    service_->receive(this, chat, reply->readAll());
+                else
+                    qDebug() << "Error:" << reply->errorString();
+                reply->deleteLater();
+                if (chat->stopButton_)
+                    chat->stopButton_->setEnabled(false);
+            });
     }
     else
     {
-        service_->connect(service_->networkManager_, &QNetworkAccessManager::finished, service_, [this, chat, reply]() {
-            if (reply->error() == QNetworkReply::NoError)            
-                service_->receive(this, chat, reply->readAll());            
-            else            
-                qDebug() << "Error:" << reply->errorString();            
-            reply->deleteLater();
-            if (chat->stopButton_)
-                chat->stopButton_->setEnabled(false);            
-        });
+        service_->connect(service_->networkManager_, &QNetworkAccessManager::finished, service_,
+            [this, chat, reply]()
+            {
+                if (reply->error() == QNetworkReply::NoError)
+                    service_->receive(this, chat, reply->readAll());
+                else
+                    qDebug() << "Error:" << reply->errorString();
+                reply->deleteLater();
+                if (chat->stopButton_)
+                    chat->stopButton_->setEnabled(false);
+            });
     }
 }
 
@@ -290,14 +313,16 @@ void OllamaService::post(Chat* chat, const QString& content, bool streamed)
         if (canStartProcess() && service_->requireStartProcess(this))
         {
             start();
-            
+
             qDebug() << "OllamaService::post: api launched";
-            
-            service_->connect(programProcess_.get(), &QProcess::started, service_, [this, chat, content, streamed]() {
-                qDebug() << "OllamaService::post: api started : state=" << programProcess_->state();
-                programProcess_->waitForReadyRead(3000);
-                this->postInternal(chat, content, streamed);
-            });
+
+            service_->connect(programProcess_.get(), &QProcess::started, service_,
+                [this, chat, content, streamed]()
+                {
+                    qDebug() << "OllamaService::post: api started : state=" << programProcess_->state();
+                    programProcess_->waitForReadyRead(3000);
+                    this->postInternal(chat, content, streamed);
+                });
         }
     }
     else
@@ -322,10 +347,10 @@ bool OllamaService::handleMessageError(Chat* chat, const QString& message)
 
         qDebug() << "handleMessageError: ollama:" << model << num_params << "not found";
 
-        if (QDir(ollamaSystemDir).exists()) 
+        if (QDir(ollamaSystemDir).exists())
         {
             OllamaManifest manifest = getOllamaManifest(ollamaSystemDir + ollamaManifestBaseDir, model, num_params);
-            if (!manifest.model_.isEmpty()) 
+            if (!manifest.model_.isEmpty())
             {
                 // create in userland the link to the manifest file
                 QString userManifestDir = homePath + ollamaManifestBaseDir + model;
@@ -333,9 +358,10 @@ bool OllamaService::handleMessageError(Chat* chat, const QString& message)
 
                 QString userManifestFileName = userManifestDir + "/" + num_params;
                 QFileInfo userManifestInfo(userManifestFileName);
-                if (!userManifestInfo.exists()) 
+                if (!userManifestInfo.exists())
                 {
-                    if (QFile::link(ollamaSystemDir + ollamaManifestBaseDir + model + "/" + num_params, userManifestFileName))
+                    if (QFile::link(
+                            ollamaSystemDir + ollamaManifestBaseDir + model + "/" + num_params, userManifestFileName))
                         qDebug() << "Lien symbolique manifest créé:" << userManifestFileName;
                     else
                         qWarning() << "Échec de la création du lien manifest:" << userManifestFileName;
@@ -347,8 +373,8 @@ bool OllamaService::handleMessageError(Chat* chat, const QString& message)
                 digests += manifest.config.digest_;
                 for (OllamaManifest::Layer& layer : manifest.layers_)
                     digests += layer.digest_;
-                for (QString& digest : digests) 
-                {                    
+                for (QString& digest : digests)
+                {
                     QString userBlobPath = homePath + ollamaBlobsBaseDir + digest.replace(':', '-');
                     if (!QFileInfo(homePath + ollamaBlobsBaseDir + digest).exists())
                     {
@@ -367,7 +393,7 @@ bool OllamaService::handleMessageError(Chat* chat, const QString& message)
     return false;
 }
 
-QJsonObject OllamaService::toJson() const 
+QJsonObject OllamaService::toJson() const
 {
     QJsonObject obj;
     obj["type"] = enumValueToString<LLMEnum>("LLMType", type_);
@@ -378,7 +404,7 @@ QJsonObject OllamaService::toJson() const
     obj["apikey"] = apiKey_; // TODO : encode ?
     obj["executable"] = programPath_;
     QJsonArray argsArray;
-    for (const QString &arg : programArguments_)
+    for (const QString& arg : programArguments_)
         argsArray.append(arg);
     obj["args"] = argsArray;
     return obj;

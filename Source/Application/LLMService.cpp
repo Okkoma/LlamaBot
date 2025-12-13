@@ -96,7 +96,7 @@ void LLMService::createDefaultServiceJsonFile()
     // windows ? use the path of the ollama binary in the PATH environment variable
     // mac ? use the path of the ollama binary in the PATH environment variable
     apiEntries_.push_back(new OllamaService(this, "Ollama", "http://localhost:11434/", "api/version", "api/chat", "",
-                                            "/usr/local/bin/ollama", QStringList("serve")));
+        "/usr/local/bin/ollama", QStringList("serve")));
 
     saveServiceJsonFile();
 }
@@ -135,6 +135,20 @@ std::vector<LLMModel> LLMService::getAvailableModels(const LLMAPIEntry* api) con
     // TODO : get all models (all registered apis)
     std::vector<LLMModel> results;
     return results;
+}
+
+LLMModel* LLMService::getModel(const QString& name) const
+{
+    for (LLMAPIEntry* api : apiEntries_)
+    {
+        std::vector<LLMModel> models = api->getAvailableModels();
+        for (LLMModel& model : models)
+        {
+            if (model.toString() == name)
+                return &model;
+        }
+    }
+    return nullptr;
 }
 
 void LLMService::addAPI(LLMAPIEntry* info)
@@ -199,7 +213,7 @@ bool LLMService::requireStartProcess(LLMAPIEntry* api)
     // Demander la confirmation à l'utilisateur
     QMessageBox::StandardButton reply;
     reply = QMessageBox::question(widget_, "Confirmation", "Do you want to start the service " + api->name_ + "?",
-                                  QMessageBox::Yes | QMessageBox::No);
+        QMessageBox::Yes | QMessageBox::No);
     return (reply == QMessageBox::Yes);
 }
 

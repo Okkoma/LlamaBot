@@ -1,23 +1,23 @@
+#include <QActionGroup>
+#include <QDir>
+#include <QEvent>
+#include <QFrame>
+#include <QHBoxLayout>
+#include <QIcon>
 #include <QJsonDocument>
+#include <QMenu>
+#include <QProcess>
+#include <QPushButton>
+#include <QScrollBar>
+#include <QString>
+#include <QStyle>
+#include <QTabBar>
 #include <QTabWidget>
-#include <QTextEdit>
 #include <QTextBlock>
 #include <QTextBrowser>
+#include <QTextEdit>
 #include <QVBoxLayout>
-#include <QHBoxLayout>
-#include <QPushButton>
-#include <QFrame>
-#include <QEvent>
-#include <QIcon>
-#include <QStyle>
-#include <QProcess>
 #include <QVector>
-#include <QString>
-#include <QMenu>
-#include <QTabBar>
-#include <QDir>
-#include <QActionGroup>
-#include <QScrollBar>
 #include <qabstractslider.h>
 
 #include <QDebug>
@@ -26,10 +26,7 @@
 
 #include "ChatBotPanel.h"
 
-
-ChatBotPanel::ChatBotPanel(LLMService* service, QWidget* parent) :
-    QWidget(parent),
-    llm_(service)
+ChatBotPanel::ChatBotPanel(LLMService* service, QWidget* parent) : QWidget(parent), llm_(service)
 {
     initialize();
     llm_->setWidget(this);
@@ -49,23 +46,27 @@ void ChatBotPanel::initialize()
         tabWidget_->tabBar()->installEventFilter(this);
 
     // Connexion pour fermer un onglet
-    connect(tabWidget_, &QTabWidget::tabCloseRequested, this, [this](int index) {
-        if (tabWidget_->count() > 1) 
-        { // Toujours garder au moins un chat
-            tabWidget_->removeTab(index);
-            chats_.erase(chats_.begin() + index);
-            if (index == tabWidget_->currentIndex())
-                currentChat_ = &chats_[tabWidget_->currentIndex()];
-        }
-    });
+    connect(tabWidget_, &QTabWidget::tabCloseRequested, this,
+        [this](int index)
+        {
+            if (tabWidget_->count() > 1)
+            { // Toujours garder au moins un chat
+                tabWidget_->removeTab(index);
+                chats_.erase(chats_.begin() + index);
+                if (index == tabWidget_->currentIndex())
+                    currentChat_ = &chats_[tabWidget_->currentIndex()];
+            }
+        });
 
     // Ajout d'un bouton "+" pour créer un nouvel onglet
     QPushButton* addTabButton = new QPushButton("+");
     addTabButton->setFixedWidth(30);
     tabWidget_->setCornerWidget(addTabButton, Qt::TopRightCorner);
-    connect(addTabButton, &QPushButton::clicked, this, [this]() {
-        currentChat_ = addNewChat();
-    });
+    connect(addTabButton, &QPushButton::clicked, this,
+        [this]()
+        {
+            currentChat_ = addNewChat();
+        });
 
     setLayout(mainLayout);
 
@@ -73,9 +74,11 @@ void ChatBotPanel::initialize()
     currentChat_ = addNewChat();
 
     // Connexion du changement d'onglet pour mettre à jour le chat courant
-    connect(tabWidget_, &QTabWidget::currentChanged, this, [this](int index) {
-        currentChat_ = &chats_[index];
-    });
+    connect(tabWidget_, &QTabWidget::currentChanged, this,
+        [this](int index)
+        {
+            currentChat_ = &chats_[index];
+        });
 }
 
 Chat* ChatBotPanel::addNewChat()
@@ -116,29 +119,36 @@ Chat* ChatBotPanel::addNewChat()
 
     tabWidget_->addTab(chatTab, QString("Chat %1").arg(chats_.size()));
     tabWidget_->setCurrentWidget(chatTab);
-    
+
     // Connexion du bouton et de la touche Entrée
-    connect(sendButton, &QPushButton::clicked, this, [this, newChat]() {
-        QString content = newChat->askText_->toPlainText().trimmed();
-        if (!content.isEmpty()) {
-            sendRequest(newChat, content);
-            if (newChat->stopButton_)
-                newChat->stopButton_->setEnabled(true);
-        }
-    });
+    connect(sendButton, &QPushButton::clicked, this,
+        [this, newChat]()
+        {
+            QString content = newChat->askText_->toPlainText().trimmed();
+            if (!content.isEmpty())
+            {
+                sendRequest(newChat, content);
+                if (newChat->stopButton_)
+                    newChat->stopButton_->setEnabled(true);
+            }
+        });
 
-    connect(stopButton, &QPushButton::clicked, this, [this, newChat, stopButton]() {
-        llm_->stopStream(newChat);
-        stopButton->setEnabled(false);
-    });
+    connect(stopButton, &QPushButton::clicked, this,
+        [this, newChat, stopButton]()
+        {
+            llm_->stopStream(newChat);
+            stopButton->setEnabled(false);
+        });
 
-    connect(newChat->chatView_->verticalScrollBar(), &QAbstractSlider::valueChanged, this, [this, newChat]() {
-        newChat->lastScrollValue_ = newChat->chatView_->verticalScrollBar()->value();
-    });
+    connect(newChat->chatView_->verticalScrollBar(), &QAbstractSlider::valueChanged, this,
+        [this, newChat]()
+        {
+            newChat->lastScrollValue_ = newChat->chatView_->verticalScrollBar()->value();
+        });
 
     newChat->askText_->installEventFilter(this);
 
-    return newChat; 
+    return newChat;
 }
 
 void ChatBotPanel::sendRequest(Chat* chat, const QString& content, bool streamed)
@@ -161,56 +171,58 @@ bool ChatBotPanel::eventFilter(QObject* obj, QEvent* event)
         {
             QTabBar* tabBar = tabWidget_->tabBar();
             int tabIndex = tabBar->tabAt(mouseEvent->pos());
-            Chat& chat = chats_[tabIndex];
-            if (tabIndex != -1)
-            {
-                QMenu menu;
-                // Label "Choisir API"
-                QAction* apiLabel = menu.addAction("Choisir API");
-                apiLabel->setEnabled(false);
-                menu.addSeparator();
-                // Liste des APIs disponibles
-                QActionGroup* apiGroup = new QActionGroup(&menu);
-                apiGroup->setExclusive(true);
-                const std::vector<LLMAPIEntry*>& apis = llm_->getAPIs();
-                for (LLMAPIEntry* api : apis)
-                {
-                    QAction* action = menu.addAction(api->name_);
-                    action->setCheckable(true);
-                    action->setChecked(chat.currentApi_ == api->name_);
-                    apiGroup->addAction(action);
-                }
-                // Séparation
-                menu.addSeparator();
-                // Label "Choisir Modèle"
-                QAction* modelLabel = menu.addAction("Choisir Modèle");
-                modelLabel->setEnabled(false);
-                menu.addSeparator();
-                // Liste des modèles (scan dossier models/)
-                QActionGroup* modelGroup = new QActionGroup(&menu);
-                modelGroup->setExclusive(true);
-                std::vector<LLMModel> models = llm_->getAvailableModels(llm_->get(chat.currentApi_));
-                for (const LLMModel& model : models)
-                {
-                    QAction* action = menu.addAction(model.toString());
-                    action->setCheckable(true);
-                    action->setChecked(chat.currentModel_ == model.toString());
-                    modelGroup->addAction(action);
-                }
-                QAction* selectedAction = menu.exec(tabBar->mapToGlobal(mouseEvent->pos()));
-                // Gestion du choix API
-                if (selectedAction && apiGroup->actions().contains(selectedAction))
-                {
-                    chat.setApi(selectedAction->text());
-                }
-                // Gestion du choix modèle
-                if (selectedAction && modelGroup->actions().contains(selectedAction))
-                {
-                    chat.setModel(selectedAction->text());
-                }
+            if (tabIndex == -1)
+                return false;
 
-                return true;
+            Chat& chat = chats_[tabIndex];
+            QMenu menu;
+            // Label "Choisir API"
+            QAction* apiLabel = menu.addAction("Choisir API");
+            apiLabel->setEnabled(false);
+            menu.addSeparator();
+            // Liste des APIs disponibles
+            QActionGroup* apiGroup = new QActionGroup(&menu);
+            apiGroup->setExclusive(true);
+            const std::vector<LLMAPIEntry*>& apis = llm_->getAPIs();
+            for (LLMAPIEntry* api : apis)
+            {
+                QAction* action = menu.addAction(api->name_);
+                action->setCheckable(true);
+                action->setChecked(chat.currentApi_ == api->name_);
+                apiGroup->addAction(action);
             }
+            // Séparation
+            menu.addSeparator();
+            // Label "Choisir Modèle"
+            QAction* modelLabel = menu.addAction("Choisir Modèle");
+            modelLabel->setEnabled(false);
+            menu.addSeparator();
+            // Liste des modèles (scan dossier models/)
+            QActionGroup* modelGroup = new QActionGroup(&menu);
+            modelGroup->setExclusive(true);
+            std::vector<LLMModel> models = llm_->getAvailableModels(llm_->get(chat.currentApi_));
+            for (const LLMModel& model : models)
+            {
+                QAction* action = menu.addAction(model.toString());
+                action->setCheckable(true);
+                action->setChecked(chat.currentModel_ == model.toString());
+                modelGroup->addAction(action);
+            }
+            QAction* selectedAction = menu.exec(tabBar->mapToGlobal(mouseEvent->pos()));
+            // Gestion du choix API
+            if (selectedAction && apiGroup->actions().contains(selectedAction))
+            {
+                qDebug() << "selectedAction: api=" << selectedAction->text();
+                chat.setApi(selectedAction->text());
+            }
+            // Gestion du choix modèle
+            if (selectedAction && modelGroup->actions().contains(selectedAction))
+            {
+                qDebug() << "selectedAction: model=" << selectedAction->text();
+                chat.setModel(selectedAction->text());
+            }
+
+            return true;
         }
     }
     if (event->type() == QEvent::KeyPress)
@@ -220,8 +232,8 @@ bool ChatBotPanel::eventFilter(QObject* obj, QEvent* event)
         {
             // Simule le clic sur le bouton Envoyer
             QString content = currentChat_->askText_->toPlainText().trimmed();
-            if (!content.isEmpty())       
-                sendRequest(currentChat_, content, true);                            
+            if (!content.isEmpty())
+                sendRequest(currentChat_, content, true);
             return true;
         }
     }

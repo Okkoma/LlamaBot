@@ -6,8 +6,8 @@
 #include <QPushButton>
 
 #include <QNetworkAccessManager>
-#include <QNetworkRequest>
 #include <QNetworkReply>
+#include <QNetworkRequest>
 
 #include <QMutex>
 #include <QWaitCondition>
@@ -15,9 +15,9 @@
 
 #include "Chat.h"
 
-#include "LlamaCppService.h"
 #include "LLMService.h"
-
+#include "LlamaCppService.h"
+#include "OllamaService.h"
 
 std::vector<llama_token> LlamaTokenize(LlamaCppChatData& data, const QString& prompt)
 {
@@ -27,7 +27,8 @@ std::vector<llama_token> LlamaTokenize(LlamaCppChatData& data, const QString& pr
     // tokenize the prompt
     const int n_prompt_tokens = -llama_tokenize(vocab, qPrintable(prompt), prompt.size(), NULL, 0, is_first, true);
     std::vector<llama_token> prompt_tokens(n_prompt_tokens);
-    if (llama_tokenize(vocab, qPrintable(prompt), prompt.size(), prompt_tokens.data(), prompt_tokens.size(), is_first, true) < 0)
+    if (llama_tokenize(
+            vocab, qPrintable(prompt), prompt.size(), prompt_tokens.data(), prompt_tokens.size(), is_first, true) < 0)
         qDebug() << "failed to tokenize the prompt";
 
     return prompt_tokens;
@@ -72,15 +73,13 @@ int LlamaGenerateStep(LlamaCppChatData& data, std::vector<llama_token>& prompt_t
         qWarning() << "LlamaGenerateStep: error -3 = failed to convert token to piece";
         return -3;
     }
-    
+
     buf[n] = 0;
     qDebug() << "LlamaGenerateStep: response:" << buf << "tokenid:" << data.tokenId_;
     response = QString(buf);
 
     return static_cast<int>(data.tokenId_);
 }
-
-
 
 LlamaCppChatData::~LlamaCppChatData()
 {
@@ -108,7 +107,7 @@ void LlamaCppChatData::initialize(LlamaModelData* model)
     llama_sampler_chain_add(smpl_, llama_sampler_init_min_p(0.05f, 1));
     llama_sampler_chain_add(smpl_, llama_sampler_init_temp(0.8f));
     llama_sampler_chain_add(smpl_, llama_sampler_init_dist(LLAMA_DEFAULT_SEED));
-    
+
     // initialize the default chat template
     llamaCppChattemplate_ = llama_model_chat_template(model_->model_, /* name */ nullptr);
 
@@ -128,18 +127,15 @@ void LlamaCppChatData::deinitialize()
         ctx_ = nullptr;
     }
 
-    for (llama_chat_message& msg : llamaCppChatMessages_) 
-        free(const_cast<char *>(msg.content));
+    for (llama_chat_message& msg : llamaCppChatMessages_)
+        free(const_cast<char*>(msg.content));
     llamaCppChatMessages_.clear();
 }
 
 struct LlamaCppProcessAsync : public LlamaCppProcess
 {
-    LlamaCppProcessAsync(LlamaCppChatData* data, LLMService* service) : LlamaCppProcess(0, data, service) { }
-    ~LlamaCppProcessAsync() override
-    {
-        stop();
-    }
+    LlamaCppProcessAsync(LlamaCppChatData* data, LLMService* service) : LlamaCppProcess(0, data, service) {}
+    ~LlamaCppProcessAsync() override { stop(); }
 
     void start(Chat* chat, const QString& content, bool streamed) override
     {
@@ -158,29 +154,28 @@ struct LlamaCppProcessAsync : public LlamaCppProcess
         {
             asyncTimer_ = new QTimer(service_); // parenté sur service_ pour gestion mémoire
             asyncTimer_->setInterval(100);
-            QObject::connect(asyncTimer_, &QTimer::timeout, service_, [this]() {
-                generate(); 
-            });
+            QObject::connect(asyncTimer_, &QTimer::timeout, service_,
+                [this]()
+                {
+                    generate();
+                });
         }
 
         startProcess();
     }
 
-    void stop() override
-    {
-        stopProcess();
-    }
+    void stop() override { stopProcess(); }
 
     void startProcess()
     {
         if (asyncTimer_ && !asyncTimer_->isActive())
-            asyncTimer_->start();               
+            asyncTimer_->start();
     }
 
     void stopProcess() override
     {
         if (asyncTimer_ && asyncTimer_->isActive())
-            asyncTimer_->stop();                
+            asyncTimer_->stop();
     }
 
     void generate() override
@@ -190,37 +185,34 @@ struct LlamaCppProcessAsync : public LlamaCppProcess
             stopProcess();
             return;
         }
-    
+
         data_->tokenId_ = LlamaGenerateStep(*data_, data_->tokens_, data_->response_);
         data_->chat_->updateCurrentAIStream(data_->response_);
-    
+
         if (data_->tokenId_ <= 0)
         {
             stopProcess();
-    
+
             if (data_->chat_->stopButton_)
                 data_->chat_->stopButton_->setEnabled(false);
-    
+
             data_->chat_ = nullptr;
             data_->tokens_.clear();
             data_->response_.clear();
-            return;        
+            return;
         }
-    
+
         // Préparer le batch pour le prochain token
-        data_->batch_ = llama_batch_get_one(&data_->tokenId_, 1);  
+        data_->batch_ = llama_batch_get_one(&data_->tokenId_, 1);
     }
 
-    QTimer* asyncTimer_ = nullptr;    
+    QTimer* asyncTimer_ = nullptr;
 };
 
 struct LlamaCppProcessThread : public LlamaCppProcess
 {
-    LlamaCppProcessThread(LlamaCppChatData* data, LLMService* service) : LlamaCppProcess(1, data, service) { }
-    ~LlamaCppProcessThread() override
-    {
-        stop();
-    }
+    LlamaCppProcessThread(LlamaCppChatData* data, LLMService* service) : LlamaCppProcess(1, data, service) {}
+    ~LlamaCppProcessThread() override { stop(); }
 
     void start(Chat* chat, const QString& content, bool streamed) override
     {
@@ -240,27 +232,33 @@ struct LlamaCppProcessThread : public LlamaCppProcess
         if (!worker_)
         {
             worker_ = new LlamaCppWorker(this);
-            
+
             // Connecter les signaux du worker
-            QObject::connect(worker_, &LlamaCppWorker::tokenGenerated, service_, [this, chat](const QString& token) {
-                chat->updateCurrentAIStream(token);
-            });
-            
-            QObject::connect(worker_, &LlamaCppWorker::generationFinished, service_, [this, chat]() {
-                if (chat->stopButton_)
-                    chat->stopButton_->setEnabled(false);
-                    
-                QMutexLocker locker(&mutex_);
-                data_->chat_ = nullptr;
-                data_->tokens_.clear();
-                data_->response_.clear();
-            });
-            
-            QObject::connect(worker_, &LlamaCppWorker::errorOccurred, service_, [this, chat](const QString& error) {
-                qWarning() << "LlamaCppApi thread error:" << error;
-                if (chat->stopButton_)
-                    chat->stopButton_->setEnabled(false);
-            });
+            QObject::connect(worker_, &LlamaCppWorker::tokenGenerated, service_,
+                [this, chat](const QString& token)
+                {
+                    chat->updateCurrentAIStream(token);
+                });
+
+            QObject::connect(worker_, &LlamaCppWorker::generationFinished, service_,
+                [this, chat]()
+                {
+                    if (chat->stopButton_)
+                        chat->stopButton_->setEnabled(false);
+
+                    QMutexLocker locker(&mutex_);
+                    data_->chat_ = nullptr;
+                    data_->tokens_.clear();
+                    data_->response_.clear();
+                });
+
+            QObject::connect(worker_, &LlamaCppWorker::errorOccurred, service_,
+                [this, chat](const QString& error)
+                {
+                    qWarning() << "LlamaCppApi thread error:" << error;
+                    if (chat->stopButton_)
+                        chat->stopButton_->setEnabled(false);
+                });
         }
 
         // Démarrer le thread
@@ -278,7 +276,7 @@ struct LlamaCppProcessThread : public LlamaCppProcess
             }
             if (!worker_->thread()->isRunning())
                 worker_->thread()->start();
-        }             
+        }
     }
 
     void stop() override
@@ -299,19 +297,18 @@ struct LlamaCppProcessThread : public LlamaCppProcess
     void stopProcess() override
     {
         if (worker_)
-            worker_->stopProcessing();              
+            worker_->stopProcessing();
     }
 
     LlamaCppWorker* worker_ = nullptr;
 
     QMutex mutex_;
     QWaitCondition condition_;
-    std::atomic<bool> stopRequested_{false};
-    std::atomic<bool> isProcessing_{false};    
+    std::atomic<bool> stopRequested_{ false };
+    std::atomic<bool> isProcessing_{ false };
 };
 
-LlamaCppWorker::LlamaCppWorker(LlamaCppProcess *process)
-    : process_(process)
+LlamaCppWorker::LlamaCppWorker(LlamaCppProcess* process) : process_(process)
 {
     thread_ = new QThread();
     this->moveToThread(thread_);
@@ -350,34 +347,33 @@ void LlamaCppWorker::processRequest()
         emit generationFinished();
         return;
     }
-    
+
     process->isProcessing_ = true;
-        
+
     // Préparer le batch pour le premier token
     data.batch_ = llama_batch_get_one(data.tokens_.data(), data.tokens_.size());
-        
+
     while (!process->stopRequested_.load())
     {
         locker.unlock();
-            
+
         // Générer le prochain token
         data.tokenId_ = LlamaGenerateStep(data, data.tokens_, data.response_);
-            
+
         locker.relock();
-            
+
         if (data.tokenId_ <= 0) // Fin de génération
             break;
-        
+
         // Émettre le token généré
         emit tokenGenerated(data.response_);
-            
+
         // Préparer le batch pour le prochain token
         data.batch_ = llama_batch_get_one(&data.tokenId_, 1);
     }
-        
+
     process->isProcessing_ = false;
     emit generationFinished();
-
 }
 
 void LlamaCppWorker::stopProcessing()
@@ -385,7 +381,6 @@ void LlamaCppWorker::stopProcessing()
     if (process_)
         static_cast<LlamaCppProcessThread*>(process_)->stopRequested_ = true;
 }
-
 
 LlamaCppService::LlamaCppService(LLMService* service, const QString& name) :
     LLMAPIEntry(service, name, LLMEnum::LLMType::LlamaCpp)
@@ -427,9 +422,9 @@ LlamaCppService::~LlamaCppService()
     for (LlamaModelData& model : models_)
     {
         if (model.model_)
-            llama_model_free(model.model_);        
+            llama_model_free(model.model_);
     }
-    
+
     datas_.clear();
     models_.clear();
 }
@@ -448,7 +443,7 @@ void LlamaCppService::initializeData(LlamaCppChatData* data, LlamaModelData* mod
     if (useThreadedVersion_)
         data->generateProcess_ = new LlamaCppProcessThread(data, service_);
     else
-        data->generateProcess_ = new LlamaCppProcessAsync(data, service_);    
+        data->generateProcess_ = new LlamaCppProcessAsync(data, service_);
 }
 
 void LlamaCppService::clearData(LlamaCppChatData* data)
@@ -469,7 +464,7 @@ LlamaModelData* LlamaCppService::addModel(const QString& modelName, int numGpuLa
 
     std::vector<LLMModel> models = getAvailableModels();
     for (LLMModel& model : models)
-    {    
+    {
         if (model.toString() == modelName)
         {
             qDebug() << "LlamaCppService::addModel: model" << model.toString() << " file:" << model.filePath_;
@@ -523,12 +518,12 @@ void LlamaCppService::setModel(Chat* chat, QString modelName)
             if (!model)
             {
                 qWarning() << "LlamaCppApi::setModel: no model" << modelName;
-                return;        
-            }            
+                return;
+            }
         }
 
         initializeData(data, model);
-    } 
+    }
 }
 
 bool LlamaCppService::isReady() const
@@ -540,20 +535,19 @@ void LlamaCppService::post(Chat* chat, const QString& content, bool streamed)
 {
     setModel(chat);
 
-    LlamaCppChatData* data = getData(chat); 
+    LlamaCppChatData* data = getData(chat);
     if (!data || !data->model_)
     {
         qDebug() << "LlamaCppService::post no data or no model";
         return;
     }
     chat->updateContent(content);
-    data->generateProcess_->start(chat, content, streamed);    
+    data->generateProcess_->start(chat, content, streamed);
 }
-
 
 QString LlamaCppService::formatMessage(Chat* chat, const QString& role, const QString& content)
 {
-    LlamaCppChatData* data = getData(chat); 
+    LlamaCppChatData* data = getData(chat);
     if (!data)
     {
         qDebug() << "LlamaCppService::formatMessage: no data";
@@ -561,38 +555,42 @@ QString LlamaCppService::formatMessage(Chat* chat, const QString& role, const QS
     }
 
     std::vector<char> formatted(llama_n_ctx(data->ctx_));
-    
+
     if (role == "user")
     {
         // ajouter le message de l'utilisateur
-        data->llamaCppChatMessages_.push_back({ "user", content.isEmpty() ? "" : strdup(content.toUtf8().constData())});
+        data->llamaCppChatMessages_.push_back(
+            { "user", content.isEmpty() ? "" : strdup(content.toUtf8().constData()) });
     }
-    else 
+    else
     {
         // ajouter la réponse de l'assistant
-        data->llamaCppChatMessages_.push_back({ "assistant", content.isEmpty() ? "" : strdup(content.toUtf8().constData())});
+        data->llamaCppChatMessages_.push_back(
+            { "assistant", content.isEmpty() ? "" : strdup(content.toUtf8().constData()) });
     }
 
-    int new_len = llama_chat_apply_template(data->llamaCppChattemplate_, data->llamaCppChatMessages_.data(), data->llamaCppChatMessages_.size(), true, formatted.data(), formatted.size());
-    if (new_len > (int)formatted.size()) 
+    int new_len = llama_chat_apply_template(data->llamaCppChattemplate_, data->llamaCppChatMessages_.data(),
+        data->llamaCppChatMessages_.size(), true, formatted.data(), formatted.size());
+    if (new_len > (int)formatted.size())
     {
         formatted.resize(new_len);
-        new_len = llama_chat_apply_template(data->llamaCppChattemplate_, data->llamaCppChatMessages_.data(), data->llamaCppChatMessages_.size(), true, formatted.data(), formatted.size());
+        new_len = llama_chat_apply_template(data->llamaCppChattemplate_, data->llamaCppChatMessages_.data(),
+            data->llamaCppChatMessages_.size(), true, formatted.data(), formatted.size());
     }
 
     QString result = QString::fromLocal8Bit(formatted.data(), new_len);
-    qDebug() << "LlamaCppApi::formatMessage: role:" << role << "content:" << content << "result:" << result; 
+    qDebug() << "LlamaCppApi::formatMessage: role:" << role << "content:" << content << "result:" << result;
     return result;
 }
 
 void LlamaCppService::stopStream(Chat* chat)
 {
-    LlamaCppChatData* data = getData(chat);    
+    LlamaCppChatData* data = getData(chat);
     if (data && data->generateProcess_)
         data->generateProcess_->stopProcess();
 }
 
-QJsonObject LlamaCppService::toJson() const 
+QJsonObject LlamaCppService::toJson() const
 {
     QJsonObject obj;
     obj["type"] = enumValueToString<LLMEnum>("LLMType", type_);
@@ -622,7 +620,7 @@ void LlamaCppService::setDefaultUseGpu(bool use_gpu)
 QStringList LlamaCppService::getAvailableBackends()
 {
     QStringList backends;
-        
+
     for (size_t i = 0; i < ggml_backend_reg_count(); i++)
     {
         ggml_backend_reg_t reg = ggml_backend_reg_get(i);
@@ -632,7 +630,7 @@ QStringList LlamaCppService::getAvailableBackends()
             backends.append(backendName);
         }
     }
-    
+
     return backends;
 }
 
@@ -640,13 +638,13 @@ QString LlamaCppService::getBackendInfo()
 {
     QString info;
     info += "=== Backends disponibles ===\n";
-    
+
     QStringList backends = getAvailableBackends();
     for (const QString& backend : backends)
     {
         info += "- " + backend + "\n";
     }
-    
+
     info += "\n=== Devices disponibles ===\n";
     for (size_t i = 0; i < ggml_backend_dev_count(); i++)
     {
@@ -658,7 +656,7 @@ QString LlamaCppService::getBackendInfo()
             info += QString("- %1: %2\n").arg(devName, devDesc);
         }
     }
-    
+
     return info;
 }
 
@@ -671,28 +669,55 @@ int LlamaCppService::getGpuLayers(Chat* chat) const
 }
 
 bool LlamaCppService::isUsingGpu(Chat* chat) const
-{ 
+{
     const LlamaCppChatData* data = chat ? getData(chat) : nullptr;
     if (data && data->model_)
-        return data->model_->use_gpu_;    
+        return data->model_->use_gpu_;
     return defaultUseGpu_;
 }
 
 int LlamaCppService::getContextSize(Chat* chat) const
 {
-    const LlamaCppChatData* data = chat ? getData(chat) : nullptr;    
+    const LlamaCppChatData* data = chat ? getData(chat) : nullptr;
     return data ? data->n_ctx_ : defaultContextSize_;
+}
+
+std::vector<LLMModel> LlamaCppService::getAvailableModels() const
+{
+    std::vector<LLMModel> result;
+
+    // LlamaCpp can use shared Ollama models.
+    OllamaService::getOllamaModels(OllamaService::ollamaSystemDir, result);
+    OllamaService::getOllamaModels(QDir::homePath() + "/", result);
+
+    QString appDataModelsPath = QStandardPaths::writableLocation(QStandardPaths::AppDataLocation) + "/models";
+    QDir appDataModelsDir(appDataModelsPath);
+    if (appDataModelsDir.exists())
+    {
+        QDirIterator it(appDataModelsPath, QStringList() << "*.gguf", QDir::Files, QDirIterator::NoIteratorFlags);
+        while (it.hasNext())
+        {
+            it.next();
+            LLMModel model;
+            model.filePath_ = it.fileInfo().absoluteFilePath();
+            model.name_ = it.fileName().replace(".gguf", ""); // Use filename as model name
+            model.num_params_ = "";                           // Unknown without parsing GGUF header
+            result.push_back(model);
+        }
+    }
+
+    return result;
 }
 
 LlamaModelData* LlamaCppService::getModel(const QString& modelname)
 {
-    QHash<QString, LlamaModelData >::iterator it = models_.find(modelname);
+    QHash<QString, LlamaModelData>::iterator it = models_.find(modelname);
     return it != models_.end() ? &it.value() : nullptr;
 }
 
 const LlamaModelData* LlamaCppService::getModel(const QString& modelname) const
 {
-    QHash<QString, LlamaModelData >::const_iterator it = models_.find(modelname);
+    QHash<QString, LlamaModelData>::const_iterator it = models_.find(modelname);
     return it != models_.end() ? &it.value() : nullptr;
 }
 

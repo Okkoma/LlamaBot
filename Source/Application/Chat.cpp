@@ -1,30 +1,29 @@
-#include <QTextEdit>
+#include <QScrollBar>
 #include <QTextBrowser>
 #include <QTextCursor>
-#include <QScrollBar>
+#include <QTextEdit>
 
 #include "Chat.h"
 #include "LLMService.h"
 
-//const char* rawHumanPrompt = "human:";
-//const char* rawAiPrompt = "ai:";
+// const char* rawHumanPrompt = "human:";
+// const char* rawAiPrompt = "ai:";
 
 const char* rawHumanPrompt = "";
 const char* rawAiPrompt = "";
 const char* rawDefaultInitialPrompt = "";
 
-
-Chat::Chat(LLMService* service, const QString& name, const QString& initialPrompt, bool streamed) : 
+Chat::Chat(LLMService* service, const QString& name, const QString& initialPrompt, bool streamed) :
     service_(service),
     streamed_(streamed),
-    lastBotIndex_(-1),    
+    lastBotIndex_(-1),
     name_(name),
     currentApi_("Ollama"),
     currentModel_("llama3.1:8b"),
     userPrompt_("🧑 >"),
     aiPrompt_("🤖 >")
-{ 
-    initialize(); 
+{
+    initialize();
 
     rawMessages_ = !initialPrompt.isEmpty() ? initialPrompt : rawDefaultInitialPrompt;
 }
@@ -46,12 +45,23 @@ void Chat::setApi(const QString& api)
 
 void Chat::setModel(const QString& model)
 {
-    LLMAPIEntry* api = service_->get(currentApi_);
-    if (api)
-        api->setModel(this, model);
+    LLMModel* modelptr = service_->getModel(model);
+    qDebug() << "Chat::setModel: modelptr:" << modelptr << "model:" << model;
+    if (modelptr)
+    {
+        if (modelptr->filePath_.contains(".gguf") && currentApi_ == "Ollama")
+        {
+            qDebug() << "Chat::setModel: Detected local model file, switching API to LlamaCpp";
+            setApi("LlamaCpp");
+        }
 
-    currentModel_ = model;
-    jsonObject_["model"] = model;
+        LLMAPIEntry* api = service_->get(currentApi_);
+        if (api)
+            api->setModel(this, model);
+
+        currentModel_ = model;
+        jsonObject_["model"] = model;
+    }
 }
 
 void Chat::updateContent(const QString& content)
@@ -78,7 +88,7 @@ void Chat::addContent(const QString& role, const QString& content)
 
     // Add to history
     if (!content.isEmpty())
-        history_.append({role, content});
+        history_.append({ role, content });
 
     if (!content.isEmpty())
     {
@@ -91,7 +101,7 @@ void Chat::addContent(const QString& role, const QString& content)
     {
         messages_.append("");
         lastBotIndex_ = messages_.size() - 1;
-    }    
+    }
 }
 
 void Chat::finalizeStream()
@@ -103,10 +113,10 @@ void Chat::finalizeStream()
 
         LLMAPIEntry* api = service_->get(currentApi_);
         rawMessages_ += api ? api->formatMessage(this, "assistant", currentAIStream_) : currentAIStream_ + "\n";
-        
+
         // Add valid response to history
-        history_.append({"assistant", currentAIStream_});
-        
+        history_.append({ "assistant", currentAIStream_ });
+
         currentAIStream_.clear();
     }
 }
@@ -136,9 +146,9 @@ void Chat::updateCurrentAIStream(const QString& text)
     }
 
     chatView_->setMarkdown(messages_.join("\n\n"));
-    
+
     // update scroll bar
-    if (atbottom)    
+    if (atbottom)
     {
         chatView_->moveCursor(QTextCursor::End);
         chatView_->ensureCursorVisible();
