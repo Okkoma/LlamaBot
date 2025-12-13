@@ -73,7 +73,7 @@ Rectangle {
             spacing: 5
             delegate: ItemDelegate {
                 width: modelListView.width
-                text: model.name + " (" + (model.digest ? model.digest.substring(0, 7) : "N/A") + "...)"
+                text: model.name + " (" + (model.digest ? model.digest.substring(0, 7) : "Select to fetch") + ")"
                 onClicked: {
                     searchField.text = model.name
                     fetchBtn.clicked()
