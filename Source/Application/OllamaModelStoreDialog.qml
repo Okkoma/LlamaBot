@@ -124,7 +124,8 @@ Rectangle {
                 // Let's assume we pass the file path from QML? No, C++ is safer.
                 // Let's modify OllamaModelStoreDialog to have a convenience 'downloadModel(name, digest)' that handles path.
                 
-                ollamaModelStoreDialog.downloadLayer(modelName, digest, "/tmp/" + modelName.replace("/", "_") + ".gguf") // TEMPORARY PATH
+                // Use the new high-level C++ method that handles persistent storage path
+                ollamaModelStoreDialog.downloadModel(modelName, digest)
             }
         }
         

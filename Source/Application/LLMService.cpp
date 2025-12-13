@@ -13,11 +13,7 @@
 #include "LlamaCppService.h"
 #include "OllamaService.h"
 
-
-LLMService::LLMService(QObject *parent) :
-    QObject(parent),
-    widget_(nullptr),
-    allowSharedModels_(false)
+LLMService::LLMService(QObject* parent) : QObject(parent), widget_(nullptr), allowSharedModels_(false)
 {
     initialize();
 }
@@ -61,7 +57,7 @@ bool LLMService::loadServiceJsonFile()
     QJsonArray array = doc.array();
     if (!array.empty())
     {
-        for (const QJsonValue& value : array)        
+        for (const QJsonValue& value : array)
             addAPI(LLMAPIEntry::fromJson(this, value.toObject()));
     }
 
@@ -80,7 +76,7 @@ bool LLMService::saveServiceJsonFile()
     QJsonArray array;
     for (LLMAPIEntry* entry : apiEntries_)
         array << entry->toJson();
-    
+
     QJsonDocument doc;
     doc.setArray(array);
     QByteArray data = doc.toJson();
@@ -92,14 +88,15 @@ bool LLMService::saveServiceJsonFile()
 void LLMService::createDefaultServiceJsonFile()
 {
     qDebug() << "createDefaultServiceJsonFile";
-       
+
     apiEntries_.push_back(LlamaCppService::createDefault(this, "LlamaCpp"));
     // TODO: this only works on Linux if Ollama is installed in /usr/local/bin
     // find a way to get the path of the ollama binary on other platforms
     // android ? use internal storage and/or find a way to install ollama on android
     // windows ? use the path of the ollama binary in the PATH environment variable
     // mac ? use the path of the ollama binary in the PATH environment variable
-    apiEntries_.push_back(new OllamaService(this, "Ollama", "http://localhost:11434/", "api/version", "api/chat", "", "/usr/local/bin/ollama", QStringList("serve")));
+    apiEntries_.push_back(new OllamaService(this, "Ollama", "http://localhost:11434/", "api/version", "api/chat", "",
+                                            "/usr/local/bin/ollama", QStringList("serve")));
 
     saveServiceJsonFile();
 }
@@ -112,7 +109,7 @@ void LLMService::initialize()
         createDefaultServiceJsonFile();
 
     LLMAPIEntry* defaultService_ = apiEntries_.front();
-    
+
     if (defaultService_ && !defaultService_->isReady())
         defaultService_->start();
 
@@ -134,7 +131,7 @@ std::vector<LLMModel> LLMService::getAvailableModels(const LLMAPIEntry* api) con
 {
     if (api)
         return api->getAvailableModels();
-    
+
     // TODO : get all models (all registered apis)
     std::vector<LLMModel> results;
     return results;
@@ -180,13 +177,13 @@ void LLMService::receive(LLMAPIEntry* api, Chat* chat, const QByteArray& data)
             }
             else if (obj.contains("message"))
             {
-                 // Handle /api/chat response format
-                 QJsonObject messageObj = obj["message"].toObject();
-                 if (messageObj.contains("content"))
-                 {
-                     chat->updateCurrentAIStream(messageObj["content"].toString());
-                     chat->chatView_->setMarkdown(chat->messages_.join("\n\n"));
-                 }
+                // Handle /api/chat response format
+                QJsonObject messageObj = obj["message"].toObject();
+                if (messageObj.contains("content"))
+                {
+                    chat->updateCurrentAIStream(messageObj["content"].toString());
+                    chat->chatView_->setMarkdown(chat->messages_.join("\n\n"));
+                }
             }
             else if (obj.contains("error"))
             {
@@ -198,12 +195,11 @@ void LLMService::receive(LLMAPIEntry* api, Chat* chat, const QByteArray& data)
 
 bool LLMService::requireStartProcess(LLMAPIEntry* api)
 {
-    qDebug() << "Require the user authorization for starting the service" << api->name_;                
+    qDebug() << "Require the user authorization for starting the service" << api->name_;
     // Demander la confirmation à l'utilisateur
     QMessageBox::StandardButton reply;
-    reply = QMessageBox::question(widget_, "Confirmation", 
-                                "Do you want to start the service " + api->name_ + "?",
-                                QMessageBox::Yes | QMessageBox::No);
+    reply = QMessageBox::question(widget_, "Confirmation", "Do you want to start the service " + api->name_ + "?",
+                                  QMessageBox::Yes | QMessageBox::No);
     return (reply == QMessageBox::Yes);
 }
 
@@ -213,7 +209,7 @@ void LLMService::handleMessageError(Chat* chat, const QString& message)
     LLMAPIEntry* entry = get(chat->currentApi_);
 
     if (entry && entry->handleMessageError(chat, message))
-        post(entry, chat, "", true);      
+        post(entry, chat, "", true);
 }
 
 void LLMService::stopStream(Chat* chat)
@@ -222,4 +218,3 @@ void LLMService::stopStream(Chat* chat)
     if (api)
         api->stopStream(chat);
 }
-
