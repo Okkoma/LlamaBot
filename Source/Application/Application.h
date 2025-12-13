@@ -10,6 +10,7 @@
 class MainWindow;
 class QQmlApplicationEngine;
 class ChatController;
+class OllamaModelStoreDialog;
 
 class Application : public QApplication
 {
@@ -35,6 +36,7 @@ private:
     MainWindow* window_;
     QQmlApplicationEngine* qmlEngine_;
     ChatController* chatController_;
+    OllamaModelStoreDialog* modelStoreDialog_;
     ApplicationServices services_;
 
     QFont currentFont_;

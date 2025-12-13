@@ -10,5 +10,6 @@
     <file alias="MessageDelegate.qml">qml/MessageDelegate.qml</file>
     <file alias="ChatDrawer.qml">qml/ChatDrawer.qml</file>
     <file alias="ModelSelector.qml">qml/ModelSelector.qml</file>
+    <file alias="APISelector.qml">qml/APISelector.qml</file>
   </qresource>
 </RCC> 

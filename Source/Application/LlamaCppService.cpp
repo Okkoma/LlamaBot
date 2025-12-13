@@ -12,6 +12,7 @@
 #include <QMutex>
 #include <QWaitCondition>
 #include <atomic>
+#include <qdebug.h>
 
 #include "Chat.h"
 
@@ -705,6 +706,8 @@ std::vector<LLMModel> LlamaCppService::getAvailableModels() const
             result.push_back(model);
         }
     }
+
+    qDebug() << "LlamaCppService::getAvailableModels: " << result.size() << " models found";
 
     return result;
 }

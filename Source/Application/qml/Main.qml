@@ -44,9 +44,23 @@ ApplicationWindow {
                     ToolTip.text: "New Chat"
                 }
                 
+                Label {
+                    text: "API:"
+                    color: "white"
+                }
+                
+                APISelector {
+                    Layout.preferredWidth: 120
+                }
+                
+                Label {
+                    text: "Model:"
+                    color: "white"
+                }
+                
                 ModelSelector {
                     Layout.fillWidth: true
-                    Layout.maximumWidth: 300
+                    Layout.maximumWidth: 250
                 }
                 
                 Item { Layout.fillWidth: true }
@@ -59,8 +73,11 @@ ApplicationWindow {
                     
                     Menu {
                         id: menu
+                        MenuItem { 
+                            text: "Model Store"
+                            onTriggered: modelStoreDialog.open()
+                        }
                         MenuItem { text: "Settings" }
-                        MenuItem { text: "Model Store" }
                         MenuItem { text: "About" }
                     }
                 }
@@ -70,6 +87,31 @@ ApplicationWindow {
         ChatView {
             Layout.fillWidth: true
             Layout.fillHeight: true
+        }
+    }
+    
+    // Model Store Dialog
+    Dialog {
+        id: modelStoreDialog
+        title: "Ollama Model Store"
+        width: 600
+        height: 800
+        modal: true
+        anchors.centerIn: parent
+        
+        contentItem: Loader {
+            id: modelStoreLoader
+            anchors.fill: parent
+            source: "qrc:/ressources/OllamaModelStoreDialog.qml"
+            
+            onLoaded: {
+                // Connect the closeRequested signal from the loaded QML
+                if (item) {
+                    item.closeRequested.connect(function() {
+                        modelStoreDialog.close()
+                    })
+                }
+            }
         }
     }
 }

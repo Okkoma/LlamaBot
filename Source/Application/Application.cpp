@@ -14,11 +14,17 @@
 #include "Application.h"
 #include "ChatController.h"
 #include "LLMService.h"
+#include "OllamaModelStoreDialog.h"
 
 // #include "MainWindow.h"
 
 Application::Application(int& argc, char** argv) :
-    QApplication(argc, argv), window_(nullptr), qmlEngine_(nullptr), chatController_(nullptr), services_(this)
+    QApplication(argc, argv),
+    window_(nullptr),
+    qmlEngine_(nullptr),
+    chatController_(nullptr),
+    modelStoreDialog_(nullptr),
+    services_(this)
 {
     setApplicationName("ChatBot");
     setApplicationVersion("0.1.0");
@@ -34,11 +40,18 @@ Application::Application(int& argc, char** argv) :
     // Initialize Controller
     chatController_ = new ChatController(ApplicationServices::get<LLMService>(), this);
 
+    // Initialize Model Store Dialog
+    modelStoreDialog_ = new OllamaModelStoreDialog(this);
+
     // Initialize QML
     qmlEngine_ = new QQmlApplicationEngine(this);
 
+    // Set QML engine for model store
+    modelStoreDialog_->setQmlEngine(qmlEngine_);
+
     // Register Controller and Types
     qmlEngine_->rootContext()->setContextProperty("chatController", chatController_);
+    qmlEngine_->rootContext()->setContextProperty("ollamaModelStoreDialog", modelStoreDialog_);
 
     // Load Main.qml
     const QUrl url(QStringLiteral("qrc:/ressources/Main.qml"));

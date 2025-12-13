@@ -27,6 +27,8 @@ std::vector<LLMModel> OllamaService::getAvailableModels() const
         OllamaService::getOllamaModels(QDir::homePath() + "/", result);
     }
 
+    qDebug() << "OllamaService::getAvailableModels: " << result.size() << " models found";
+
     return result;
 }
 

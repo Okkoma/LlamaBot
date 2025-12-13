@@ -4,7 +4,9 @@ import QtQuick.Controls
 ComboBox {
     id: modelSelector
     
-    model: chatController ? chatController.getAvailableModels() : []
+    property var modelList: chatController ? chatController.getAvailableModels() : []
+    
+    model: modelList
     textRole: "name"
     
     displayText: chatController && chatController.currentChat ? chatController.currentChat.currentModel : "No Model"
@@ -30,5 +32,13 @@ ComboBox {
             }
         }
         highlighted: modelSelector.highlightedIndex === index
+    }
+    
+    // Refresh model list when available models change
+    Connections {
+        target: chatController
+        function onAvailableModelsChanged() {
+            modelSelector.modelList = chatController.getAvailableModels()
+        }
     }
 }

@@ -40,6 +40,7 @@ public:
 signals:
     void currentChatChanged();
     void chatListChanged();
+    void availableModelsChanged();
 
 private:
     LLMService* service_;
