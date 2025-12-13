@@ -187,7 +187,6 @@ void LLMService::receive(LLMAPIEntry* api, Chat* chat, const QByteArray& data)
             {
                 // Met à jour le dernier message IA
                 chat->updateCurrentAIStream(obj["response"].toString());
-                chat->chatView_->setMarkdown(chat->messages_.join("\n\n"));
             }
             else if (obj.contains("message"))
             {
@@ -196,12 +195,15 @@ void LLMService::receive(LLMAPIEntry* api, Chat* chat, const QByteArray& data)
                 if (messageObj.contains("content"))
                 {
                     chat->updateCurrentAIStream(messageObj["content"].toString());
-                    chat->chatView_->setMarkdown(chat->messages_.join("\n\n"));
                 }
             }
             else if (obj.contains("error"))
             {
                 handleMessageError(chat, obj["error"].toString());
+            }
+            else
+            {
+                qWarning() << "Unknown response format : " << obj;
             }
         }
     }

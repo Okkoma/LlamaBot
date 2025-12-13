@@ -51,10 +51,20 @@ void ChatBotPanel::initialize()
         {
             if (tabWidget_->count() > 1)
             { // Toujours garder au moins un chat
+                Chat* chatToRemove = chats_[index];
+
                 tabWidget_->removeTab(index);
+
+                // Cleanup
+                chatViews_.remove(chatToRemove);
                 chats_.erase(chats_.begin() + index);
-                if (index == tabWidget_->currentIndex())
-                    currentChat_ = &chats_[tabWidget_->currentIndex()];
+
+                chatToRemove->deleteLater();
+
+                if (index < chats_.size())
+                    currentChat_ = chats_[index];
+                else if (!chats_.empty())
+                    currentChat_ = chats_.back();
             }
         });
 
@@ -77,33 +87,35 @@ void ChatBotPanel::initialize()
     connect(tabWidget_, &QTabWidget::currentChanged, this,
         [this](int index)
         {
-            currentChat_ = &chats_[index];
+            if (index >= 0 && index < static_cast<int>(chats_.size()))
+                currentChat_ = chats_[index];
         });
 }
 
 Chat* ChatBotPanel::addNewChat()
 {
     // Création d'un nouveau chat
-    chats_.emplace_back(llm_);
-    Chat* newChat = &chats_.back();
+    // Passage de this comme parent
+    Chat* newChat = new Chat(llm_, "new_chat", "", true, this);
+    chats_.push_back(newChat);
 
     // Création des widgets pour ce chat
     QWidget* chatTab = new QWidget;
     QVBoxLayout* tabLayout = new QVBoxLayout(chatTab);
 
     // Affichage de la conversation
-    newChat->chatView_ = new QTextBrowser();
-    newChat->chatView_->setReadOnly(true);
-    tabLayout->addWidget(newChat->chatView_);
+    QTextBrowser* chatView = new QTextBrowser();
+    chatView->setReadOnly(true);
+    tabLayout->addWidget(chatView);
 
     // Zone de saisie + bouton
     QHBoxLayout* inputLayout = new QHBoxLayout();
-    newChat->askText_ = new QTextEdit();
-    newChat->askText_->setFixedHeight(50);
+    QTextEdit* askText = new QTextEdit();
+    askText->setFixedHeight(50);
     QPushButton* sendButton = new QPushButton();
     sendButton->setIcon(style()->standardIcon(QStyle::SP_ArrowForward));
     sendButton->setToolTip("Envoyer");
-    inputLayout->addWidget(newChat->askText_);
+    inputLayout->addWidget(askText);
     inputLayout->addWidget(sendButton);
 
     // Ajout du bouton Stop
@@ -112,9 +124,12 @@ Chat* ChatBotPanel::addNewChat()
     stopButton->setToolTip("Arrêter la génération");
     stopButton->setEnabled(false);
     inputLayout->addWidget(stopButton);
-    newChat->stopButton_ = stopButton;
-    tabLayout->addLayout(inputLayout);
 
+    // Store View Data
+    ChatViewData viewData = { chatView, askText, stopButton };
+    chatViews_[newChat] = viewData;
+
+    tabLayout->addLayout(inputLayout);
     chatTab->setLayout(tabLayout);
 
     tabWidget_->addTab(chatTab, QString("Chat %1").arg(chats_.size()));
@@ -122,14 +137,12 @@ Chat* ChatBotPanel::addNewChat()
 
     // Connexion du bouton et de la touche Entrée
     connect(sendButton, &QPushButton::clicked, this,
-        [this, newChat]()
+        [this, newChat, askText]()
         {
-            QString content = newChat->askText_->toPlainText().trimmed();
+            QString content = askText->toPlainText().trimmed();
             if (!content.isEmpty())
             {
                 sendRequest(newChat, content);
-                if (newChat->stopButton_)
-                    newChat->stopButton_->setEnabled(true);
             }
         });
 
@@ -140,13 +153,56 @@ Chat* ChatBotPanel::addNewChat()
             stopButton->setEnabled(false);
         });
 
-    connect(newChat->chatView_->verticalScrollBar(), &QAbstractSlider::valueChanged, this,
-        [this, newChat]()
+    // Chat Logic CONNECTIONS
+
+    // 1. Messages Changed
+    connect(newChat, &Chat::messagesChanged, this,
+        [newChat, chatView]()
         {
-            newChat->lastScrollValue_ = newChat->chatView_->verticalScrollBar()->value();
+            chatView->setMarkdown(newChat->messages().join("\n\n"));
         });
 
-    newChat->askText_->installEventFilter(this);
+    // 2. Stream Updated (Smart Scroll)
+    connect(newChat, &Chat::streamUpdated, this,
+        [newChat, chatView]()
+        {
+            QScrollBar* sb = chatView->verticalScrollBar();
+            int scrollValue = sb->value();
+            // If we are near the bottom (within 20px), auto-scroll
+            bool atBottom = scrollValue >= sb->maximum() - 20;
+            if (atBottom)
+            {
+                chatView->moveCursor(QTextCursor::End);
+                chatView->ensureCursorVisible();
+            }
+            else
+            {
+                // Keep position
+                // Changing markdown might change range, but usually we want to stay put if user scrolled up
+            }
+        });
+
+    // 3. Input Handling
+    connect(newChat, &Chat::inputCleared, this,
+        [askText]()
+        {
+            askText->clear();
+        });
+
+    // 4. Processing State
+    connect(newChat, &Chat::processingStarted, this,
+        [stopButton]()
+        {
+            stopButton->setEnabled(true);
+        });
+
+    connect(newChat, &Chat::processingFinished, this,
+        [stopButton]()
+        {
+            stopButton->setEnabled(false);
+        });
+
+    askText->installEventFilter(this);
 
     return newChat;
 }
@@ -174,7 +230,7 @@ bool ChatBotPanel::eventFilter(QObject* obj, QEvent* event)
             if (tabIndex == -1)
                 return false;
 
-            Chat& chat = chats_[tabIndex];
+            Chat* chat = chats_[tabIndex];
             QMenu menu;
             // Label "Choisir API"
             QAction* apiLabel = menu.addAction("Choisir API");
@@ -188,7 +244,7 @@ bool ChatBotPanel::eventFilter(QObject* obj, QEvent* event)
             {
                 QAction* action = menu.addAction(api->name_);
                 action->setCheckable(true);
-                action->setChecked(chat.currentApi_ == api->name_);
+                action->setChecked(chat->currentApi_ == api->name_);
                 apiGroup->addAction(action);
             }
             // Séparation
@@ -200,12 +256,12 @@ bool ChatBotPanel::eventFilter(QObject* obj, QEvent* event)
             // Liste des modèles (scan dossier models/)
             QActionGroup* modelGroup = new QActionGroup(&menu);
             modelGroup->setExclusive(true);
-            std::vector<LLMModel> models = llm_->getAvailableModels(llm_->get(chat.currentApi_));
+            std::vector<LLMModel> models = llm_->getAvailableModels(llm_->get(chat->currentApi_));
             for (const LLMModel& model : models)
             {
                 QAction* action = menu.addAction(model.toString());
                 action->setCheckable(true);
-                action->setChecked(chat.currentModel_ == model.toString());
+                action->setChecked(chat->currentModel_ == model.toString());
                 modelGroup->addAction(action);
             }
             QAction* selectedAction = menu.exec(tabBar->mapToGlobal(mouseEvent->pos()));
@@ -213,28 +269,36 @@ bool ChatBotPanel::eventFilter(QObject* obj, QEvent* event)
             if (selectedAction && apiGroup->actions().contains(selectedAction))
             {
                 qDebug() << "selectedAction: api=" << selectedAction->text();
-                chat.setApi(selectedAction->text());
+                chat->setApi(selectedAction->text());
             }
             // Gestion du choix modèle
             if (selectedAction && modelGroup->actions().contains(selectedAction))
             {
                 qDebug() << "selectedAction: model=" << selectedAction->text();
-                chat.setModel(selectedAction->text());
+                chat->setModel(selectedAction->text());
             }
 
             return true;
         }
     }
-    if (event->type() == QEvent::KeyPress)
+    if (event->type() == QEvent::KeyPress && currentChat_)
     {
         QKeyEvent* keyEvent = static_cast<QKeyEvent*>(event);
-        if (currentChat_ && keyEvent->key() == Qt::Key_Return && (keyEvent->modifiers() & Qt::ShiftModifier) == 0)
+
+        // Find which chat corresponds to the object if possible, or use currentChat_
+        // But obj is askText.
+
+        ChatViewData& view = chatViews_[currentChat_];
+        if (obj == view.askText)
         {
-            // Simule le clic sur le bouton Envoyer
-            QString content = currentChat_->askText_->toPlainText().trimmed();
-            if (!content.isEmpty())
-                sendRequest(currentChat_, content, true);
-            return true;
+            if (keyEvent->key() == Qt::Key_Return && (keyEvent->modifiers() & Qt::ShiftModifier) == 0)
+            {
+                // Simule le clic sur le bouton Envoyer
+                QString content = view.askText->toPlainText().trimmed();
+                if (!content.isEmpty())
+                    sendRequest(currentChat_, content, true);
+                return true;
+            }
         }
     }
     return QWidget::eventFilter(obj, event);

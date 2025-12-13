@@ -212,8 +212,8 @@ void OllamaService::postInternal(Chat* chat, const QString& content, bool stream
 
     chat->updateContent(content);
 
-    if (chat->stopButton_)
-        chat->stopButton_->setEnabled(true);
+    if (chat)
+        chat->setProcessing(true);
 
     // post the request
     QJsonObject payload = chat->jsonObject_;
@@ -283,8 +283,8 @@ void OllamaService::postInternal(Chat* chat, const QString& content, bool stream
                 else
                     qDebug() << "Error:" << reply->errorString();
                 reply->deleteLater();
-                if (chat->stopButton_)
-                    chat->stopButton_->setEnabled(false);
+                if (chat)
+                    chat->setProcessing(false);
             });
     }
     else
@@ -297,8 +297,8 @@ void OllamaService::postInternal(Chat* chat, const QString& content, bool stream
                 else
                     qDebug() << "Error:" << reply->errorString();
                 reply->deleteLater();
-                if (chat->stopButton_)
-                    chat->stopButton_->setEnabled(false);
+                if (chat)
+                    chat->setProcessing(false);
             });
     }
 }

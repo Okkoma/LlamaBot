@@ -24,7 +24,8 @@ set(PROJECT_SOURCES
         MainWindow.cpp
         MainWindow.h
         ChatBotPanel.cpp Chat.cpp
-        ChatBotPanel.h Chat.h  
+        ChatBotPanel.h Chat.h
+        ChatController.h
 )
 
 qt_add_resources(PROJECT_SOURCES ressources.qrc)

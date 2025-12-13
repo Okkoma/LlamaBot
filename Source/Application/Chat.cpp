@@ -1,7 +1,4 @@
-#include <QScrollBar>
-#include <QTextBrowser>
-#include <QTextCursor>
-#include <QTextEdit>
+#include <QDebug>
 
 #include "Chat.h"
 #include "LLMService.h"
@@ -13,7 +10,8 @@ const char* rawHumanPrompt = "";
 const char* rawAiPrompt = "";
 const char* rawDefaultInitialPrompt = "";
 
-Chat::Chat(LLMService* service, const QString& name, const QString& initialPrompt, bool streamed) :
+Chat::Chat(LLMService* service, const QString& name, const QString& initialPrompt, bool streamed, QObject* parent) :
+    QObject(parent),
     service_(service),
     streamed_(streamed),
     lastBotIndex_(-1),
@@ -30,17 +28,20 @@ Chat::Chat(LLMService* service, const QString& name, const QString& initialPromp
 
 void Chat::initialize()
 {
-    lastScrollValue_ = 0;
-
     jsonObject_["model"] = currentModel_;
     jsonObject_["stream"] = streamed_;
 
     history_.clear();
+    emit historyChanged();
 }
 
 void Chat::setApi(const QString& api)
 {
-    currentApi_ = api;
+    if (currentApi_ != api)
+    {
+        currentApi_ = api;
+        emit currentApiChanged();
+    }
 }
 
 void Chat::setModel(const QString& model)
@@ -59,8 +60,12 @@ void Chat::setModel(const QString& model)
         if (api)
             api->setModel(this, model);
 
-        currentModel_ = model;
-        jsonObject_["model"] = model;
+        if (currentModel_ != model)
+        {
+            currentModel_ = model;
+            jsonObject_["model"] = model;
+            emit currentModelChanged();
+        }
     }
 }
 
@@ -70,10 +75,9 @@ void Chat::updateContent(const QString& content)
     addContent("user", content);
     // Ajoute un bloc IA vide et mémorise son index
     addContent("assistant", "");
-    // Affiche tout
-    chatView_->setMarkdown(messages_.join("\n\n"));
 
-    askText_->clear();
+    emit messagesChanged();
+    emit inputCleared();
 
     updateObject();
 }
@@ -102,6 +106,9 @@ void Chat::addContent(const QString& role, const QString& content)
         messages_.append("");
         lastBotIndex_ = messages_.size() - 1;
     }
+
+    emit messageAdded(role, content);
+    emit historyChanged();
 }
 
 void Chat::finalizeStream()
@@ -114,19 +121,23 @@ void Chat::finalizeStream()
         LLMAPIEntry* api = service_->get(currentApi_);
         rawMessages_ += api ? api->formatMessage(this, "assistant", currentAIStream_) : currentAIStream_ + "\n";
 
-        // Add valid response to history
-        history_.append({ "assistant", currentAIStream_ });
+        // History is already updated during streaming in updateCurrentAIStream()
+        // No need to append again, just verify it's there
+        if (history_.isEmpty() || history_.last().role != "assistant" || history_.last().content != currentAIStream_)
+        {
+            // Fallback: if for some reason history wasn't updated during streaming
+            qWarning() << "Chat::finalizeStream: history was not updated during streaming, adding now";
+            history_.append({ "assistant", currentAIStream_ });
+            emit historyChanged();
+        }
 
         currentAIStream_.clear();
+        emit streamFinishedSignal();
     }
 }
 
 void Chat::updateCurrentAIStream(const QString& text)
 {
-    int scrollValue = lastScrollValue_;
-
-    bool atbottom = scrollValue >= chatView_->verticalScrollBar()->maximum() - 4;
-
     if (!text.isEmpty())
     {
         currentAIStream_ += text;
@@ -143,21 +154,63 @@ void Chat::updateCurrentAIStream(const QString& text)
         }
 
         messages_[lastBotIndex_] = QString("%1 %2\n").arg(aiPrompt_, currentAIStream_);
-    }
 
-    chatView_->setMarkdown(messages_.join("\n\n"));
+        // Update history in real-time for QML display
+        // Check if the last entry is an assistant message (streaming placeholder)
+        if (!history_.isEmpty() && history_.last().role == "assistant" && history_.last().content.isEmpty())
+        {
+            // Update the existing empty assistant entry
+            history_.last().content = currentAIStream_;
+        }
+        else if (!history_.isEmpty() && history_.last().role == "assistant")
+        {
+            // Update existing assistant message (already streaming)
+            history_.last().content = currentAIStream_;
+        }
+        else
+        {
+            // No assistant entry yet, create one
+            history_.append({ "assistant", currentAIStream_ });
+        }
 
-    // update scroll bar
-    if (atbottom)
-    {
-        chatView_->moveCursor(QTextCursor::End);
-        chatView_->ensureCursorVisible();
+        emit streamUpdated(text); // Signal for partial updates
+        emit messagesChanged();   // Signal for full text updates
+        emit historyChanged();    // Signal that history has been updated
     }
+}
+
+void Chat::setProcessing(bool processing)
+{
+    if (processing)
+        emit processingStarted();
     else
-        chatView_->verticalScrollBar()->setValue(scrollValue);
+        emit processingFinished();
 }
 
 void Chat::updateObject()
 {
     jsonObject_["prompt"] = rawMessages_;
+}
+
+void Chat::addUserContent(const QString& text)
+{
+    addContent("user", text);
+}
+
+void Chat::addAIContent(const QString& text)
+{
+    addContent("assistant", text);
+}
+
+QVariantList Chat::historyList() const
+{
+    QVariantList list;
+    for (const auto& msg : history_)
+    {
+        QVariantMap map;
+        map["role"] = msg.role;
+        map["content"] = msg.content;
+        list.append(map);
+    }
+    return list;
 }

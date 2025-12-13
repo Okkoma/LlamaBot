@@ -146,8 +146,8 @@ struct LlamaCppProcessAsync : public LlamaCppProcess
         data_->response_.clear();
         data_->batch_ = llama_batch_get_one(data_->tokens_.data(), data_->tokens_.size());
 
-        if (chat->stopButton_)
-            chat->stopButton_->setEnabled(true);
+        if (chat)
+            chat->setProcessing(true);
 
         // Lancement de la génération asynchrone
         if (!asyncTimer_)
@@ -193,8 +193,8 @@ struct LlamaCppProcessAsync : public LlamaCppProcess
         {
             stopProcess();
 
-            if (data_->chat_->stopButton_)
-                data_->chat_->stopButton_->setEnabled(false);
+            if (data_->chat_)
+                data_->chat_->setProcessing(false);
 
             data_->chat_ = nullptr;
             data_->tokens_.clear();
@@ -225,8 +225,8 @@ struct LlamaCppProcessThread : public LlamaCppProcess
         stopRequested_ = false;
         locker.unlock();
 
-        if (data_->chat_->stopButton_)
-            data_->chat_->stopButton_->setEnabled(true);
+        if (data_->chat_)
+            data_->chat_->setProcessing(true);
 
         // Créer et configurer le worker thread
         if (!worker_)
@@ -243,8 +243,8 @@ struct LlamaCppProcessThread : public LlamaCppProcess
             QObject::connect(worker_, &LlamaCppWorker::generationFinished, service_,
                 [this, chat]()
                 {
-                    if (chat->stopButton_)
-                        chat->stopButton_->setEnabled(false);
+                    if (chat)
+                        chat->setProcessing(false);
 
                     QMutexLocker locker(&mutex_);
                     data_->chat_ = nullptr;
@@ -256,8 +256,8 @@ struct LlamaCppProcessThread : public LlamaCppProcess
                 [this, chat](const QString& error)
                 {
                     qWarning() << "LlamaCppApi thread error:" << error;
-                    if (chat->stopButton_)
-                        chat->stopButton_->setEnabled(false);
+                    if (chat)
+                        chat->setProcessing(false);
                 });
         }
 

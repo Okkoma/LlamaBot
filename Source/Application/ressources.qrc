@@ -4,5 +4,9 @@
     <file>material-light-old.qss</file>
     <file>material-light-new.qss</file>
     <file alias="OllamaModelStoreDialog.qml">OllamaModelStoreDialog.qml</file>
+    <file alias="Main.qml">qml/Main.qml</file>
+    <file alias="ChatView.qml">qml/ChatView.qml</file>
+    <file alias="InputArea.qml">qml/InputArea.qml</file>
+    <file alias="MessageDelegate.qml">qml/MessageDelegate.qml</file>
   </qresource>
 </RCC> 

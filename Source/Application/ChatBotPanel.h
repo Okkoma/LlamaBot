@@ -7,6 +7,16 @@
 #include "Chat.h"
 
 class QTabWidget;
+class QTextBrowser;
+class QTextEdit;
+class QPushButton;
+
+struct ChatViewData
+{
+    QTextBrowser* chatView;
+    QTextEdit* askText;
+    QPushButton* stopButton;
+};
 
 class LLMService;
 
@@ -29,6 +39,7 @@ private:
 
     QTabWidget* tabWidget_;
 
-    std::vector<Chat> chats_;
+    std::vector<Chat*> chats_;
+    QMap<Chat*, ChatViewData> chatViews_;
     Chat* currentChat_;
 };

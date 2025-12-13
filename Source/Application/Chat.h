@@ -1,14 +1,12 @@
 #pragma once
 
-#include <QString>
 #include <QJsonObject>
+#include <QList>
+#include <QObject>
+#include <QString>
+#include <QStringList>
 
 #include "LLMService.h"
-
-
-class QTextEdit;
-class QTextBrowser;
-class QPushButton;
 
 struct ChatMessage
 {
@@ -16,13 +14,30 @@ struct ChatMessage
     QString content;
 };
 
-struct Chat
+class Chat : public QObject
 {
-    Chat(LLMService* service, const QString& name="new_chat", const QString& initialContext="", bool streamed=true);
+    Q_OBJECT
+    Q_PROPERTY(QString currentApi READ currentApi WRITE setApi NOTIFY currentApiChanged)
+    Q_PROPERTY(QString currentModel READ currentModel WRITE setModel NOTIFY currentModelChanged)
+    Q_PROPERTY(QStringList messages READ messages NOTIFY messagesChanged)
+    Q_PROPERTY(QVariantList history READ historyList NOTIFY historyChanged)
+
+public:
+    explicit Chat(LLMService* service, const QString& name = "new_chat", const QString& initialContext = "",
+        bool streamed = true, QObject* parent = nullptr);
 
     void initialize();
+
+    QVariantList historyList() const;
+
+    QString currentApi() const { return currentApi_; }
     void setApi(const QString& api);
+
+    QString currentModel() const { return currentModel_; }
     void setModel(const QString& model);
+
+    QStringList messages() const { return messages_; }
+
     void updateContent(const QString& content);
 
     void addContent(const QString& role, const QString& content);
@@ -33,10 +48,25 @@ struct Chat
     void updateCurrentAIStream(const QString& text);
     void updateObject();
 
+    void setProcessing(bool processing);
+
+signals:
+    void currentApiChanged();
+    void currentModelChanged();
+    void messagesChanged();
+    void streamUpdated(const QString& text); // For raw stream chunks if needed, or just rely on messagesChanged
+    void inputCleared();                     // Request to clear input
+    void processingStarted();
+    void processingFinished();
+    void messageAdded(const QString& role, const QString& content);
+    void streamFinishedSignal();
+    void historyChanged();
+
+public:
+    // Data members
     bool streamed_;
     int lastBotIndex_;
-    int lastScrollValue_;
-    
+
     QString name_;
     QString currentApi_;
     QString currentModel_;
@@ -49,12 +79,8 @@ struct Chat
 
     QStringList messages_;
     QList<ChatMessage> history_;
-    QString currentAIStream_;    
+    QString currentAIStream_;
     QJsonObject jsonObject_;
-
-    QTextBrowser* chatView_;
-    QTextEdit* askText_;
-    QPushButton* stopButton_ = nullptr;
 
     LLMService* service_;
 };
