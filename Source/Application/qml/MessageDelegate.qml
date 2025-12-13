@@ -34,7 +34,7 @@ Item {
         Rectangle {
             id: bubble
             Layout.maximumWidth: root.width * 0.7
-            Layout.preferredWidth: Math.min(root.width * 0.7, msgText.implicitWidth + 20)
+            Layout.fillWidth: true
             Layout.preferredHeight: msgText.implicitHeight + 20
             color: isUser ? "#303030" : "#424242"
             radius: 10
