@@ -1,13 +1,16 @@
 import QtQuick
 import QtQuick.Controls
 import QtQuick.Layouts
+import QtQuick.Controls.Material
 
 
 Rectangle {
     id: root
     width: 600
     height: 800
-    color: "#212121" // Dark theme background
+    color: Material.background
+
+    Material.theme: application ? (application.currentTheme === "Dark" ? Material.Dark : Material.Light) : Material.Dark
 
     signal closeRequested()
 
@@ -20,7 +23,6 @@ Rectangle {
             text: "Ollama models Store"
             font.pixelSize: 24
             font.bold: true
-            color: "white"
             Layout.alignment: Qt.AlignHCenter
         }
 
@@ -28,8 +30,6 @@ Rectangle {
             id: searchField
             placeholderText: "Model Name (e.g. llama3, phi3:medium)"
             Layout.fillWidth: true
-            color: "white"
-            background: Rectangle { color: "#424242"; radius: 5 }
             onAccepted: fetchBtn.clicked()
         }
 
@@ -84,7 +84,6 @@ Rectangle {
         Label {
             id: statusLabel
             text: "Ready to search."
-            color: "#cccccc"
             wrapMode: Text.Wrap
             Layout.fillWidth: true
         }

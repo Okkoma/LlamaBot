@@ -1,12 +1,15 @@
 import QtQuick
 import QtQuick.Controls
 import QtQuick.Layouts
+import QtQuick.Controls.Material
 
 Drawer {
     id: drawer
     width: 280
     height: parent.height
     edge: Qt.LeftEdge
+
+    Material.theme: application ? (application.currentTheme === "Dark" ? Material.Dark : Material.Light) : Material.Dark
 
     ColumnLayout {
         anchors.fill: parent
@@ -46,7 +49,7 @@ Drawer {
                 property bool isCurrent: chatController && chatController.currentChatIndex === chatData.index
 
                 background: Rectangle {
-                    color: isCurrent ? "#009688" : (parent.hovered ? "#424242" : "#303030")
+                    color: isCurrent ? Material.accent : (parent.hovered ? Material.listHighlightColor : "transparent")
                     radius: 5
                 }
 
@@ -56,16 +59,13 @@ Drawer {
                     Label {
                         text: chatData.name
                         font.bold: isCurrent
-                        color: "white"
-                        elide: Text.ElideRight
                         Layout.fillWidth: true
                     }
 
                     Label {
                         text: chatData.model + " • " + chatData.messageCount + " messages"
                         font.pixelSize: 10
-                        color: "#aaa"
-                        elide: Text.ElideRight
+                        color: Material.hintTextColor
                         Layout.fillWidth: true
                     }
                 }
@@ -98,3 +98,4 @@ Drawer {
         }
     }
 }
+

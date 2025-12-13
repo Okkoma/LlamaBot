@@ -1,10 +1,13 @@
 import QtQuick
 import QtQuick.Controls
 import QtQuick.Layouts
+import QtQuick.Controls.Material
 
 Rectangle {
-    color: "#202020"
-    
+    color: Material.background
+
+    Material.theme: application ? (application.currentTheme === "Dark" ? Material.Dark : Material.Light) : Material.Dark
+
     signal accepted(string text)
     
     RowLayout {
@@ -19,7 +22,6 @@ Rectangle {
                 placeholderText: "Type a message..."
                 wrapMode: Text.Wrap
                 selectByMouse: true
-                color: "white"
                 
                 // Handle Shift+Enter
                 Keys.onReturnPressed: (event) => {

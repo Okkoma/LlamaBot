@@ -10,8 +10,16 @@ ApplicationWindow {
     height: 800
     title: qsTr("ChatBot QML")
 
-    Material.theme: Material.Dark
+    Material.theme: application && application.currentTheme === "Dark" ? Material.Dark : Material.Light
     Material.accent: Material.Teal
+    
+    // Listen to theme changes
+    Connections {
+        target: application
+        function onThemeChanged(theme) {
+            console.log("Theme changed in QML:", theme)
+        }
+    }
 
     // Chat Drawer
     ChatDrawer {
@@ -76,6 +84,15 @@ ApplicationWindow {
                         MenuItem { 
                             text: "Model Store"
                             onTriggered: modelStoreDialog.open()
+                        }
+                        MenuSeparator {}
+                        MenuItem {
+                            text: application && application.currentTheme === "Dark" ? "☀ Light Theme" : "🌙 Dark Theme"
+                            onTriggered: {
+                                if (application) {
+                                    application.setTheme(application.currentTheme === "Dark" ? "Light" : "Dark")
+                                }
+                            }
                         }
                         MenuItem { text: "Settings" }
                         MenuItem { text: "About" }

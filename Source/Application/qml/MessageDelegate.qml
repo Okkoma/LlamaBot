@@ -1,6 +1,7 @@
 import QtQuick
 import QtQuick.Controls
 import QtQuick.Layouts
+import QtQuick.Controls.Material
 
 Item {
     id: root
@@ -22,7 +23,7 @@ Item {
         
         Rectangle {
             width: 40; height: 40; radius: 20
-            color: isUser ? "#555" : "#009688"
+            color: isUser ? Material.color(Material.Grey, Material.Shade700) : Material.accent
             Layout.alignment: Qt.AlignTop
             Label {
                 anchors.centerIn: parent
@@ -36,7 +37,7 @@ Item {
             Layout.maximumWidth: root.width * 0.7
             Layout.fillWidth: true
             Layout.preferredHeight: msgText.implicitHeight + 20
-            color: isUser ? "#303030" : "#424242"
+            color: isUser ? Material.color(Material.Grey, Material.Shade800) : Material.color(Material.Grey, Material.Shade900)
             radius: 10
             
             TextArea {
@@ -44,7 +45,7 @@ Item {
                 anchors.fill: parent
                 anchors.margins: 10
                 text: messageData ? messageData.content : ""
-                color: "white"
+                color: Material.foreground
                 wrapMode: Text.Wrap
                 readOnly: true
                 background: null

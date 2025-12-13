@@ -36,9 +36,10 @@ ComboBox {
     
     // Refresh model list when available models change
     Connections {
-        target: chatController
+        target: chatController || null
         function onAvailableModelsChanged() {
-            modelSelector.modelList = chatController.getAvailableModels()
+            if (chatController)
+                modelSelector.modelList = chatController.getAvailableModels()
         }
     }
 }

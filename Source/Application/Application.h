@@ -15,6 +15,7 @@ class OllamaModelStoreDialog;
 class Application : public QApplication
 {
     Q_OBJECT
+    Q_PROPERTY(QString currentTheme READ currentTheme NOTIFY themeChanged)
 
 public:
     explicit Application(int& argc, char** argv);
@@ -26,6 +27,13 @@ public:
     void loadSettings();
     void setStyleName(const QString& styleName);
     QString styleName() const;
+
+    // Theme management for QML
+    Q_INVOKABLE void setTheme(const QString& theme);
+    QString currentTheme() const;
+
+signals:
+    void themeChanged(const QString& theme);
 
 private slots:
     void ApplyStyle(const QString& style);
@@ -41,4 +49,5 @@ private:
 
     QFont currentFont_;
     QString currentStyleName_ = "Fusion";
+    QString currentTheme_ = "Dark";
 };

@@ -52,6 +52,7 @@ Application::Application(int& argc, char** argv) :
     // Register Controller and Types
     qmlEngine_->rootContext()->setContextProperty("chatController", chatController_);
     qmlEngine_->rootContext()->setContextProperty("ollamaModelStoreDialog", modelStoreDialog_);
+    qmlEngine_->rootContext()->setContextProperty("application", this);
 
     // Load Main.qml
     const QUrl url(QStringLiteral("qrc:/ressources/Main.qml"));
@@ -125,6 +126,21 @@ void Application::saveSettings()
 }
 
 void Application::loadSettings() {}
+
+void Application::setTheme(const QString& theme)
+{
+    if (theme == "Dark" || theme == "Light")
+    {
+        currentTheme_ = theme;
+        emit themeChanged(theme);
+        qDebug() << "Theme changed to:" << theme;
+    }
+}
+
+QString Application::currentTheme() const
+{
+    return currentTheme_;
+}
 
 bool Application::eventFilter(QObject* obj, QEvent* event)
 {
