@@ -8,5 +8,7 @@
     <file alias="ChatView.qml">qml/ChatView.qml</file>
     <file alias="InputArea.qml">qml/InputArea.qml</file>
     <file alias="MessageDelegate.qml">qml/MessageDelegate.qml</file>
+    <file alias="ChatDrawer.qml">qml/ChatDrawer.qml</file>
+    <file alias="ModelSelector.qml">qml/ModelSelector.qml</file>
   </qresource>
 </RCC> 

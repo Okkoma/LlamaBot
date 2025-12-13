@@ -13,6 +13,11 @@ ApplicationWindow {
     Material.theme: Material.Dark
     Material.accent: Material.Teal
 
+    // Chat Drawer
+    ChatDrawer {
+        id: chatDrawer
+    }
+
     ColumnLayout {
         anchors.fill: parent
         spacing: 0
@@ -22,19 +27,30 @@ ApplicationWindow {
             Layout.fillWidth: true
             RowLayout {
                 anchors.fill: parent
+                spacing: 10
+                
+                ToolButton {
+                    icon.name: "menu"
+                    text: "☰"
+                    onClicked: chatDrawer.open()
+                    ToolTip.visible: hovered
+                    ToolTip.text: "Conversations"
+                }
+                
                 ToolButton {
                     text: "+"
                     onClicked: { if (chatController) chatController.createChat() }
                     ToolTip.visible: hovered
                     ToolTip.text: "New Chat"
                 }
-                Label {
-                    text: (chatController && chatController.currentChat) ? chatController.currentChat.currentModel : "No Model"
-                    elide: Text.ElideRight
+                
+                ModelSelector {
                     Layout.fillWidth: true
-                    horizontalAlignment: Qt.AlignHCenter
-                    font.bold: true
+                    Layout.maximumWidth: 300
                 }
+                
+                Item { Layout.fillWidth: true }
+                
                 ToolButton {
                     text: "⋮"
                     ToolTip.visible: hovered
@@ -44,6 +60,7 @@ ApplicationWindow {
                     Menu {
                         id: menu
                         MenuItem { text: "Settings" }
+                        MenuItem { text: "Model Store" }
                         MenuItem { text: "About" }
                     }
                 }

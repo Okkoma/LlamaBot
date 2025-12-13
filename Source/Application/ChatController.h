@@ -3,62 +3,47 @@
 #include "Chat.h"
 #include "LLMService.h"
 #include <QObject>
+#include <QVariantList>
+#include <QVariantMap>
 
 class ChatController : public QObject
 {
     Q_OBJECT
     Q_PROPERTY(Chat* currentChat READ currentChat NOTIFY currentChatChanged)
+    Q_PROPERTY(QVariantList chatList READ chatList NOTIFY chatListChanged)
+    Q_PROPERTY(int currentChatIndex READ currentChatIndex NOTIFY currentChatChanged)
 
 public:
-    explicit ChatController(LLMService* service, QObject* parent = nullptr) :
-        QObject(parent), service_(service), currentChat_(nullptr)
-    {
-        createChat();
-    }
+    explicit ChatController(LLMService* service, QObject* parent = nullptr);
+    ~ChatController();
 
     Chat* currentChat() const { return currentChat_; }
+    QVariantList chatList() const;
+    int currentChatIndex() const;
 
-    Q_INVOKABLE void createChat()
-    {
-        Chat* chat = new Chat(service_, "New Chat", "", true, this);
-        // Set pointers
-        if (currentChat_ != chat)
-        {
-            currentChat_ = chat;
-            emit currentChatChanged();
-        }
-    }
+    // Chat Management
+    Q_INVOKABLE void createChat();
+    Q_INVOKABLE void switchToChat(int index);
+    Q_INVOKABLE void deleteChat(int index);
+    Q_INVOKABLE void renameChat(int index, const QString& name);
 
-    Q_INVOKABLE void sendMessage(const QString& text)
-    {
-        if (!currentChat_)
-            return;
+    // Message Operations
+    Q_INVOKABLE void sendMessage(const QString& text);
+    Q_INVOKABLE void stopGeneration();
 
-        LLMAPIEntry* api = service_->get(currentChat_->currentApi());
-        if (api)
-        {
-            // Trigger UI update immediately via chat
-            // Chat::update(content) in sendRequest?
-            // In ChatBotPanel, sendRequest calls llm->post which calls chat->updateContent.
-            // But usually LLMService::post calls API which calls Chat?
-            // Let's check LLMService::post.
-            // LLMService::post -> api->post.
-            // api->post usually calls chat->updateContent(content) (e.g. LlamaCppService::post).
-
-            service_->post(api, currentChat_, text, true);
-        }
-    }
-
-    Q_INVOKABLE void stopGeneration()
-    {
-        if (currentChat_)
-            service_->stopStream(currentChat_);
-    }
+    // Model Management
+    Q_INVOKABLE QVariantList getAvailableModels();
+    Q_INVOKABLE QVariantList getAvailableAPIs();
+    Q_INVOKABLE void setModel(const QString& modelName);
+    Q_INVOKABLE void setAPI(const QString& apiName);
 
 signals:
     void currentChatChanged();
+    void chatListChanged();
 
 private:
     LLMService* service_;
+    QList<Chat*> chats_;
     Chat* currentChat_;
+    int chatCounter_;
 };
