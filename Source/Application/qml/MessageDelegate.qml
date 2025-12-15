@@ -8,6 +8,10 @@ Item {
     width: ListView.view.width
     height: contentLayout.height + 20 // Padding
 
+    function bubbleWidth() {
+        return root.width * 0.85;
+    }
+
     property var messageData: modelData // {role, content}
 
     property bool isUser: messageData ? messageData.role === "user" : false
@@ -37,8 +41,8 @@ Item {
         
         Rectangle {
             id: bubble
-            Layout.maximumWidth: root.width * 0.7
-            Layout.fillWidth: true
+            Layout.maximumWidth: root.width * 0.95
+            Layout.preferredWidth: bubbleWidth()
             Layout.preferredHeight: msgText.implicitHeight + 20
             color: {
                 var isDark = application ? (application.currentTheme === "Dark") : true;
@@ -70,6 +74,9 @@ Item {
                     // Force proper height calculation
                     onImplicitHeightChanged: {
                         bubble.Layout.preferredHeight = Qt.binding(() => msgText.implicitHeight + 20)
+                    }
+                    onImplicitWidthChanged: {
+                        bubble.Layout.preferredWidth = bubbleWidth()
                     }
                 }
             }
