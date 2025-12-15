@@ -84,6 +84,7 @@ class LlamaCppService : public LLMAPIEntry
 {
 public:
     LlamaCppService(LLMService* service, const QString& name);
+    LlamaCppService(const QVariantMap& params);
     ~LlamaCppService() override;
 
     void setModel(Chat* chat, QString model = "") override;

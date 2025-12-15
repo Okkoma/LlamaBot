@@ -46,7 +46,20 @@ public:
 class LLMAPIEntry
 {
 public:
-    LLMAPIEntry(LLMService* service, const QString& name, int type);
+    using LLMAPIFactory = std::function<LLMAPIEntry* (const QVariantMap& params)>;
+    template<typename T> static void registerService(int type)
+    {
+        factories_[type] = [](const QVariantMap& params) { static T t = T(params); return &t; };
+    }
+    static LLMAPIEntry* createService(int type, const QVariantMap& params)
+    {
+        auto it = factories_.find(type);
+        return it != factories_.end() ? it->second(params) : nullptr;
+    }
+    static LLMAPIEntry* fromJson(LLMService* service, const QJsonObject& obj);
+
+    LLMAPIEntry(const QVariantMap& params);
+    LLMAPIEntry(int type, LLMService* service, const QString& name);    
     virtual ~LLMAPIEntry();
 
     virtual bool start() { return true; };
@@ -64,9 +77,10 @@ public:
 
     virtual std::vector<LLMModel> getAvailableModels() const = 0;
 
-    int type_;
-    QString name_;
     LLMService* service_;
+    int type_;
+    QString name_; 
 
-    static LLMAPIEntry* fromJson(LLMService* service, const QJsonObject& obj);
+private:
+    static std::unordered_map<int, LLMAPIFactory> factories_;
 };

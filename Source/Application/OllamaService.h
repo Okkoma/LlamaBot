@@ -99,6 +99,7 @@ class OllamaService : public LLMAPIEntry
 public:
     OllamaService(LLMService* service, const QString& name, const QString& url, const QString& ver, const QString& gen,
         const QString& apiKey, const QString& programPath, const QStringList& programArguments);
+    OllamaService(const QVariantMap& params);
     ~OllamaService() override;
 
     bool start() override;

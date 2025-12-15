@@ -87,13 +87,24 @@ void OllamaService::getOllamaModels(const QString& ollamaDir, std::vector<LLMMod
 
 OllamaService::OllamaService(LLMService* service, const QString& name, const QString& url, const QString& ver,
     const QString& gen, const QString& apiKey, const QString& programPath, const QStringList& programArguments) :
-    LLMAPIEntry(service, name, LLMEnum::LLMType::Ollama),
+    LLMAPIEntry(LLMEnum::LLMType::Ollama, service, name),
     url_(url),
     api_version_(ver),
     api_generate_(gen),
     apiKey_(apiKey),
     programPath_(programPath),
     programArguments_(programArguments)
+{
+}
+
+OllamaService::OllamaService(const QVariantMap& params) :
+    LLMAPIEntry(params),
+    url_(params["url"].toString()),
+    api_version_(params["apiver"].toString()),
+    api_generate_(params["apigen"].toString()),
+    apiKey_(params["apikey"].toString()),
+    programPath_(params["executable"].toString()),
+    programArguments_(params["programargs"].toStringList())
 {
 }
 

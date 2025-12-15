@@ -6,12 +6,12 @@
 #include <QTextBrowser>
 
 #include <QNetworkAccessManager>
+#include <qvariant.h>
 
 #include "Chat.h"
 
 #include "LLMService.h"
-#include "LlamaCppService.h"
-#include "OllamaService.h"
+
 
 LLMService::LLMService(QObject* parent) : QObject(parent), widget_(nullptr), allowSharedModels_(false)
 {
@@ -85,18 +85,35 @@ bool LLMService::saveServiceJsonFile()
     return true;
 }
 
+bool LLMService::isServiceAvailable(LLMEnum::LLMType service) const 
+{
+    return true;
+}
+
 void LLMService::createDefaultServiceJsonFile()
 {
     qDebug() << "createDefaultServiceJsonFile";
 
-    apiEntries_.push_back(LlamaCppService::createDefault(this, "LlamaCpp"));
+    QVariantMap params;
+    params["lmservice"] = QVariant::fromValue(this);
+    params["type"] = static_cast<int>(LLMEnum::LLMType::LlamaCpp);
+    params["name"] = "LlamaCpp";
+    addAPI(LLMAPIEntry::createService(LLMEnum::LLMType::LlamaCpp, params));
+
     // TODO: this only works on Linux if Ollama is installed in /usr/local/bin
     // find a way to get the path of the ollama binary on other platforms
     // android ? use internal storage and/or find a way to install ollama on android
     // windows ? use the path of the ollama binary in the PATH environment variable
     // mac ? use the path of the ollama binary in the PATH environment variable
-    apiEntries_.push_back(new OllamaService(this, "Ollama", "http://localhost:11434/", "api/version", "api/chat", "",
-        "/usr/local/bin/ollama", QStringList("serve")));
+    params["type"] = static_cast<int>(LLMEnum::LLMType::Ollama);
+    params["name"] = "Ollama";
+    params["url"] = "http://localhost:11434/";
+    params["apiver"] = "api/version";
+    params["apigen"] = "api/chat";
+    params["apikey"] = "";
+    params["executable"] = "/usr/local/bin/ollama";
+    params["programargs"] = QStringList("serve");
+    addAPI(LLMAPIEntry::createService(LLMEnum::LLMType::Ollama, params));
 
     saveServiceJsonFile();
 }
@@ -137,6 +154,21 @@ std::vector<LLMModel> LLMService::getAvailableModels(const LLMAPIEntry* api) con
     return results;
 }
 
+LLMAPIEntry* LLMService::get(LLMEnum::LLMType service) const
+{
+    return get(enumValueToString<LLMEnum>("LLMType", service));
+}
+
+LLMAPIEntry* LLMService::get(const QString& name) const
+{
+    for (LLMAPIEntry* entry : apiEntries_)
+    {
+        if (entry->name_ == name)
+            return entry;
+    }
+    return nullptr;
+}
+
 LLMModel* LLMService::getModel(const QString& name) const
 {
     for (LLMAPIEntry* api : apiEntries_)
@@ -151,19 +183,9 @@ LLMModel* LLMService::getModel(const QString& name) const
     return nullptr;
 }
 
-void LLMService::addAPI(LLMAPIEntry* info)
+void LLMService::addAPI(LLMAPIEntry* api)
 {
-    apiEntries_.push_back(info);
-}
-
-LLMAPIEntry* LLMService::get(const QString& name) const
-{
-    for (LLMAPIEntry* entry : apiEntries_)
-    {
-        if (entry->name_ == name)
-            return entry;
-    }
-    return nullptr;
+    apiEntries_.push_back(api);
 }
 
 void LLMService::post(LLMAPIEntry* api, Chat* chat, const QString& content, bool streamed)

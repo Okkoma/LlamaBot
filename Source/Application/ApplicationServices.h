@@ -5,8 +5,6 @@
 #include <QObject>
 #include <QMap>
 
-#include "LLMService.h"
-
 class ApplicationServices : public QObject
 {
     Q_OBJECT

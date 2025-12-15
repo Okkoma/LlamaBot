@@ -16,6 +16,8 @@ public:
     void setWidget(QWidget* widget);
     void allowSharedModels(bool enable);
 
+    bool isServiceAvailable(LLMEnum::LLMType service) const;
+    LLMAPIEntry* get(LLMEnum::LLMType service) const;
     LLMAPIEntry* get(const QString& name) const;
 
     const std::vector<LLMAPIEntry*>& getAPIs() const { return apiEntries_; }

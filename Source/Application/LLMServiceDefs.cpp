@@ -7,13 +7,22 @@
 #include <QStandardPaths>
 
 #include "LLMService.h"
-#include "LlamaCppService.h"
-#include "OllamaService.h"
 
-LLMAPIEntry::LLMAPIEntry(LLMService* service, const QString& name, int type) :
-    type_(type), name_(name), service_(service)
-{
-}
+
+std::unordered_map<int, LLMAPIEntry::LLMAPIFactory> LLMAPIEntry::factories_;
+
+
+LLMAPIEntry::LLMAPIEntry(int type, LLMService* service, const QString& name) :
+    service_(service),
+    type_(type),
+    name_(name)
+{ }
+
+LLMAPIEntry::LLMAPIEntry(const QVariantMap& params) :
+    service_(params["lmservice"].value<LLMService*>()),
+    type_(params["type"].toInt()),
+    name_(params["name"].toString())
+{ }
 
 LLMAPIEntry::~LLMAPIEntry()
 {
@@ -24,21 +33,24 @@ LLMAPIEntry* LLMAPIEntry::fromJson(LLMService* service, const QJsonObject& obj)
 {
     int type = stringToEnumValue<LLMEnum>("LLMType", obj["type"].toString());
 
-    if (type == LLMEnum::LLMType::LlamaCpp)
-    {
-        LlamaCppService* llamaApi = LlamaCppService::createDefault(service, obj["name"].toString());
+    QVariantMap params;
+    params["lmservice"] = QVariant::fromValue(service);
+    params["type"] = type;
+    params["name"] = obj["name"].toString();
 
-        return llamaApi;
-    }
-    else if (type == LLMEnum::LLMType::Ollama)
+    if (type == LLMEnum::LLMType::Ollama)
     {
         QStringList programArguments;
         QJsonArray argsArray = obj["args"].toArray();
         for (const QJsonValue& val : argsArray)
             programArguments << val.toString();
-
-        return new OllamaService(service, obj["name"].toString(), obj["url"].toString(), obj["apiver"].toString(),
-            obj["apigen"].toString(), obj["apikey"].toString(), obj["executable"].toString(), programArguments);
+        params["url"] = obj["url"].toString();
+        params["apiver"] = obj["apiver"].toString();
+        params["apigen"] = obj["apigen"].toString();
+        params["apikey"] = obj["apikey"].toString();
+        params["executable"] = obj["executable"].toString();
+        params["programargs"] = programArguments;
     }
-    return nullptr;
+    
+    return createService(type, params);   
 }

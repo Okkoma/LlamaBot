@@ -16,10 +16,10 @@
 #include <qdebug.h>
 
 #include "Chat.h"
-
 #include "LLMService.h"
+
 #include "LlamaCppService.h"
-#include "OllamaService.h"
+
 
 std::vector<llama_token> LlamaTokenize(LlamaCppChatData& data, const QString& prompt)
 {
@@ -521,8 +521,9 @@ void LlamaCppWorker::stopProcessing()
         static_cast<LlamaCppProcessThread*>(process_)->stopRequested_ = true;
 }
 
+
 LlamaCppService::LlamaCppService(LLMService* service, const QString& name) :
-    LLMAPIEntry(service, name, LLMEnum::LLMType::LlamaCpp)
+    LLMAPIEntry(LLMEnum::LLMType::LlamaCpp, service, name)
 {
     bool check = checkGpuMemoryAvailable(0);
 
@@ -533,26 +534,23 @@ LlamaCppService::LlamaCppService(LLMService* service, const QString& name) :
     qDebug().noquote() << getBackendInfo();
 }
 
-LlamaCppService* LlamaCppService::createDefault(LLMService* service, const QString& name)
+LlamaCppService::LlamaCppService(const QVariantMap& params) :
+    LLMAPIEntry(params)
 {
-    LlamaCppService* llamaService = new LlamaCppService(service, name);
-
     // Default GPU configuration
-    llamaService->setDefaultUseGpu(true);
-    llamaService->setDefaultGpuLayers(99); // All layers on GPU
-    llamaService->setDefaultContextSize(4096);
+    setDefaultUseGpu(true);
+    setDefaultGpuLayers(99); // All layers on GPU
+    setDefaultContextSize(4096);
 
     // Enable threaded version by default
-    llamaService->setUseThreadedVersion(true);
+    setUseThreadedVersion(true);
 
     // Display information about available backends
     qDebug() << "=== Configuration LlamaCpp ===";
-    qDebug() << "GPU activé:" << llamaService->isUsingGpu();
-    qDebug() << "Couches GPU:" << llamaService->getGpuLayers();
-    qDebug() << "Taille contexte:" << llamaService->getContextSize();
-    qDebug() << "Version threadée:" << llamaService->isUsingThreadedVersion();
-
-    return llamaService;
+    qDebug() << "GPU activé:" << isUsingGpu();
+    qDebug() << "Couches GPU:" << getGpuLayers();
+    qDebug() << "Taille contexte:" << getContextSize();
+    qDebug() << "Version threadée:" << isUsingThreadedVersion();
 }
 
 LlamaCppService::~LlamaCppService()
@@ -910,9 +908,10 @@ std::vector<LLMModel> LlamaCppService::getAvailableModels() const
 {
     std::vector<LLMModel> result;
 
-    // LlamaCpp can use shared Ollama models.
-    OllamaService::getOllamaModels(OllamaService::ollamaSystemDir, result);
-    OllamaService::getOllamaModels(QDir::homePath() + "/", result);
+    // LlamaCpp can use shared models from Ollama.
+    LLMAPIEntry* ollamaApi = service_->get(LLMEnum::LLMType::Ollama);
+    if (ollamaApi)
+        result = service_->getAvailableModels(ollamaApi);
 
     QString appDataModelsPath = QStandardPaths::writableLocation(QStandardPaths::AppDataLocation) + "/models";
     QDir appDataModelsDir(appDataModelsPath);
