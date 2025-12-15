@@ -11,6 +11,7 @@
 
 #include <QMutex>
 #include <QWaitCondition>
+#include <QThread>
 #include <atomic>
 #include <qdebug.h>
 
@@ -87,6 +88,79 @@ LlamaCppChatData::~LlamaCppChatData()
     deinitialize();
 }
 
+// Utility function to check available GPU memory
+static bool checkGpuMemoryAvailable(size_t requiredBytes)
+{
+    size_t freeMem = 0;
+    size_t totalMem = 0;
+    bool hasEnoughMemory = false;
+    
+    // Check all available GPU devices
+    if (requiredBytes)
+        qDebug() << QString("GPU memory check - Required: %1 MiB").arg(requiredBytes / (1024 * 1024));
+    
+    for (size_t i = 0; i < ggml_backend_dev_count(); i++)
+    {
+        ggml_backend_dev_t dev = ggml_backend_dev_get(i);
+        if (dev)
+        {
+            ggml_backend_dev_memory(dev, &freeMem, &totalMem);
+            QString devName = QString::fromUtf8(ggml_backend_dev_name(dev));
+            QString devDesc = QString::fromUtf8(ggml_backend_dev_description(dev));
+            qDebug() << QString("Device %1 (%2): %3 MiB free / %4 MiB total")
+                        .arg(devName)
+                        .arg(devDesc)
+                        .arg(freeMem / (1024 * 1024))
+                        .arg(totalMem / (1024 * 1024));
+            
+            if (requiredBytes)
+            {
+                if (freeMem >= requiredBytes)
+                {
+                    hasEnoughMemory = true;
+                    qDebug() << QString("- Sufficient memory on device %1").arg(devName);
+                }
+                else
+                {
+                    qWarning() << QString("! Insufficient memory on device %1 (missing %2 MiB)")
+                                .arg(devName)
+                                .arg((requiredBytes - freeMem) / (1024 * 1024));
+                }
+            }
+        }
+    }
+    
+    return hasEnoughMemory || !requiredBytes;
+}
+
+// Function to wait for GPU memory to be released
+// CUDA operations are asynchronous, so after llama_free(), we need to wait
+// for the CUDA driver to actually release the memory before we can reallocate
+static void waitForGpuMemoryPurge()
+{
+    qDebug() << "Waiting for GPU memory to be released...";
+    
+    // Iterate through all available devices (for logging)
+    for (size_t i = 0; i < ggml_backend_dev_count(); i++)
+    {
+        ggml_backend_dev_t dev = ggml_backend_dev_get(i);
+        if (dev)
+        {
+            QString devName = QString::fromUtf8(ggml_backend_dev_name(dev));
+            qDebug() << QString("Device %1 waiting for memory release...").arg(devName);
+        }
+    }
+    
+    // Wait for CUDA to release memory
+    // CUDA operations are asynchronous and memory may take time to be released
+    // We wait in multiple steps to allow the system to release progressively
+    QThread::msleep(100);
+    QThread::msleep(100);
+    QThread::msleep(100);
+    
+    qDebug() << "GPU memory release wait completed";
+}
+
 void LlamaCppChatData::initialize(LlamaModelData* model)
 {
     model_ = model;
@@ -96,11 +170,66 @@ void LlamaCppChatData::initialize(LlamaModelData* model)
     ctx_params.n_ctx = n_ctx_;
     ctx_params.n_batch = n_ctx_;
 
+    // Estimate required memory (approximate: context + batch + buffers)
+    // Based on logs, we need:
+    // - KV cache: 256 MiB (allocated first)
+    // - Compute buffers: 258.5 MiB (allocated next, fails here)
+    // - Total: ~514-520 MiB to be safe
+    // We add a 20% safety margin for fragmentation
+    size_t kvCacheMemory = 256 * 1024 * 1024; // 256 MiB for KV cache
+    size_t computeBuffers = 271056896; // 258.5 MiB for compute buffers
+    size_t estimatedMemory = kvCacheMemory + computeBuffers;
+    estimatedMemory = static_cast<size_t>(estimatedMemory * 1.2); // +20% safety margin
+    
+    qDebug() << "LlamaCppChatData::initialize: Creating context with n_ctx=" << n_ctx_;
+    qDebug() << QString("Estimated memory required: %1 MiB (KV cache: 256 MiB + Buffers: 258.5 MiB + 20% margin)")
+                .arg(estimatedMemory / (1024 * 1024));
+    
+    // Check available memory before creating the context
+    if (!checkGpuMemoryAvailable(estimatedMemory))
+    {
+        qWarning() << "Insufficient GPU memory detected, waiting for release...";
+        
+        // Release all other contexts if possible
+        // Note: We cannot directly access the service from here,
+        // so we just wait for memory to be released
+        waitForGpuMemoryPurge();
+                
+        // Check again after purge
+        if (!checkGpuMemoryAvailable(estimatedMemory))
+        {
+            qWarning() << "llama-cpp error: Insufficient GPU memory even after purge";
+            qWarning() << QString("Required: %1 MiB, but insufficient memory available").arg(estimatedMemory / (1024 * 1024));
+            qWarning() << "Check that GPU memory is sufficient and no other process is using the GPU";
+            qWarning() << "Try closing other applications using the GPU or reduce n_ctx";
+            return;
+        }
+    }
+    
     ctx_ = llama_init_from_model(model_->model_, ctx_params);
     if (!ctx_)
     {
-        qDebug() << "llama-cpp error: failed to create the llama_context";
-        return;
+        qWarning() << "llama-cpp error: failed to create the llama_context - possible GPU memory issue";
+        qWarning() << "Waiting for GPU release and rechecking...";
+        
+        // On failure, wait for memory to be released and retry once
+        waitForGpuMemoryPurge();
+        
+        if (!checkGpuMemoryAvailable(estimatedMemory))
+        {
+            qWarning() << "GPU memory still insufficient after purge";
+            return;
+        }
+        
+        // Retry once after purge
+        qDebug() << "Retrying context creation after purge...";
+        ctx_ = llama_init_from_model(model_->model_, ctx_params);
+        if (!ctx_)
+        {
+            qWarning() << "llama-cpp error: Final failure to create context";
+            qWarning() << "Check that GPU memory is sufficient and no other process is using the GPU";
+            return;
+        }
     }
 
     // initialize the sampler
@@ -112,7 +241,7 @@ void LlamaCppChatData::initialize(LlamaModelData* model)
     // initialize the default chat template
     llamaCppChattemplate_ = llama_model_chat_template(model_->model_, /* name */ nullptr);
 
-    qDebug() << "llama_initialize: Modèle chargé avec succès";
+    qDebug() << "llama_initialize: Model loaded successfully";
 }
 
 void LlamaCppChatData::deinitialize()
@@ -124,8 +253,17 @@ void LlamaCppChatData::deinitialize()
     }
     if (ctx_)
     {
+        qDebug() << "LlamaCppChatData::deinitialize: Freeing llama context";
+        // Free the context
         llama_free(ctx_);
         ctx_ = nullptr;
+        
+        // Wait a bit to allow CUDA to release GPU memory
+        // CUDA operations are asynchronous and memory may not be
+        // immediately available after llama_free()
+        qDebug() << "LlamaCppChatData::deinitialize: Waiting for GPU memory release...";
+        waitForGpuMemoryPurge();
+        qDebug() << "LlamaCppChatData::deinitialize: Context freed";
     }
 
     for (llama_chat_message& msg : llamaCppChatMessages_)
@@ -140,20 +278,20 @@ struct LlamaCppProcessAsync : public LlamaCppProcess
 
     void start(Chat* chat, const QString& content, bool streamed) override
     {
-        // Préparation des tokens et batch pour la génération asynchrone
+        // Prepare tokens and batch for asynchronous generation
         data_->chat_ = chat;
         data_->tokens_ = LlamaTokenize(*data_, chat->rawMessages_);
-        data_->tokenId_ = 1; // valeur initiale > 0 pour entrer dans la boucle
+        data_->tokenId_ = 1; // initial value > 0 to enter the loop
         data_->response_.clear();
         data_->batch_ = llama_batch_get_one(data_->tokens_.data(), data_->tokens_.size());
 
         if (chat)
             chat->setProcessing(true);
 
-        // Lancement de la génération asynchrone
+        // Launch asynchronous generation
         if (!asyncTimer_)
         {
-            asyncTimer_ = new QTimer(service_); // parenté sur service_ pour gestion mémoire
+            asyncTimer_ = new QTimer(service_); // parented to service_ for memory management
             asyncTimer_->setInterval(100);
             QObject::connect(asyncTimer_, &QTimer::timeout, service_,
                 [this]()
@@ -203,7 +341,7 @@ struct LlamaCppProcessAsync : public LlamaCppProcess
             return;
         }
 
-        // Préparer le batch pour le prochain token
+        // Prepare batch for next token
         data_->batch_ = llama_batch_get_one(&data_->tokenId_, 1);
     }
 
@@ -217,11 +355,11 @@ struct LlamaCppProcessThread : public LlamaCppProcess
 
     void start(Chat* chat, const QString& content, bool streamed) override
     {
-        // Préparation des données pour la génération threadée
+        // Prepare data for threaded generation
         QMutexLocker locker(&mutex_);
         data_->chat_ = chat;
         data_->tokens_ = LlamaTokenize(*data_, data_->chat_->rawMessages_);
-        data_->tokenId_ = 1; // valeur initiale > 0 pour entrer dans la boucle
+        data_->tokenId_ = 1; // initial value > 0 to enter the loop
         data_->response_.clear();
         stopRequested_ = false;
         locker.unlock();
@@ -229,12 +367,12 @@ struct LlamaCppProcessThread : public LlamaCppProcess
         if (data_->chat_)
             data_->chat_->setProcessing(true);
 
-        // Créer et configurer le worker thread
+        // Create and configure worker thread
         if (!worker_)
         {
             worker_ = new LlamaCppWorker(this);
 
-            // Connecter les signaux du worker
+            // Connect worker signals
             QObject::connect(worker_, &LlamaCppWorker::tokenGenerated, service_,
                 [this, chat](const QString& token)
                 {
@@ -262,7 +400,7 @@ struct LlamaCppProcessThread : public LlamaCppProcess
                 });
         }
 
-        // Démarrer le thread
+        // Start the thread
         startProcess();
     }
 
@@ -351,25 +489,25 @@ void LlamaCppWorker::processRequest()
 
     process->isProcessing_ = true;
 
-    // Préparer le batch pour le premier token
+    // Prepare batch for first token
     data.batch_ = llama_batch_get_one(data.tokens_.data(), data.tokens_.size());
 
     while (!process->stopRequested_.load())
     {
         locker.unlock();
 
-        // Générer le prochain token
+        // Generate next token
         data.tokenId_ = LlamaGenerateStep(data, data.tokens_, data.response_);
 
         locker.relock();
 
-        if (data.tokenId_ <= 0) // Fin de génération
+        if (data.tokenId_ <= 0) // End of generation
             break;
 
-        // Émettre le token généré
+        // Emit generated token
         emit tokenGenerated(data.response_);
 
-        // Préparer le batch pour le prochain token
+        // Prepare batch for next token
         data.batch_ = llama_batch_get_one(&data.tokenId_, 1);
     }
 
@@ -386,26 +524,28 @@ void LlamaCppWorker::stopProcessing()
 LlamaCppService::LlamaCppService(LLMService* service, const QString& name) :
     LLMAPIEntry(service, name, LLMEnum::LLMType::LlamaCpp)
 {
-    // load dynamic backends - IMPORTANT pour activer GPU
+    bool check = checkGpuMemoryAvailable(0);
+
+    // load dynamic backends - IMPORTANT to enable GPU
     ggml_backend_load_all();
 
-    // Afficher les informations sur les backends disponibles
-    qDebug() << getBackendInfo();
+    // Display information about available backends
+    qDebug().noquote() << getBackendInfo();
 }
 
 LlamaCppService* LlamaCppService::createDefault(LLMService* service, const QString& name)
 {
     LlamaCppService* llamaService = new LlamaCppService(service, name);
 
-    // Configuration GPU par défaut
+    // Default GPU configuration
     llamaService->setDefaultUseGpu(true);
-    llamaService->setDefaultGpuLayers(99); // Toutes les couches sur GPU
+    llamaService->setDefaultGpuLayers(99); // All layers on GPU
     llamaService->setDefaultContextSize(4096);
 
-    // Activer la version threadée par défaut
+    // Enable threaded version by default
     llamaService->setUseThreadedVersion(true);
 
-    // Afficher les informations sur les backends disponibles
+    // Display information about available backends
     qDebug() << "=== Configuration LlamaCpp ===";
     qDebug() << "GPU activé:" << llamaService->isUsingGpu();
     qDebug() << "Couches GPU:" << llamaService->getGpuLayers();
@@ -417,6 +557,8 @@ LlamaCppService* LlamaCppService::createDefault(LLMService* service, const QStri
 
 LlamaCppService::~LlamaCppService()
 {
+    qDebug() << "~LlamaCppService";
+
     for (LlamaCppChatData& data : datas_)
         clearData(&data);
 
@@ -425,6 +567,8 @@ LlamaCppService::~LlamaCppService()
         if (model.model_)
             llama_model_free(model.model_);
     }
+
+    checkGpuMemoryAvailable(0);
 
     datas_.clear();
     models_.clear();
@@ -449,14 +593,46 @@ void LlamaCppService::initializeData(LlamaCppChatData* data, LlamaModelData* mod
 
 void LlamaCppService::clearData(LlamaCppChatData* data)
 {
+    qDebug() << "LlamaCppService::clearData: Cleaning up data";
+    
     if (data->generateProcess_)
     {
+        // Stop the process before deleting it
+        qDebug() << "LlamaCppService::clearData: Stopping generation process";
+        data->generateProcess_->stop();
         delete data->generateProcess_;
         data->generateProcess_ = nullptr;
     }
+    
+    // Free context resources
     data->deinitialize();
 
+    // Wait for GPU memory to be released
+    // CUDA operations are asynchronous, we need to wait for the driver to release memory
+    waitForGpuMemoryPurge();
+    
+    qDebug() << "LlamaCppService::clearData: Cleanup completed";
+
     data->model_ = nullptr;
+}
+
+void LlamaCppService::clearModelInMemory(const QString& modelName)
+{
+    if (!models_.contains(modelName))
+        return;
+    
+    LlamaModelData& model = models_[modelName];
+    if (!model.model_)
+        return;
+
+    qDebug() << "LlamaCppService::clearModelInMemory:" << modelName;
+
+    llama_model_free(model.model_);
+
+    waitForGpuMemoryPurge();
+    bool check = checkGpuMemoryAvailable(0);
+
+    model.model_ = nullptr;
 }
 
 LlamaModelData* LlamaCppService::addModel(const QString& modelName, int numGpuLayers)
@@ -474,11 +650,17 @@ LlamaModelData* LlamaCppService::addModel(const QString& modelName, int numGpuLa
         }
     }
 
+    if (onlyOneModelInMemory_ && lastModelAddedInMemory_ && modelName != lastModelAddedInMemory_->modelName_)
+    {
+        qDebug() << "LlamaCppService::addModel: Clear last model" << modelName;
+        clearModelInMemory(lastModelAddedInMemory_->modelName_);
+    }
+
     // initialize the model
     llama_model_params model_params = llama_model_default_params();
     model_params.n_gpu_layers = numGpuLayers;
 
-    qDebug() << "LlamaCppService::addModel: Chargement du modèle avec" << model_params.n_gpu_layers << "couches GPU";
+    qDebug() << "LlamaCppService::addModel: Loading model with" << model_params.n_gpu_layers << "GPU layers";
 
     modelData.model_ = llama_model_load_from_file(qPrintable(modelData.modelPath_), model_params);
     if (!modelData.model_)
@@ -491,7 +673,9 @@ LlamaModelData* LlamaCppService::addModel(const QString& modelName, int numGpuLa
     modelData.use_gpu_ = numGpuLayers > 0;
     models_[modelName] = modelData;
 
-    return &models_[modelName];
+    lastModelAddedInMemory_ = &models_[modelName];
+
+    return lastModelAddedInMemory_;
 }
 
 void LlamaCppService::setModel(Chat* chat, QString modelName)
@@ -513,7 +697,7 @@ void LlamaCppService::setModel(Chat* chat, QString modelName)
         clearData(data);
 
         LlamaModelData* model = getModel(modelName);
-        if (!model)
+        if (!model || !model->model_)
         {
             model = addModel(modelName, 99);
             if (!model)
@@ -539,9 +723,25 @@ void LlamaCppService::post(Chat* chat, const QString& content, bool streamed)
     LlamaCppChatData* data = getData(chat);
     if (!data || !data->model_)
     {
-        qDebug() << "LlamaCppService::post no data or no model";
+        qWarning() << "LlamaCppService::post: no data or no model";
         return;
     }
+    
+    // Check that context is properly initialized
+    if (!data->ctx_)
+    {
+        qWarning() << "LlamaCppService::post: context not initialized - cannot generate";
+        qWarning() << "Context could not be created, likely due to insufficient GPU memory";
+        return;
+    }
+    
+    // Check that generation process exists
+    if (!data->generateProcess_)
+    {
+        qWarning() << "LlamaCppService::post: generation process not initialized";
+        return;
+    }
+    
     chat->updateContent(content);
     data->generateProcess_->start(chat, content, streamed);
 }
@@ -554,34 +754,57 @@ QString LlamaCppService::formatMessage(Chat* chat, const QString& role, const QS
         qDebug() << "LlamaCppService::formatMessage: no data";
         return content;
     }
-
-    std::vector<char> formatted(llama_n_ctx(data->ctx_));
-
-    if (role == "user")
+    if (!data->ctx_)
     {
-        // ajouter le message de l'utilisateur
-        data->llamaCppChatMessages_.push_back(
-            { "user", content.isEmpty() ? "" : strdup(content.toUtf8().constData()) });
+        qDebug() << "LlamaCppService::formatMessage: no data context - returning raw content";
+        return content;
     }
-    else
+    if (!data->llamaCppChattemplate_)
     {
-        // ajouter la réponse de l'assistant
-        data->llamaCppChatMessages_.push_back(
-            { "assistant", content.isEmpty() ? "" : strdup(content.toUtf8().constData()) });
+        qDebug() << "LlamaCppService::formatMessage: no chat template - returning raw content";
+        return content;
     }
 
-    int new_len = llama_chat_apply_template(data->llamaCppChattemplate_, data->llamaCppChatMessages_.data(),
-        data->llamaCppChatMessages_.size(), true, formatted.data(), formatted.size());
-    if (new_len > (int)formatted.size())
+    try
     {
-        formatted.resize(new_len);
-        new_len = llama_chat_apply_template(data->llamaCppChattemplate_, data->llamaCppChatMessages_.data(),
+        std::vector<char> formatted(llama_n_ctx(data->ctx_));
+
+        if (role == "user")
+        {
+            // add user message
+            data->llamaCppChatMessages_.push_back(
+                { "user", content.isEmpty() ? "" : strdup(content.toUtf8().constData()) });
+        }
+        else
+        {
+            // add assistant response
+            data->llamaCppChatMessages_.push_back(
+                { "assistant", content.isEmpty() ? "" : strdup(content.toUtf8().constData()) });
+        }
+
+        int new_len = llama_chat_apply_template(data->llamaCppChattemplate_, data->llamaCppChatMessages_.data(),
             data->llamaCppChatMessages_.size(), true, formatted.data(), formatted.size());
-    }
+        if (new_len > (int)formatted.size())
+        {
+            formatted.resize(new_len);
+            new_len = llama_chat_apply_template(data->llamaCppChattemplate_, data->llamaCppChatMessages_.data(),
+                data->llamaCppChatMessages_.size(), true, formatted.data(), formatted.size());
+        }
 
-    QString result = QString::fromLocal8Bit(formatted.data(), new_len);
-    qDebug() << "LlamaCppApi::formatMessage: role:" << role << "content:" << content << "result:" << result;
-    return result;
+        QString result = QString::fromLocal8Bit(formatted.data(), new_len);
+        qDebug() << "LlamaCppApi::formatMessage: role:" << role << "content:" << content << "result:" << result;
+        return result;
+    }
+    catch (const std::exception& e)
+    {
+        qWarning() << "LlamaCppService::formatMessage: Exception:" << e.what();
+        return content;
+    }
+    catch (...)
+    {
+        qWarning() << "LlamaCppService::formatMessage: Unknown exception";
+        return content;
+    }
 }
 
 void LlamaCppService::stopStream(Chat* chat)
@@ -599,7 +822,7 @@ QJsonObject LlamaCppService::toJson() const
     return obj;
 }
 
-// Méthodes de configuration GPU
+// GPU configuration methods
 void LlamaCppService::setDefaultGpuLayers(int n_gpu_layers)
 {
     defaultGpuLayers_ = n_gpu_layers;
@@ -638,7 +861,7 @@ QStringList LlamaCppService::getAvailableBackends()
 QString LlamaCppService::getBackendInfo()
 {
     QString info;
-    info += "=== Backends disponibles ===\n";
+    info += "=== Available Backends ===\n";
 
     QStringList backends = getAvailableBackends();
     for (const QString& backend : backends)
@@ -646,7 +869,7 @@ QString LlamaCppService::getBackendInfo()
         info += "- " + backend + "\n";
     }
 
-    info += "\n=== Devices disponibles ===\n";
+    info += "\n=== Available Devices ===\n";
     for (size_t i = 0; i < ggml_backend_dev_count(); i++)
     {
         ggml_backend_dev_t dev = ggml_backend_dev_get(i);

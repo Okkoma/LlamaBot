@@ -100,6 +100,7 @@ public:
     LlamaModelData* addModel(const QString& model, int numGpuLayers);
     void initializeData(LlamaCppChatData* data, LlamaModelData* model = nullptr);
     void clearData(LlamaCppChatData* data);
+    void clearModelInMemory(const QString& modelName);
 
     // Activer/désactiver la version threadée
     void setUseThreadedVersion(bool useThreaded) { useThreadedVersion_ = useThreaded; }
@@ -132,4 +133,7 @@ public:
     int defaultContextSize_ = 2048;
     bool defaultUseGpu_ = true;
     bool useThreadedVersion_ = false;
+
+    bool onlyOneModelInMemory_ = true;
+    LlamaModelData* lastModelAddedInMemory_ = nullptr;
 };
