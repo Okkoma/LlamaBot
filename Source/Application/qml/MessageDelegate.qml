@@ -75,9 +75,6 @@ Item {
                     onImplicitHeightChanged: {
                         bubble.Layout.preferredHeight = Qt.binding(() => msgText.implicitHeight + 20)
                     }
-                    onImplicitWidthChanged: {
-                        bubble.Layout.preferredWidth = bubbleWidth()
-                    }
                 }
             }
         }
