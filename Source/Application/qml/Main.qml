@@ -32,6 +32,7 @@ ApplicationWindow {
 
         // Toolbar / Header
         ToolBar {
+            id: toolBar
             Layout.fillWidth: true
             RowLayout {
                 anchors.fill: parent
@@ -73,6 +74,19 @@ ApplicationWindow {
                 
                 Item { Layout.fillWidth: true }
                 
+                // Loading icon - avec gestion robuste des connexions
+                LoadingSpinner {
+                    id: loadingSpinner
+                    size: parent.height
+                    
+                    // Connect to ChatController using safe method
+                    Component.onCompleted: {
+                        if (chatController) {
+                            loadingSpinner.connectToController(chatController)
+                        }
+                    }
+                }
+
                 ToolButton {
                     text: "⋮"
                     ToolTip.visible: hovered

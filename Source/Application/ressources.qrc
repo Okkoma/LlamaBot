@@ -11,5 +11,7 @@
     <file alias="ChatDrawer.qml">qml/ChatDrawer.qml</file>
     <file alias="ModelSelector.qml">qml/ModelSelector.qml</file>
     <file alias="APISelector.qml">qml/APISelector.qml</file>
+    <file alias="LoadingSpinner.qml">qml/LoadingSpinner.qml</file>
+    <file alias="LoadingSpinner.png">LoadingSpinner.png</file>
   </qresource>
 </RCC> 

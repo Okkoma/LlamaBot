@@ -33,6 +33,22 @@ int ChatController::currentChatIndex() const
     return chats_.indexOf(currentChat_);
 }
 
+void ChatController::checkChatsProcessingFinished() 
+{
+    int count = 0;
+    for (Chat* chat : chats_)
+    {
+        if (!chat->isProcessing())
+            count++;
+    }
+
+    if (count == chats_.size())
+    {
+        qDebug() << "ChatController::checkChatsProcessingFinished ... end loading spinner";
+        emit loadingFinished();
+    }
+}
+
 void ChatController::createChat()
 {
     chatCounter_++;
@@ -42,6 +58,8 @@ void ChatController::createChat()
 
     currentChat_ = chat;
 
+    QObject::connect(chat, &Chat::processingFinished, this, &ChatController::checkChatsProcessingFinished);
+    
     emit chatListChanged();
     emit currentChatChanged();
 }
@@ -51,8 +69,9 @@ void ChatController::switchToChat(int index)
     if (index >= 0 && index < chats_.size())
     {
         if (currentChat_ != chats_[index])
-        {
+        {           
             currentChat_ = chats_[index];
+
             emit currentChatChanged();
         }
     }
@@ -63,6 +82,9 @@ void ChatController::deleteChat(int index)
     if (index >= 0 && index < chats_.size() && chats_.size() > 1)
     {
         Chat* chatToRemove = chats_[index];
+
+        QObject::disconnect(chatToRemove, &Chat::processingFinished, this, &ChatController::checkChatsProcessingFinished);
+
         chats_.removeAt(index);
 
         // Update current chat if needed
@@ -100,6 +122,8 @@ void ChatController::sendMessage(const QString& text)
     LLMAPIEntry* api = service_->get(currentChat_->currentApi());
     if (api)
     {
+        qDebug() << "ChatController::sendMessage ... start loading spinner";
+        emit loadingStarted();
         service_->post(api, currentChat_, text, true);
     }
 }
@@ -107,7 +131,9 @@ void ChatController::sendMessage(const QString& text)
 void ChatController::stopGeneration()
 {
     if (currentChat_)
-        service_->stopStream(currentChat_);
+    {
+        service_->stopStream(currentChat_);        
+    }
 }
 
 QVariantList ChatController::getAvailableModels()

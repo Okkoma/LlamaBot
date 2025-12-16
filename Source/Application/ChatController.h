@@ -41,8 +41,12 @@ signals:
     void currentChatChanged();
     void chatListChanged();
     void availableModelsChanged();
+    void loadingStarted();
+    void loadingFinished();
 
 private:
+    void checkChatsProcessingFinished();
+
     LLMService* service_;
     QList<Chat*> chats_;
     Chat* currentChat_;
