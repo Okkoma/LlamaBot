@@ -49,7 +49,7 @@ public:
     using LLMAPIFactory = std::function<LLMAPIEntry* (const QVariantMap& params)>;
     template<typename T> static void registerService(int type)
     {
-        factories_[type] = [](const QVariantMap& params) { static T t = T(params); return &t; };
+        factories_[type] = [](const QVariantMap& params) { return new T(params); };
     }
     static LLMAPIEntry* createService(int type, const QVariantMap& params)
     {
