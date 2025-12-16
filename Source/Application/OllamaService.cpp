@@ -13,7 +13,23 @@
 #include "LLMService.h"
 #include "OllamaService.h"
 
-const QString OllamaService::ollamaSystemDir = "/usr/share/ollama/";
+
+const QString ollamaDefaultSystemDir = "/usr/share/ollama/";
+const QString OllamaService::ollamaSystemDir = []() {
+    // Rechercher le chemin partagé standard (par exemple, /usr/share)
+    QStringList dataLocations = QStandardPaths::standardLocations(QStandardPaths::GenericDataLocation);
+    for (const QString &location : dataLocations) {
+        QString path = location + "/ollama/";
+        if (QDir(path).exists()) {
+            qDebug() << "OllamaService::ollamaSystemDir: " << path;
+            return path;
+        }
+    }
+
+    // Si non trouvé, retourner le chemin par défaut
+    return ollamaDefaultSystemDir;
+}();
+
 const QString OllamaService::ollamaManifestBaseDir = ".ollama/models/manifests/registry.ollama.ai/library/";
 const QString OllamaService::ollamaBlobsBaseDir = ".ollama/models/blobs/";
 

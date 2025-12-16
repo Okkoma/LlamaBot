@@ -103,18 +103,22 @@ void LLMService::createDefaultServiceJsonFile()
     params["name"] = "LlamaCpp";
     addAPI(LLMAPIEntry::createService(LLMEnum::LLMType::LlamaCpp, params));
 
-    // TODO: this only works on Linux if Ollama is installed in /usr/local/bin
-    // find a way to get the path of the ollama binary on other platforms
-    // android ? use internal storage and/or find a way to install ollama on android
-    // windows ? use the path of the ollama binary in the PATH environment variable
-    // mac ? use the path of the ollama binary in the PATH environment variable
+    // Utiliser QStandardPaths pour trouver l'exécutable Ollama
+    QString ollamaExecutable = QStandardPaths::findExecutable("ollama");
+    if (ollamaExecutable.isEmpty()) {
+        qWarning() << "Ollama executable not found in PATH. Using default path.";
+        ollamaExecutable = "/usr/local/bin/ollama"; // Chemin par défaut si non trouvé
+    } else {
+        qDebug() << "Ollama executable found at:" << ollamaExecutable;
+    }
+
     params["type"] = static_cast<int>(LLMEnum::LLMType::Ollama);
     params["name"] = "Ollama";
     params["url"] = "http://localhost:11434/";
     params["apiver"] = "api/version";
     params["apigen"] = "api/chat";
     params["apikey"] = "";
-    params["executable"] = "/usr/local/bin/ollama";
+    params["executable"] = ollamaExecutable;
     params["programargs"] = QStringList("serve");
     addAPI(LLMAPIEntry::createService(LLMEnum::LLMType::Ollama, params));
 
