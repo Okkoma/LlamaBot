@@ -16,8 +16,8 @@ Chat::Chat(LLMService* service, const QString& name, const QString& initialPromp
     streamed_(streamed),
     lastBotIndex_(-1),
     name_(name),
-    currentApi_("Ollama"),
-    currentModel_("llama3.1:8b"),
+    currentApi_("none"),
+    currentModel_("none"),
     userPrompt_("🧑 >"),
     aiPrompt_("🤖 >")
 {
@@ -28,6 +28,15 @@ Chat::Chat(LLMService* service, const QString& name, const QString& initialPromp
 
 void Chat::initialize()
 {
+    LLMAPIEntry* defaultApi = service_->getAvailableAPIs().front();
+    if (defaultApi)
+    {
+        currentApi_ = defaultApi->name_;
+        std::vector<LLMModel> models = defaultApi->getAvailableModels();
+        if (models.size())
+            currentModel_ = models.front().toString();
+    }
+
     jsonObject_["model"] = currentModel_;
     jsonObject_["stream"] = streamed_;
 
@@ -181,7 +190,8 @@ void Chat::updateCurrentAIStream(const QString& text)
 
 void Chat::setProcessing(bool processing)
 {
-    if (processing)
+    processing_ = processing;
+    if (processing) 
         emit processingStarted();
     else
         emit processingFinished();

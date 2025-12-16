@@ -50,6 +50,8 @@ public:
 
     void setProcessing(bool processing);
 
+    bool isProcessing() const { return processing_; }
+
 signals:
     void currentApiChanged();
     void currentModelChanged();
@@ -65,6 +67,7 @@ signals:
 public:
     // Data members
     bool streamed_;
+    bool processing_;
     int lastBotIndex_;
 
     QString name_;
