@@ -40,15 +40,22 @@ LLMAPIEntry* LLMAPIEntry::fromJson(LLMService* service, const QJsonObject& obj)
 
     if (type == LLMEnum::LLMType::Ollama)
     {
-        QStringList programArguments;
-        QJsonArray argsArray = obj["args"].toArray();
-        for (const QJsonValue& val : argsArray)
-            programArguments << val.toString();
+        params["executable"] = obj["executable"].toString();
+        if (!QFile::exists(params["executable"].value<QString>()))
+        {
+            qDebug() << "Ollama not find" << params["executable"].value<QString>();
+            return nullptr;
+        }
+
         params["url"] = obj["url"].toString();
         params["apiver"] = obj["apiver"].toString();
         params["apigen"] = obj["apigen"].toString();
         params["apikey"] = obj["apikey"].toString();
-        params["executable"] = obj["executable"].toString();
+        
+        QStringList programArguments;
+        QJsonArray argsArray = obj["args"].toArray();
+        for (const QJsonValue& val : argsArray)
+            programArguments << val.toString();        
         params["programargs"] = programArguments;
     }
     
