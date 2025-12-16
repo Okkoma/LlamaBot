@@ -66,6 +66,9 @@ bool LLMService::loadServiceJsonFile()
 
 bool LLMService::saveServiceJsonFile()
 {
+    if (!apiEntries_.size())
+        return false;
+
     QFile file("LLMService.json");
     if (!file.open(QIODevice::ReadWrite))
     {
@@ -92,7 +95,7 @@ bool LLMService::isServiceAvailable(LLMEnum::LLMType service) const
 
 void LLMService::createDefaultServiceJsonFile()
 {
-    qDebug() << "createDefaultServiceJsonFile";
+    qDebug() << "createDefaultServiceJsonFile ... ";
 
     QVariantMap params;
     params["lmservice"] = QVariant::fromValue(this);
@@ -115,6 +118,8 @@ void LLMService::createDefaultServiceJsonFile()
     params["programargs"] = QStringList("serve");
     addAPI(LLMAPIEntry::createService(LLMEnum::LLMType::Ollama, params));
 
+    qDebug() << "createDefaultServiceJsonFile ... apis=" << apiEntries_.size();
+
     saveServiceJsonFile();
 }
 
@@ -125,7 +130,7 @@ void LLMService::initialize()
     if (!loadServiceJsonFile())
         createDefaultServiceJsonFile();
 
-    LLMAPIEntry* defaultService_ = apiEntries_.front();
+    LLMAPIEntry* defaultService_ = apiEntries_.size() ? apiEntries_.front() : nullptr;
 
     if (defaultService_ && !defaultService_->isReady())
         defaultService_->start();
@@ -185,7 +190,8 @@ LLMModel* LLMService::getModel(const QString& name) const
 
 void LLMService::addAPI(LLMAPIEntry* api)
 {
-    apiEntries_.push_back(api);
+    if (api)
+        apiEntries_.push_back(api);
 }
 
 void LLMService::post(LLMAPIEntry* api, Chat* chat, const QString& content, bool streamed)
