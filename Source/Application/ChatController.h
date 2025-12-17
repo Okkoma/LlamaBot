@@ -46,6 +46,7 @@ signals:
 
 private:
     void checkChatsProcessingFinished();
+    void connectAPIsSignals();
 
     LLMService* service_;
     QList<Chat*> chats_;

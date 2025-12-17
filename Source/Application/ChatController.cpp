@@ -1,4 +1,5 @@
 #include "ChatController.h"
+
 #include <QDebug>
 
 ChatController::ChatController(LLMService* service, QObject* parent) :
@@ -46,6 +47,16 @@ void ChatController::checkChatsProcessingFinished()
     {
         qDebug() << "ChatController::checkChatsProcessingFinished ... end loading spinner";
         emit loadingFinished();
+    }
+}
+
+void ChatController::connectAPIsSignals()
+{
+    const std::vector<LLMAPIEntry*>& apiList = service_->getAPIs();
+    for (LLMAPIEntry* api : apiList)
+    {
+        QObject::connect(api, SIGNAL(modelLoadingStarted(const QString&)), this, SIGNAL(loadingStarted()));
+        QObject::connect(api, SIGNAL(modelLoadingFinished(const QString&, bool)), this, SIGNAL(loadingFinished()));
     }
 }
 
@@ -176,6 +187,8 @@ void ChatController::setModel(const QString& modelName)
 {
     if (currentChat_)
     {
+        qDebug() << "ChatController::setModel" << modelName;
+
         currentChat_->setModel(modelName);
         emit currentChatChanged(); // Notify to update UI
     }
@@ -185,8 +198,12 @@ void ChatController::setAPI(const QString& apiName)
 {
     if (currentChat_)
     {
+        qDebug() << "ChatController::setAPI" << apiName;
+
         currentChat_->setApi(apiName);
         emit currentChatChanged();     // Notify to update UI
         emit availableModelsChanged(); // Notify that available models list has changed
+
+        connectAPIsSignals();
     }
 }

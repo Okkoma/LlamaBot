@@ -82,6 +82,8 @@ private:
 
 class LlamaCppService : public LLMAPIEntry
 {
+    Q_OBJECT
+
 public:
     LlamaCppService(LLMService* service, const QString& name);
     LlamaCppService(const QVariantMap& params);

@@ -12,6 +12,8 @@
 #include <QMutex>
 #include <QWaitCondition>
 #include <QThread>
+#include <QFuture>
+#include <QtConcurrent/QtConcurrent>
 #include <atomic>
 #include <qdebug.h>
 
@@ -692,20 +694,27 @@ void LlamaCppService::setModel(Chat* chat, QString modelName)
 
     if (!modelName.isEmpty() && (!data->model_ || modelName != data->model_->modelName_))
     {
-        clearData(data);
+        emit modelLoadingStarted(modelName);
 
-        LlamaModelData* model = getModel(modelName);
-        if (!model || !model->model_)
-        {
-            model = addModel(modelName, 99);
-            if (!model)
+        QFuture<LlamaModelData*> future =
+            QtConcurrent::run([this, data, modelName]()  
             {
-                qWarning() << "LlamaCppApi::setModel: no model" << modelName;
-                return;
-            }
-        }
-
-        initializeData(data, model);
+                clearData(data);
+            })
+            .then([this, data, modelName]() 
+            {
+                LlamaModelData* model = this->getModel(modelName);
+                if (!model || !model->model_)                        
+                    model = this->addModel(modelName, 99);
+                
+                return model;
+            })
+            .then([this, data, modelName](LlamaModelData* model) 
+            {
+                initializeData(data, model);
+                emit modelLoadingFinished(modelName, true);
+                return model;                
+            });
     }
 }
 

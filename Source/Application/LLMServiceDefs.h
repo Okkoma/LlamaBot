@@ -43,8 +43,10 @@ public:
     QString filePath_;
 };
 
-class LLMAPIEntry
+class LLMAPIEntry : public QObject
 {
+    Q_OBJECT
+    
 public:
     using LLMAPIFactory = std::function<LLMAPIEntry* (const QVariantMap& params)>;
     template<typename T> static void registerService(int type)
@@ -80,6 +82,10 @@ public:
     LLMService* service_;
     int type_;
     QString name_; 
+
+signals:
+    void modelLoadingStarted(const QString& modelName);
+    void modelLoadingFinished(const QString& modelName, bool success);
 
 private:
     static std::unordered_map<int, LLMAPIFactory> factories_;
