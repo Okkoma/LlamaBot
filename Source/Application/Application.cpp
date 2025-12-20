@@ -1,7 +1,7 @@
 #include <QCommandLineParser>
 #include <QDebug>
 #include <QDir>
-
+#include <QIcon>
 #include <QQmlApplicationEngine>
 #include <QQmlContext>
 
@@ -75,8 +75,6 @@ Application::Application(int& argc, char** argv) :
 
 Application::~Application()
 {
-    // Critical: Destroy QML engine BEFORE services_ is destroyed
-    // Otherwise QML will try to access destroyed C++ objects
     if (qmlEngine_)
     {
         // Clear the context property to prevent QML from accessing chatController during shutdown
@@ -86,8 +84,4 @@ Application::~Application()
         delete qmlEngine_;
         qmlEngine_ = nullptr;
     }
-
-    delete themeManager_;
-    // chatController_ will be deleted automatically as it's parented to 'this'
-    // services_ will be destroyed after this destructor completes
 }
