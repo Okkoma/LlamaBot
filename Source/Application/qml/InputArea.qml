@@ -1,7 +1,6 @@
 import QtQuick
 import QtQuick.Controls
 import QtQuick.Layouts
-import QtQuick.Controls.Material
 
 Item {
     id: rootItem
@@ -9,10 +8,8 @@ Item {
     Rectangle {
         id: bgRect
         anchors.fill: parent
-        color: Material.background
+        color: "transparent"
     }
-
-    Material.theme: application ? (application.currentTheme === "Dark" ? Material.Dark : Material.Light) : Material.Dark
 
     signal accepted(string text)
     
@@ -28,6 +25,7 @@ Item {
             TextArea {
                 id: inputField
                 placeholderText: "Type a message..."
+                color: themeManager.color("text")
                 wrapMode: Text.Wrap
                 selectByMouse: true
                 hoverEnabled: false
@@ -46,12 +44,26 @@ Item {
         
         Button {
             id: sendBtn
+            palette {
+                buttonText: themeManager.color("buttonText")
+                button: themeManager.color("button")
+            }             
             text: "Send"
             enabled: inputField.text.trim().length > 0
             onClicked: {
                 parent.parent.accepted(inputField.text)
                 inputField.clear()
             }
+        }
+    }
+
+    // Add connection to themeManager to listen for theme changes
+    Connections {
+        target: themeManager
+        function onDarkModeChanged() {
+            inputField.color = themeManager.color("text")
+            sendBtn.palette.buttonText = themeManager.color("buttonText")
+            sendBtn.palette.button = themeManager.color("button")
         }
     }
 }

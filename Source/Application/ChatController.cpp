@@ -7,6 +7,10 @@ ChatController::ChatController(LLMService* service, QObject* parent) :
 {
     // Create the first chat
     createChat();
+
+    const std::vector<LLMAPIEntry*>& apiList = service_->getAPIs();
+    if (apiList.size() && apiList.front())
+        setAPI(apiList.front()->name_);
 }
 
 ChatController::~ChatController()

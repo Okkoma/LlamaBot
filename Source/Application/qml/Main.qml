@@ -1,23 +1,25 @@
 import QtQuick
 import QtQuick.Controls
 import QtQuick.Layouts
+
 import QtQuick.Controls.Material
+import QtQuick.Controls.Universal
 
 ApplicationWindow {
+    Material.theme: themeManager.darkMode ? Material.Dark : Material.Light
+    Universal.theme: themeManager.darkMode ? Universal.Dark : Universal.Light
+
     id: window
     visible: true
     width: 1000
     height: 800
     title: qsTr("ChatBot QML")
 
-    Material.theme: application && application.currentTheme === "Dark" ? Material.Dark : Material.Light
-    Material.accent: Material.Teal
-    
     // Listen to theme changes
     Connections {
-        target: application
-        function onThemeChanged(theme) {
-            console.log("Theme changed in QML:", theme)
+        target: themeManager
+        function onThemeChanged() {
+            console.log("Theme changed in QML:", themeManager.currentTheme);
         }
     }
 
@@ -55,7 +57,7 @@ ApplicationWindow {
                 
                 Label {
                     text: "API:"
-                    color: "white"
+                    color: themeManager.color("text")
                 }
                 
                 APISelector {
@@ -64,7 +66,7 @@ ApplicationWindow {
                 
                 Label {
                     text: "Model:"
-                    color: "white"
+                    color: themeManager.color("text")
                 }
                 
                 ModelSelector {
@@ -101,14 +103,15 @@ ApplicationWindow {
                         }
                         MenuSeparator {}
                         MenuItem {
-                            text: application && application.currentTheme === "Dark" ? "☀ Light Theme" : "🌙 Dark Theme"
+                            text: themeManager.darkMode ? "☀ Light Theme" : "🌙 Dark Theme"
                             onTriggered: {
-                                if (application) {
-                                    application.setTheme(application.currentTheme === "Dark" ? "Light" : "Dark")
-                                }
+                                themeManager.setDarkMode(!themeManager.darkMode)
                             }
                         }
-                        MenuItem { text: "Settings" }
+                        MenuItem {
+                            text: "Settings"
+                            onTriggered: settingsDialog.open()
+                        }
                         MenuItem { text: "About" }
                     }
                 }
@@ -120,7 +123,7 @@ ApplicationWindow {
             Layout.fillHeight: true
         }
     }
-    
+
     // Model Store Dialog
     Dialog {
         id: modelStoreDialog
@@ -144,5 +147,10 @@ ApplicationWindow {
                 }
             }
         }
+    }
+
+    // Settings Dialog
+    SettingsDialog {
+        id: settingsDialog
     }
 }

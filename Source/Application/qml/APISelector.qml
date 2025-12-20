@@ -22,12 +22,11 @@ ComboBox {
             Label {
                 text: modelData.name
                 font.bold: true
-                color: "white"
                 anchors.verticalCenter: parent.verticalCenter
             }
             Label {
                 text: modelData.ready ? "●" : "○"
-                color: modelData.ready ? "#4CAF50" : "#F44336"
+                color: modelData.ready ? themeManager.color("borderEnabled") : themeManager.color("borderDisabled")
                 font.pixelSize: 16
                 anchors.verticalCenter: parent.verticalCenter
             }

@@ -1,12 +1,6 @@
 #include <QCommandLineParser>
 #include <QDebug>
 #include <QDir>
-#include <QEvent>
-#include <QKeyEvent>
-#include <QProcess>
-#include <QRegularExpression>
-#include <QSettings>
-#include <QStyle>
 
 #include <QQmlApplicationEngine>
 #include <QQmlContext>
@@ -15,12 +9,11 @@
 #include "ChatController.h"
 #include "LLMService.h"
 #include "OllamaModelStoreDialog.h"
+#include "ThemeManager.h"
 
-// #include "MainWindow.h"
 
 Application::Application(int& argc, char** argv) :
     QApplication(argc, argv),
-    window_(nullptr),
     qmlEngine_(nullptr),
     chatController_(nullptr),
     modelStoreDialog_(nullptr),
@@ -29,6 +22,11 @@ Application::Application(int& argc, char** argv) :
     setApplicationName("ChatBot");
     setApplicationVersion("0.1.0");
 
+    // Set application icon
+    QIcon appIcon("qrc:/icons/icon1.png");
+    setWindowIcon(appIcon);
+    setDesktopFileName("chatbot");
+
     QDir::setCurrent(applicationDirPath());
 
     QCommandLineParser parser;
@@ -36,6 +34,9 @@ Application::Application(int& argc, char** argv) :
     parser.addHelpOption();
     parser.addVersionOption();
     parser.process(*this);
+
+    // Initialize ThemeManager
+    themeManager_ = new ThemeManager(this);
 
     // Initialize Controller
     chatController_ = new ChatController(ApplicationServices::get<LLMService>(), this);
@@ -53,6 +54,7 @@ Application::Application(int& argc, char** argv) :
     qmlEngine_->rootContext()->setContextProperty("chatController", chatController_);
     qmlEngine_->rootContext()->setContextProperty("ollamaModelStoreDialog", modelStoreDialog_);
     qmlEngine_->rootContext()->setContextProperty("application", this);
+    qmlEngine_->rootContext()->setContextProperty("themeManager", themeManager_);
 
     // Load Main.qml
     const QUrl url(QStringLiteral("qrc:/ressources/Main.qml"));
@@ -69,14 +71,6 @@ Application::Application(int& argc, char** argv) :
         Qt::QueuedConnection);
 
     qmlEngine_->load(url);
-
-    // Legacy Widget Initialization (Disabled)
-    /*
-    window_ = new MainWindow();
-    loadSettings();
-    setFont(currentFont_);
-    window_->show();
-    */
 }
 
 Application::~Application()
@@ -93,56 +87,7 @@ Application::~Application()
         qmlEngine_ = nullptr;
     }
 
+    delete themeManager_;
     // chatController_ will be deleted automatically as it's parented to 'this'
     // services_ will be destroyed after this destructor completes
-}
-
-void Application::ApplyStyle(const QString& style)
-{
-    // Legacy support
-    qDebug() << "Application::ApplyStyle deprecated:" << style;
-}
-
-void Application::setFont(const QFont& font)
-{
-    qDebug() << "Application::setFont deprecated:" << font;
-    currentFont_ = font;
-    QApplication::setFont(font);
-}
-
-void Application::setStyleName(const QString& styleName)
-{
-    currentStyleName_ = styleName;
-}
-
-QString Application::styleName() const
-{
-    return currentStyleName_;
-}
-
-void Application::saveSettings()
-{
-    // Port to QSettings compatible with QML if needed
-}
-
-void Application::loadSettings() {}
-
-void Application::setTheme(const QString& theme)
-{
-    if (theme == "Dark" || theme == "Light")
-    {
-        currentTheme_ = theme;
-        emit themeChanged(theme);
-        qDebug() << "Theme changed to:" << theme;
-    }
-}
-
-QString Application::currentTheme() const
-{
-    return currentTheme_;
-}
-
-bool Application::eventFilter(QObject* obj, QEvent* event)
-{
-    return QApplication::eventFilter(obj, event);
 }

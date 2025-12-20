@@ -1,7 +1,6 @@
 import QtQuick
 import QtQuick.Controls
 import QtQuick.Layouts
-import QtQuick.Controls.Material
 
 Item {
     id: root
@@ -26,11 +25,9 @@ Item {
         spacing: 10
         
         Rectangle {
+            id: userframe
             width: 40; height: 40; radius: 20
-            color: {
-                var isDark = application ? (application.currentTheme === "Dark") : true;
-                return isUser ? (isDark ? Material.color(Material.Grey, Material.Shade700) : Material.color(Material.Grey, Material.Shade400)) : Material.accent;
-            }
+            color: isUser ? themeManager.color("borderEnabled") : themeManager.color("borderDisabled")
             Layout.alignment: Qt.AlignTop
             Label {
                 anchors.centerIn: parent
@@ -44,14 +41,7 @@ Item {
             Layout.maximumWidth: root.width * 0.95
             Layout.preferredWidth: bubbleWidth()
             Layout.preferredHeight: msgText.implicitHeight + 20
-            color: {
-                var isDark = application ? (application.currentTheme === "Dark") : true;
-                if (isUser) {
-                    return isDark ? Material.color(Material.Grey, Material.Shade800) : Material.color(Material.Grey, Material.Shade200);
-                } else {
-                    return isDark ? Material.color(Material.Grey, Material.Shade900) : Material.color(Material.Grey, Material.Shade100);
-                }
-            }
+            color: isUser ? themeManager.color("borderEnabled") : themeManager.color("borderDisabled")
             radius: 10
             
             Item {
@@ -65,7 +55,7 @@ Item {
                     anchors.verticalCenter: parent.verticalCenter
                     height: implicitHeight
                     text: messageData ? messageData.content : ""
-                    color: Material.foreground
+                    color: themeManager.color("text")
                     wrapMode: TextEdit.Wrap
                     textFormat: TextEdit.MarkdownText
                     selectByMouse: true
@@ -81,4 +71,14 @@ Item {
         
         Item { Layout.fillWidth: true } // Spacer
     }
+
+    // Add connection to themeManager to listen for theme changes
+    Connections {
+        target: themeManager
+        function onDarkModeChanged() {
+            userframe.color = isUser ? themeManager.color("borderEnabled") : themeManager.color("borderDisabled")
+            bubble.color = isUser ? themeManager.color("borderEnabled") : themeManager.color("borderDisabled")
+            msgText.color = themeManager.color("text")
+        }
+    }    
 }

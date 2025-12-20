@@ -1,18 +1,18 @@
 import QtQuick
 import QtQuick.Controls
 import QtQuick.Layouts
-import QtQuick.Controls.Material
 
 
 Rectangle {
     id: root
     width: 600
     height: 800
-    color: Material.background
-
-    Material.theme: application ? (application.currentTheme === "Dark" ? Material.Dark : Material.Light) : Material.Dark
+    color: themeManager.color("window")
 
     signal closeRequested()
+
+    // Property to force delegate refresh
+    property int themeRefresh: 0
 
     ColumnLayout {
         anchors.fill: parent
@@ -20,15 +20,18 @@ Rectangle {
         spacing: 15
 
         Label {
+            id: titleLabel
             text: "Ollama models Store"
             font.pixelSize: 24
             font.bold: true
             Layout.alignment: Qt.AlignHCenter
+            color: themeManager.color("text")
         }
 
         TextField {
             id: searchField
             placeholderText: "Model Name (e.g. llama3, phi3:medium)"
+            color: themeManager.color("text")
             Layout.fillWidth: true
             onAccepted: fetchBtn.clicked()
         }
@@ -37,6 +40,10 @@ Rectangle {
             id: fetchBtn
             text: "Fetch Manifest"
             Layout.fillWidth: true
+            palette {
+                buttonText: themeManager.color("buttonText")
+                button: themeManager.color("button")
+            }
             onClicked: {
                 if (searchField.text === "") return
                 statusLabel.text = "Fetching manifest for " + searchField.text + "..."
@@ -70,13 +77,33 @@ Rectangle {
             Layout.fillHeight: true
             model: modelsModel
             clip: true
-            spacing: 5
+            spacing: 5            
+
             delegate: ItemDelegate {
+                id: modelDelegate
                 width: modelListView.width
-                text: model.name + " (" + (model.digest ? model.digest.substring(0, 7) : "Select to fetch") + ")"
+
+                // Property to force refresh when theme changes
+                property int themeDependency: root.themeRefresh
+
+                background: Rectangle {
+                    color: modelListView.isCurrentItem ? themeManager.color("borderEnabled") : (modelDelegate.hovered ? themeManager.color("borderDisabled") : "transparent")
+                }
+
+                contentItem: Text {
+                    id: delegateText
+                    text: model.name + " (" + (model.digest ? model.digest.substring(0, 7) : "Select to fetch") + ")"
+                    color: themeManager.color("text")
+                }
+
                 onClicked: {
                     searchField.text = model.name
                     fetchBtn.clicked()
+                }
+
+                // Force color update when theme changes
+                onThemeDependencyChanged: {
+                    delegateText.color = themeManager.color("text");
                 }
             }
         }
@@ -86,6 +113,7 @@ Rectangle {
             text: "Ready to search."
             wrapMode: Text.Wrap
             Layout.fillWidth: true
+            color: themeManager.color("text")
         }
 
         ProgressBar {
@@ -102,6 +130,10 @@ Rectangle {
             property string digest: ""
             property string modelName: ""
             Layout.fillWidth: true
+            palette {
+                buttonText: themeManager.color("buttonText")
+                button: themeManager.color("button")
+            }
             onClicked: {
                 if (digest === "") return
                 // Determine save path: AppData Location
@@ -131,8 +163,13 @@ Rectangle {
         Item { Layout.fillHeight: true } // Spacer
         
         Button {
+            id: closeBtn
             text: "Close"
             Layout.fillWidth: true
+            palette {
+                buttonText: themeManager.color("buttonText")
+                button: themeManager.color("button")
+            }
             onClicked: root.closeRequested()
         }
     }
@@ -156,6 +193,27 @@ Rectangle {
         function onDownloadFinished(success, message) {
             statusLabel.text = success ? "Download Complete! Saved to: " + message : "Failed: " + message
             downloadBar.visible = false
+        }
+    }
+
+    // Add connection to themeManager to listen for theme changes
+    Connections {
+        target: themeManager
+        function onDarkModeChanged() {
+            // Update colors for static elements
+            root.color = themeManager.color("window");
+            titleLabel.color = themeManager.color("text");
+            searchField.color = themeManager.color("text");
+            fetchBtn.palette.buttonText = themeManager.color("buttonText");
+            fetchBtn.palette.button = themeManager.color("button");
+            downloadBtn.palette.buttonText = themeManager.color("buttonText");
+            downloadBtn.palette.button = themeManager.color("button");
+            closeBtn.palette.buttonText = themeManager.color("buttonText");
+            closeBtn.palette.button = themeManager.color("button");        
+            statusLabel.color = themeManager.color("text");
+
+            // Force delegates to refresh by incrementing the dependency property
+            root.themeRefresh++;
         }
     }
 }

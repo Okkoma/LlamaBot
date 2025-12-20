@@ -23,12 +23,12 @@ ComboBox {
             Label {
                 text: modelData.name
                 font.bold: true
-                color: "white"
+                color: themeManager.color("text")
             }
             Label {
                 text: modelData.params || "Unknown size"
                 font.pixelSize: 10
-                color: "#aaa"
+                color: themeManager.color("text")
             }
         }
         highlighted: modelSelector.highlightedIndex === index

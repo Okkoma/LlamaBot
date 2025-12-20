@@ -1,17 +1,21 @@
 <RCC>
+  <qresource prefix="images">
+    <file alias="LoadingSpinner.png">images/LoadingSpinner.png</file>
+  </qresource>
+  <qresource prefix="icons">
+    <file alias="icon1.png">../../bin/data/images/icon1.png</file>
+    <file alias="icon2.png">../../bin/data/images/icon2.png</file>
+  </qresource>
   <qresource prefix="ressources">
-    <file>material-dark.qss</file>
-    <file>material-light-old.qss</file>
-    <file>material-light-new.qss</file>
-    <file alias="OllamaModelStoreDialog.qml">OllamaModelStoreDialog.qml</file>
-    <file alias="Main.qml">qml/Main.qml</file>
+    <file alias="OllamaModelStoreDialog.qml">qml/OllamaModelStoreDialog.qml</file>
     <file alias="ChatView.qml">qml/ChatView.qml</file>
     <file alias="InputArea.qml">qml/InputArea.qml</file>
     <file alias="MessageDelegate.qml">qml/MessageDelegate.qml</file>
     <file alias="ChatDrawer.qml">qml/ChatDrawer.qml</file>
     <file alias="ModelSelector.qml">qml/ModelSelector.qml</file>
     <file alias="APISelector.qml">qml/APISelector.qml</file>
+    <file alias="SettingsDialog.qml">qml/SettingsDialog.qml</file>
     <file alias="LoadingSpinner.qml">qml/LoadingSpinner.qml</file>
-    <file alias="LoadingSpinner.png">LoadingSpinner.png</file>
+    <file alias="Main.qml">qml/Main.qml</file>    
   </qresource>
 </RCC> 

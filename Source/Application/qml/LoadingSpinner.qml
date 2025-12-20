@@ -6,7 +6,6 @@ Item {
     width: size
     height: size
     property int size: 24
-    property color color: "white"
     visible: false 
 
     signal startLoading()
@@ -15,7 +14,7 @@ Item {
     Image {
         id: spinner
         height: root.size * 0.65
-        source: "qrc:/ressources/LoadingSpinner.png"
+        source: "qrc:/images/LoadingSpinner.png"
         fillMode: Image.PreserveAspectFit
         opacity: 0
         // Centrer l'image       

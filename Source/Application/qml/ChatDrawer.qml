@@ -1,15 +1,18 @@
 import QtQuick
 import QtQuick.Controls
 import QtQuick.Layouts
-import QtQuick.Controls.Material
 
 Drawer {
     id: drawer
     width: 280
     height: parent.height
     edge: Qt.LeftEdge
+    background: Rectangle {
+        color: themeManager.color("window")
+    }
 
-    Material.theme: application ? (application.currentTheme === "Dark" ? Material.Dark : Material.Light) : Material.Dark
+    // Property to force delegate refresh
+    property int themeRefresh: 0
 
     ColumnLayout {
         anchors.fill: parent
@@ -17,14 +20,21 @@ Drawer {
         spacing: 10
 
         Label {
+            id: convers
             text: "Conversations"
+            color: themeManager.color("text")
             font.pixelSize: 18
             font.bold: true
             Layout.fillWidth: true
         }
 
         Button {
+            id: chatBtn
             text: "+ New Chat"
+            palette {
+                buttonText: themeManager.color("buttonText")
+                button: themeManager.color("button")
+            }            
             Layout.fillWidth: true
             onClicked: {
                 if (chatController)
@@ -47,9 +57,11 @@ Drawer {
 
                 property var chatData: modelData
                 property bool isCurrent: chatController && chatController.currentChatIndex === chatData.index
+                // Property to force refresh when theme changes
+                property int themeDependency: drawer.themeRefresh
 
                 background: Rectangle {
-                    color: isCurrent ? Material.accent : (parent.hovered ? Material.listHighlightColor : "transparent")
+                    color: isCurrent ? themeManager.color("borderEnabled") : (parent.hovered ? themeManager.color("borderDisabled") : "transparent")
                     radius: 5
                 }
 
@@ -57,17 +69,26 @@ Drawer {
                     spacing: 2
 
                     Label {
+                        id: chatNameLabel
                         text: chatData.name
+                        color: themeManager.color("text")
                         font.bold: isCurrent
                         Layout.fillWidth: true
                     }
 
                     Label {
+                        id: chatModelLabel
                         text: chatData.model + " • " + chatData.messageCount + " messages"
+                        color: themeManager.color("text")
                         font.pixelSize: 10
-                        color: Material.hintTextColor
                         Layout.fillWidth: true
                     }
+                }
+                
+                // Force color update when theme changes
+                onThemeDependencyChanged: {
+                    chatNameLabel.color = themeManager.color("text")
+                    chatModelLabel.color = themeManager.color("text")
                 }
 
                 onClicked: {
@@ -97,5 +118,19 @@ Drawer {
             }
         }
     }
-}
 
+    // Add connection to themeManager to listen for theme changes
+    Connections {
+        target: themeManager
+        function onDarkModeChanged() {
+            // Update colors for static elements
+            drawer.background.color = themeManager.color("window")
+            convers.color = themeManager.color("text")
+            chatBtn.palette.buttonText = themeManager.color("buttonText")
+            chatBtn.palette.button = themeManager.color("button")
+            
+            // Force delegates to refresh by incrementing the dependency property
+            drawer.themeRefresh++
+        }
+    }
+}
