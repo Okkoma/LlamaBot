@@ -14,6 +14,7 @@ Chat::Chat(LLMService* service, const QString& name, const QString& initialPromp
     QObject(parent),
     service_(service),
     streamed_(streamed),
+    processing_(false),
     lastBotIndex_(-1),
     name_(name),
     currentApi_("none"),
