@@ -45,6 +45,9 @@ signals:
     void loadingFinished();
 
 private:
+    void saveChats();
+    void loadChats();
+    QString getChatsFilePath() const;
     void checkChatsProcessingFinished();
     void connectAPIsSignals();
 

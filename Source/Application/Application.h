@@ -7,6 +7,7 @@
 
 class QQmlApplicationEngine;
 class ChatController;
+class Clipboard;
 class OllamaModelStoreDialog;
 class ThemeManager;
 
@@ -18,11 +19,11 @@ public:
     explicit Application(int& argc, char** argv);
     ~Application() override;
 
-
 private:
     QQmlApplicationEngine* qmlEngine_;
     ChatController* chatController_;
     OllamaModelStoreDialog* modelStoreDialog_;
     ApplicationServices services_;
     ThemeManager* themeManager_;
+    Clipboard* clipboard_;
 };

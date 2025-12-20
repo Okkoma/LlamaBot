@@ -24,6 +24,7 @@ set(PROJECT_SOURCES
         Chat.cpp Chat.h
         ChatController.h ChatController.cpp
         ThemeManager.h ThemeManager.cpp
+        Clipboard.h
 )
 
 qt_add_resources(PROJECT_SOURCES ressources.qrc)

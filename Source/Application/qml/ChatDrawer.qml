@@ -114,6 +114,40 @@ Drawer {
                                 chatController.deleteChat(chatData.index)
                         }
                     }
+                    MenuSeparator {}                    
+                    Menu {
+                        title: "Copy Chat to Clipboard"
+                        MenuItem {
+                            text: "Full Conversation"
+                            enabled: chatController && chatController.currentChat && chatController.currentChat.history.length > 0
+                            onTriggered: {
+                                if (chatController && chatController.currentChat) {
+                                    var text = chatController.currentChat.getFullConversation()
+                                    clipboard.setText(text)
+                                }
+                            }
+                        }
+                        MenuItem {
+                            text: "User Prompts Only"
+                            enabled: chatController && chatController.currentChat && chatController.currentChat.history.length > 0
+                            onTriggered: {
+                                if (chatController && chatController.currentChat) {
+                                    var text = chatController.currentChat.getUserPrompts()
+                                    clipboard.setText(text)
+                                }
+                            }
+                        }
+                        MenuItem {
+                            text: "Bot Responses Only"
+                            enabled: chatController && chatController.currentChat && chatController.currentChat.history.length > 0
+                            onTriggered: {
+                                if (chatController && chatController.currentChat) {
+                                    var text = chatController.currentChat.getBotResponses()
+                                    clipboard.setText(text)
+                                }
+                            }
+                        }
+                    }
                 }
             }
         }

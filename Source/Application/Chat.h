@@ -48,6 +48,15 @@ public:
     void updateCurrentAIStream(const QString& text);
     void updateObject();
 
+    // Serialization
+    QJsonObject toJson() const;
+    void fromJson(const QJsonObject& json);
+
+    // Export Helpers
+    Q_INVOKABLE QString getFullConversation() const;
+    Q_INVOKABLE QString getUserPrompts() const;
+    Q_INVOKABLE QString getBotResponses() const;
+
     void setProcessing(bool processing);
 
     bool isProcessing() const { return processing_; }

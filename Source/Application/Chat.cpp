@@ -1,4 +1,7 @@
+#include <QCommandLineParser>
 #include <QDebug>
+#include <QJsonArray>
+#include <QJsonObject>
 
 #include "Chat.h"
 #include "LLMService.h"
@@ -19,12 +22,12 @@ Chat::Chat(LLMService* service, const QString& name, const QString& initialPromp
     name_(name),
     currentApi_("none"),
     currentModel_("none"),
-    userPrompt_("🧑 >"),
-    aiPrompt_("🤖 >")
+    aiPrompt_("🤖 >"),
+    initialContext_(initialPrompt)
 {
     initialize();
 
-    rawMessages_ = !initialPrompt.isEmpty() ? initialPrompt : rawDefaultInitialPrompt;
+    rawMessages_ = !initialContext_.isEmpty() ? initialContext_ : rawDefaultInitialPrompt;
 }
 
 void Chat::initialize()
@@ -192,7 +195,7 @@ void Chat::updateCurrentAIStream(const QString& text)
 void Chat::setProcessing(bool processing)
 {
     processing_ = processing;
-    if (processing) 
+    if (processing)
         emit processingStarted();
     else
         emit processingFinished();
@@ -224,4 +227,109 @@ QVariantList Chat::historyList() const
         list.append(map);
     }
     return list;
+}
+
+QJsonObject Chat::toJson() const
+{
+    QJsonObject json;
+    json["name"] = name_;
+    json["api"] = currentApi_;
+    json["model"] = currentModel_;
+    json["stream"] = streamed_;
+    json["userPrompt"] = userPrompt_;
+    json["aiPrompt"] = aiPrompt_;
+    json["systemPrompt"] = initialContext_;
+
+    QJsonArray historyArray;
+    for (const auto& msg : history_)
+    {
+        QJsonObject msgObj;
+        msgObj["role"] = msg.role;
+        msgObj["content"] = msg.content;
+        historyArray.append(msgObj);
+    }
+    json["history"] = historyArray;
+    return json;
+}
+
+void Chat::fromJson(const QJsonObject& json)
+{
+    name_ = json["name"].toString();
+    QString api = json["api"].toString();
+    QString model = json["model"].toString();
+
+    if (!api.isEmpty())
+        currentApi_ = api;
+    if (!model.isEmpty())
+        currentModel_ = model;
+
+    streamed_ = json["stream"].toBool(true);
+    userPrompt_ = json["userPrompt"].toString("🧑 >");
+    aiPrompt_ = json["aiPrompt"].toString("🤖 >");
+    initialContext_ = json["systemPrompt"].toString();
+
+    history_.clear();
+    QJsonArray historyArray = json["history"].toArray();
+    for (const auto& val : historyArray)
+    {
+        QJsonObject msgObj = val.toObject();
+        history_.append({ msgObj["role"].toString(), msgObj["content"].toString() });
+    }
+
+    // Reconstruct messages for UI
+    messages_.clear();
+    if (!initialContext_.isEmpty())
+        rawMessages_ = initialContext_;
+    else
+        rawMessages_ = rawDefaultInitialPrompt;
+
+    for (const auto& msg : history_)
+    {
+        bool isUser = (msg.role == "user");
+        messages_.append(QString("%1 %2\n").arg(isUser ? userPrompt_ : aiPrompt_, msg.content));
+
+        if (service_)
+        {
+            LLMAPIEntry* apiEntry = service_->get(currentApi_);
+            rawMessages_ += apiEntry ? apiEntry->formatMessage(this, msg.role, msg.content) : msg.content + "\n";
+        }
+    }
+
+    emit historyChanged();
+    emit messagesChanged();
+    emit currentApiChanged();
+    emit currentModelChanged();
+}
+
+QString Chat::getFullConversation() const
+{
+    QString result;
+    for (const auto& msg : history_)
+    {
+        QString roleName = (msg.role == "user") ? "USER" : "AI";
+        result += QString("[%1]:\n%2\n\n").arg(roleName, msg.content);
+    }
+    return result.trimmed();
+}
+
+QString Chat::getUserPrompts() const
+{
+    QString result;
+    for (const auto& msg : history_)
+    {
+        if (msg.role == "user")
+            result += msg.content + "\n\n";
+    }
+    return result.trimmed();
+}
+
+QString Chat::getBotResponses() const
+{
+    QString result;
+    for (const auto& msg : history_)
+    {
+        if (msg.role == "assistant")
+            result += msg.content + "\n\n";
+    }
+    return result.trimmed();
 }

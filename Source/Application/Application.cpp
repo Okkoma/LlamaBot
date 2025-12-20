@@ -7,17 +7,13 @@
 
 #include "Application.h"
 #include "ChatController.h"
+#include "Clipboard.h"
 #include "LLMService.h"
 #include "OllamaModelStoreDialog.h"
 #include "ThemeManager.h"
 
-
 Application::Application(int& argc, char** argv) :
-    QApplication(argc, argv),
-    qmlEngine_(nullptr),
-    chatController_(nullptr),
-    modelStoreDialog_(nullptr),
-    services_(this)
+    QApplication(argc, argv), qmlEngine_(nullptr), chatController_(nullptr), modelStoreDialog_(nullptr), services_(this)
 {
     setApplicationName("ChatBot");
     setApplicationVersion("0.1.0");
@@ -38,6 +34,9 @@ Application::Application(int& argc, char** argv) :
     // Initialize ThemeManager
     themeManager_ = new ThemeManager(this);
 
+    // Initialize Clipboard
+    clipboard_ = new Clipboard(this);
+
     // Initialize Controller
     chatController_ = new ChatController(ApplicationServices::get<LLMService>(), this);
 
@@ -55,6 +54,7 @@ Application::Application(int& argc, char** argv) :
     qmlEngine_->rootContext()->setContextProperty("ollamaModelStoreDialog", modelStoreDialog_);
     qmlEngine_->rootContext()->setContextProperty("application", this);
     qmlEngine_->rootContext()->setContextProperty("themeManager", themeManager_);
+    qmlEngine_->rootContext()->setContextProperty("clipboard", clipboard_);
 
     // Load Main.qml
     const QUrl url(QStringLiteral("qrc:/ressources/Main.qml"));

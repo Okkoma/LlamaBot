@@ -1,16 +1,30 @@
 #include "ChatController.h"
 
 #include <QDebug>
+#include <QDir>
+#include <QFile>
+#include <QJsonArray>
+#include <QJsonDocument>
+#include <QJsonObject>
+#include <QStandardPaths>
 
 ChatController::ChatController(LLMService* service, QObject* parent) :
     QObject(parent), service_(service), currentChat_(nullptr), chatCounter_(0)
 {
-    // Create the first chat
-    createChat();
+    // Try to load existing chats
+    loadChats();
+
+    // specific case for first run
+    if (chats_.isEmpty())
+        createChat();
 
     const std::vector<LLMAPIEntry*>& apiList = service_->getAPIs();
     if (apiList.size() && apiList.front())
-        setAPI(apiList.front()->name_);
+    {
+        // If loaded chats have no API set (or were created from scratch), set default
+        if (currentChat_ && currentChat_->currentApi() == "none")
+            setAPI(apiList.front()->name_);
+    }
 }
 
 ChatController::~ChatController()
@@ -38,7 +52,7 @@ int ChatController::currentChatIndex() const
     return chats_.indexOf(currentChat_);
 }
 
-void ChatController::checkChatsProcessingFinished() 
+void ChatController::checkChatsProcessingFinished()
 {
     int count = 0;
     for (Chat* chat : chats_)
@@ -51,6 +65,7 @@ void ChatController::checkChatsProcessingFinished()
     {
         qDebug() << "ChatController::checkChatsProcessingFinished ... end loading spinner";
         emit loadingFinished();
+        saveChats();
     }
 }
 
@@ -74,7 +89,10 @@ void ChatController::createChat()
     currentChat_ = chat;
 
     QObject::connect(chat, &Chat::processingFinished, this, &ChatController::checkChatsProcessingFinished);
-    
+
+    // Save new chat creation
+    saveChats();
+
     emit chatListChanged();
     emit currentChatChanged();
 }
@@ -84,7 +102,7 @@ void ChatController::switchToChat(int index)
     if (index >= 0 && index < chats_.size())
     {
         if (currentChat_ != chats_[index])
-        {           
+        {
             currentChat_ = chats_[index];
 
             emit currentChatChanged();
@@ -98,7 +116,8 @@ void ChatController::deleteChat(int index)
     {
         Chat* chatToRemove = chats_[index];
 
-        QObject::disconnect(chatToRemove, &Chat::processingFinished, this, &ChatController::checkChatsProcessingFinished);
+        QObject::disconnect(
+            chatToRemove, &Chat::processingFinished, this, &ChatController::checkChatsProcessingFinished);
 
         chats_.removeAt(index);
 
@@ -116,6 +135,7 @@ void ChatController::deleteChat(int index)
         }
 
         chatToRemove->deleteLater();
+        saveChats();
         emit chatListChanged();
     }
 }
@@ -125,6 +145,7 @@ void ChatController::renameChat(int index, const QString& name)
     if (index >= 0 && index < chats_.size())
     {
         chats_[index]->name_ = name;
+        saveChats();
         emit chatListChanged();
     }
 }
@@ -147,7 +168,7 @@ void ChatController::stopGeneration()
 {
     if (currentChat_)
     {
-        service_->stopStream(currentChat_);        
+        service_->stopStream(currentChat_);
     }
 }
 
@@ -209,5 +230,85 @@ void ChatController::setAPI(const QString& apiName)
         emit availableModelsChanged(); // Notify that available models list has changed
 
         connectAPIsSignals();
+    }
+}
+
+QString ChatController::getChatsFilePath() const
+{
+    QString dataLocation = QStandardPaths::writableLocation(QStandardPaths::AppDataLocation);
+    QDir dir(dataLocation);
+    if (!dir.exists())
+        dir.mkpath(".");
+
+    return dir.filePath("chats.json");
+}
+
+void ChatController::saveChats()
+{
+    QFile file(getChatsFilePath());
+    if (!file.open(QIODevice::WriteOnly))
+    {
+        qWarning() << "Could not open chats file for writing:" << file.fileName();
+        return;
+    }
+
+    QJsonArray array;
+    for (Chat* chat : chats_)
+    {
+        array.append(chat->toJson());
+    }
+
+    QJsonDocument doc(array);
+    file.write(doc.toJson());
+    file.close();
+    qDebug() << "Chats saved to" << file.fileName();
+}
+
+void ChatController::loadChats()
+{
+    QFile file(getChatsFilePath());
+    if (!file.exists() || !file.open(QIODevice::ReadOnly))
+    {
+        return; // existing file not found or couldn't be read
+    }
+
+    QByteArray data = file.readAll();
+    QJsonDocument doc = QJsonDocument::fromJson(data);
+    if (!doc.isArray())
+    {
+        qWarning() << "Invalid chats file format";
+        return;
+    }
+
+    QJsonArray array = doc.array();
+    for (const auto& val : array)
+    {
+        if (val.isObject())
+        {
+            chatCounter_++;
+            // Create chat but don't append to list immediately to avoid signals issues or just do standard creation
+            // then overwrite Actually standard creation connects signals which is good. But standard creation appends
+            // to list. Let's create chat manually here to control initialization from JSON.
+
+            Chat* chat = new Chat(service_, "", "", true, this);
+            chat->fromJson(val.toObject());
+
+            // Ensure unique name handling if needed, but for now trust JSON or just let it be.
+            // If chat name is empty (legacy?), give it a name.
+            if (chat->name_.isEmpty())
+                chat->name_ = QString("Chat %1").arg(chatCounter_);
+
+            chats_.append(chat);
+
+            // Connect signals
+            QObject::connect(chat, &Chat::processingFinished, this, &ChatController::checkChatsProcessingFinished);
+        }
+    }
+
+    if (!chats_.isEmpty())
+    {
+        currentChat_ = chats_.last();
+        emit currentChatChanged();
+        emit chatListChanged();
     }
 }

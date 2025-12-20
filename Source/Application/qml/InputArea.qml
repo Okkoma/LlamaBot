@@ -39,6 +39,27 @@ Item {
                             sendBtn.clicked()
                     }
                 }
+
+                // Custom Context Menu
+                MouseArea {
+                    anchors.fill: parent
+                    acceptedButtons: Qt.RightButton
+                    cursorShape: Qt.IBeamCursor
+                    onClicked: (mouse) => {
+                        if (mouse.button === Qt.RightButton) {
+                            contextMenu.popup()
+                        }
+                    }
+                }
+
+                Menu {
+                    id: contextMenu
+                    MenuItem { text: "Cut"; enabled: inputField.selectedText.length > 0; onTriggered: inputField.cut() }
+                    MenuItem { text: "Copy"; enabled: inputField.selectedText.length > 0; onTriggered: inputField.copy() }
+                    MenuItem { text: "Paste"; enabled: inputField.canPaste; onTriggered: inputField.paste() }
+                    MenuSeparator {}
+                    MenuItem { text: "Select All"; enabled: inputField.length > 0; onTriggered: inputField.selectAll() }
+                }
             }
         }
         
