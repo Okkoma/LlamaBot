@@ -60,6 +60,7 @@ else()
 endif()
 
 add_subdirectory (Source/ThirdParty/llama.cpp)
+add_subdirectory (Source/ThirdParty/poppler)
 add_subdirectory (Source/Application)
 
 if (NOT ANDROID)
@@ -67,6 +68,6 @@ if (NOT ANDROID)
     add_subdirectory (Tests)
 endif()
 
-include_directories (Source/Application Source/ThirdParty/llama.cpp/src)
+include_directories (Source/Application Source/ThirdParty/llama.cpp/src Source/ThirdParty/poppler/qt6/src)
 
 # ajout des headers vulkan directement dans llama.cpp/ggml/ggml-vulkan
