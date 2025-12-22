@@ -25,6 +25,9 @@ set(PROJECT_SOURCES
         ChatController.h ChatController.cpp
         ThemeManager.h ThemeManager.cpp
         Clipboard.h
+        DocumentProcessor.h DocumentProcessor.cpp
+        RAGService.h RAGService.cpp
+        VectorStore.h VectorStore.cpp
 )
 
 qt_add_resources(PROJECT_SOURCES ressources.qrc)
@@ -36,6 +39,7 @@ qt_add_executable(ChatBot MANUAL_FINALIZATION ${PROJECT_SOURCES})
 # For more information, see https://doc.qt.io/qt-6/qt-add-executable.html#target-creation
 
 target_link_libraries(ChatBot PRIVATE Qt6::Core Qt6::Network Qt6::Widgets Qt6::Widgets Qt6::Qml Qt6::Quick Qt6::QuickControls2 llama)
+target_link_libraries(ChatBot PRIVATE poppler-qt6)
 
 # Qt for iOS sets MACOSX_BUNDLE_GUI_IDENTIFIER automatically since Qt 6.1.
 # If you are developing for iOS or macOS you should consider setting an

@@ -46,12 +46,16 @@ public:
 class LLMAPIEntry : public QObject
 {
     Q_OBJECT
-    
+
 public:
-    using LLMAPIFactory = std::function<LLMAPIEntry* (const QVariantMap& params)>;
-    template<typename T> static void registerService(int type)
+    using LLMAPIFactory = std::function<LLMAPIEntry*(const QVariantMap& params)>;
+    template <typename T>
+    static void registerService(int type)
     {
-        factories_[type] = [](const QVariantMap& params) { return new T(params); };
+        factories_[type] = [](const QVariantMap& params)
+        {
+            return new T(params);
+        };
     }
     static LLMAPIEntry* createService(int type, const QVariantMap& params)
     {
@@ -61,7 +65,7 @@ public:
     static LLMAPIEntry* fromJson(LLMService* service, const QJsonObject& obj);
 
     LLMAPIEntry(const QVariantMap& params);
-    LLMAPIEntry(int type, LLMService* service, const QString& name);    
+    LLMAPIEntry(int type, LLMService* service, const QString& name);
     virtual ~LLMAPIEntry();
 
     virtual bool start() { return true; };
@@ -77,11 +81,13 @@ public:
 
     virtual QJsonObject toJson() const = 0;
 
+    virtual std::vector<float> getEmbedding(const QString& text) { return {}; }
+
     virtual std::vector<LLMModel> getAvailableModels() const = 0;
 
     LLMService* service_;
     int type_;
-    QString name_; 
+    QString name_;
 
 signals:
     void modelLoadingStarted(const QString& modelName);

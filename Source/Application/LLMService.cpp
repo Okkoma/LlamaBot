@@ -88,7 +88,7 @@ bool LLMService::saveServiceJsonFile()
     return true;
 }
 
-bool LLMService::isServiceAvailable(LLMEnum::LLMType service) const 
+bool LLMService::isServiceAvailable(LLMEnum::LLMType service) const
 {
     return true;
 }
@@ -262,4 +262,19 @@ void LLMService::stopStream(Chat* chat)
     LLMAPIEntry* api = get(chat->currentApi_);
     if (api)
         api->stopStream(chat);
+}
+
+std::vector<float> LLMService::getEmbedding(const QString& text)
+{
+    // Prefer LlamaCpp
+    for (LLMAPIEntry* api : apiEntries_)
+    {
+        if (api->type_ == LLMEnum::LLMType::LlamaCpp && api->isReady())
+        {
+            std::vector<float> res = api->getEmbedding(text);
+            if (!res.empty())
+                return res;
+        }
+    }
+    return {};
 }

@@ -9,10 +9,10 @@
 #include <QNetworkReply>
 #include <QNetworkRequest>
 
-#include <QMutex>
-#include <QWaitCondition>
-#include <QThread>
 #include <QFuture>
+#include <QMutex>
+#include <QThread>
+#include <QWaitCondition>
 #include <QtConcurrent/QtConcurrent>
 #include <atomic>
 #include <qdebug.h>
@@ -83,11 +83,6 @@ int LlamaGenerateStep(LlamaCppChatData& data, std::vector<llama_token>& prompt_t
     response = QString(buf);
 
     return static_cast<int>(data.tokenId_);
-}
-
-LlamaCppChatData::~LlamaCppChatData()
-{
-    deinitialize();
 }
 
 // Utility function to check available GPU memory
@@ -161,6 +156,11 @@ static void waitForGpuMemoryPurge()
     QThread::msleep(100);
     
     qDebug() << "GPU memory release wait completed";
+}
+
+LlamaCppChatData::~LlamaCppChatData()
+{
+    deinitialize();
 }
 
 void LlamaCppChatData::initialize(LlamaModelData* model)
@@ -270,7 +270,10 @@ void LlamaCppChatData::deinitialize()
 
     for (llama_chat_message& msg : llamaCppChatMessages_)
         free(const_cast<char*>(msg.content));
+
+    tokens_.clear();
     llamaCppChatMessages_.clear();
+    response_.clear();
 }
 
 struct LlamaCppProcessAsync : public LlamaCppProcess
@@ -682,7 +685,10 @@ void LlamaCppService::setModel(Chat* chat, QString modelName)
 {
     LlamaCppChatData* data = getData(chat);
     if (!data)
+    {   
+        qDebug() << "LlamaCppService::setModel ... create data";
         data = createData(chat);
+    }
 
     if (modelName.isEmpty())
     {
@@ -694,10 +700,15 @@ void LlamaCppService::setModel(Chat* chat, QString modelName)
 
     if (!modelName.isEmpty() && (!data->model_ || modelName != data->model_->modelName_))
     {
-        emit modelLoadingStarted(modelName);
+        if (!data->loadingFuture_.isFinished() && data->pendingModelName_ == modelName)
+            return;
 
-        QFuture<LlamaModelData*> future =
-            QtConcurrent::run([this, data, modelName]()  
+        qDebug() << "LlamaCppService::setModel ... start loading model";
+
+        data->pendingModelName_ = modelName;
+        emit modelLoadingStarted(modelName);
+        data->loadingFuture_ = QtConcurrent::run(
+            [this, data, modelName]()
             {
                 clearData(data);
             })
@@ -713,6 +724,8 @@ void LlamaCppService::setModel(Chat* chat, QString modelName)
             {
                 initializeData(data, model);
                 emit modelLoadingFinished(modelName, true);
+
+                qDebug() << "LlamaCppService::setModel ... end loading model";
                 return model;                
             });
     }
@@ -725,9 +738,37 @@ bool LlamaCppService::isReady() const
 
 void LlamaCppService::post(Chat* chat, const QString& content, bool streamed)
 {
+    qDebug() << "LlamaCppService::post ...";
+
     setModel(chat);
 
     LlamaCppChatData* data = getData(chat);
+    if (!data)
+    {
+        qDebug() << "LlamaCppService::post ... no data";
+        return;
+    }
+
+    qDebug() << "LlamaCppService::post ..." 
+             << "loadingFutureIsValid:"   << data->loadingFuture_.isValid() 
+             << "loadingFutureIsFinished" << data->loadingFuture_.isFinished();
+
+    if (!data->loadingFuture_.isFinished())
+    {
+        data->loadingFuture_.then(
+            [this, chat, content, streamed]()
+            {
+                QMetaObject::invokeMethod(
+                    this,
+                    [this, chat, content, streamed]()
+                    {
+                        this->post(chat, content, streamed);
+                    },
+                    Qt::QueuedConnection);
+            });
+        return;
+    }
+
     if (!data || !data->model_)
     {
         qWarning() << "LlamaCppService::post: no data or no model";

@@ -1,5 +1,3 @@
-#include "ChatController.h"
-
 #include <QDebug>
 #include <QDir>
 #include <QFile>
@@ -8,8 +6,14 @@
 #include <QJsonObject>
 #include <QStandardPaths>
 
+#include "ChatController.h"
+
 ChatController::ChatController(LLMService* service, QObject* parent) :
-    QObject(parent), service_(service), currentChat_(nullptr), chatCounter_(0)
+    QObject(parent),
+    service_(service),
+    currentChat_(nullptr),
+    chatCounter_(0),
+    ragService_(new RAG::RAGService(service, this))
 {
     // Try to load existing chats
     loadChats();
@@ -160,7 +164,20 @@ void ChatController::sendMessage(const QString& text)
     {
         qDebug() << "ChatController::sendMessage ... start loading spinner";
         emit loadingStarted();
-        service_->post(api, currentChat_, text, true);
+
+        QString prompt = text;
+        if (ragEnabled_ && ragService_)
+        {
+            QString context = ragService_->retrieveContext(text);
+            if (!context.isEmpty())
+            {
+                // Augment prompt
+                prompt = QString("Uses the following context to answer the user question:\n%1\n\nUser Question: %2")
+                             .arg(context, text);
+            }
+        }
+
+        service_->post(api, currentChat_, prompt, true);
     }
 }
 

@@ -31,6 +31,8 @@ public:
     void receive(LLMAPIEntry* api, Chat* chat, const QByteArray& data);
     void stopStream(Chat* chat);
 
+    std::vector<float> getEmbedding(const QString& text);
+
 private:
     void initialize();
 

@@ -1,10 +1,12 @@
 #pragma once
 
-#include "Chat.h"
-#include "LLMService.h"
 #include <QObject>
 #include <QVariantList>
 #include <QVariantMap>
+
+#include "Chat.h"
+#include "LLMService.h"
+#include "RAGService.h"
 
 class ChatController : public QObject
 {
@@ -12,6 +14,8 @@ class ChatController : public QObject
     Q_PROPERTY(Chat* currentChat READ currentChat NOTIFY currentChatChanged)
     Q_PROPERTY(QVariantList chatList READ chatList NOTIFY chatListChanged)
     Q_PROPERTY(int currentChatIndex READ currentChatIndex NOTIFY currentChatChanged)
+    Q_PROPERTY(bool ragEnabled READ ragEnabled WRITE setRagEnabled NOTIFY ragEnabledChanged)
+    Q_PROPERTY(RAG::RAGService* ragService READ ragService CONSTANT)
 
 public:
     explicit ChatController(LLMService* service, QObject* parent = nullptr);
@@ -52,7 +56,24 @@ private:
     void connectAPIsSignals();
 
     LLMService* service_;
+    RAG::RAGService* ragService_;
     QList<Chat*> chats_;
     Chat* currentChat_;
     int chatCounter_;
+    bool ragEnabled_ = false;
+
+public:
+    bool ragEnabled() const { return ragEnabled_; }
+    void setRagEnabled(bool enabled)
+    {
+        if (ragEnabled_ != enabled)
+        {
+            ragEnabled_ = enabled;
+            emit ragEnabledChanged();
+        }
+    }
+    RAG::RAGService* ragService() const { return ragService_; }
+
+signals:
+    void ragEnabledChanged();
 };

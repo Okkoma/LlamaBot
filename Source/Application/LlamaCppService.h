@@ -1,7 +1,10 @@
 #pragma once
 
-#include "LLMServiceDefs.h"
+#include <QFuture>
+
 #include "llama-cpp.h"
+
+#include "LLMServiceDefs.h"
 
 struct LlamaCppChatData;
 
@@ -39,7 +42,7 @@ struct LlamaCppChatData
     void initialize(LlamaModelData* model = nullptr);
     void deinitialize();
 
-    Chat* chat_;
+    Chat* chat_ = nullptr;
 
     LlamaModelData* model_ = nullptr;
     int n_ctx_ = 2048; // Taille du contexte
@@ -49,11 +52,14 @@ struct LlamaCppChatData
 
     llama_batch batch_;
     llama_token tokenId_;
-    std::vector<llama_token> tokens_;
 
+    std::vector<llama_token> tokens_;
     std::vector<llama_chat_message> llamaCppChatMessages_;
 
     QString response_;
+
+    QString pendingModelName_;
+    QFuture<void> loadingFuture_;
 
     LlamaCppProcess* generateProcess_ = nullptr;
 };
