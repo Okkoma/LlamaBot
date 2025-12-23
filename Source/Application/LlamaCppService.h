@@ -106,7 +106,6 @@ public:
     QJsonObject toJson() const override;
 
     LlamaCppChatData* createData(Chat* chat);
-    LlamaModelData* addModel(const QString& model, int numGpuLayers);
     void initializeData(LlamaCppChatData* data, LlamaModelData* model = nullptr);
     void clearData(LlamaCppChatData* data);
     void clearModelInMemory(const QString& modelName);
@@ -130,6 +129,8 @@ public:
     LlamaCppChatData* getData(Chat* chat);
     const LlamaCppChatData* getData(Chat* chat) const;
 
+    std::vector<float> getEmbedding(const QString& text) override;
+
     // Informations sur les backends disponibles
     static QStringList getAvailableBackends();
     static QString getBackendInfo();
@@ -142,7 +143,12 @@ public:
     int defaultContextSize_ = 2048;
     bool defaultUseGpu_ = true;
     bool useThreadedVersion_ = false;
-
     bool onlyOneModelInMemory_ = true;
+
+private:
+    LlamaModelData* loadModel(const QString& model, int numGpuLayers, bool clearOtherModels);
+    void setModelInternal(LlamaCppChatData* data, const QString& modelName);
+
     LlamaModelData* lastModelAddedInMemory_ = nullptr;
+    LlamaModelData* embeddingModel_ = nullptr;
 };

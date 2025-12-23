@@ -76,6 +76,16 @@ ApplicationWindow {
                 
                 Item { Layout.fillWidth: true }
                 
+                // RAG Status Indicator
+                ToolButton {
+                    text: "📚"
+                    visible: chatController ? chatController.ragEnabled : false
+                    enabled: false
+                    ToolTip.visible: hovered
+                    ToolTip.text: "RAG Active: " + (chatController && chatController.ragService ? chatController.ragService.collectionStatus : "N/A")
+                    opacity: 0.7
+                }
+                
                 // Loading icon - avec gestion robuste des connexions
                 LoadingSpinner {
                     id: loadingSpinner

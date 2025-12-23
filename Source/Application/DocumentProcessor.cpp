@@ -8,9 +8,6 @@
 
 #include "DocumentProcessor.h"
 
-namespace RAG
-{
-
 std::vector<DocumentChunk> DocumentProcessor::processFile(const QString& filePath, int chunkSize, int overlap)
 {
     std::vector<DocumentChunk> chunks;
@@ -166,6 +163,4 @@ std::vector<QString> DocumentProcessor::chunkText(const QString& text, int size,
     }
 
     return result;
-}
-
 }

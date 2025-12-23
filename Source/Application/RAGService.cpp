@@ -6,9 +6,6 @@
 #include "LLMService.h"
 #include "RAGService.h"
 
-namespace RAG
-{
-
 RAGService::RAGService(LLMService* llmService, QObject* parent) :
     QObject(parent), llmService_(llmService), status_("Ready")
 {
@@ -23,7 +20,7 @@ void RAGService::ingestFile(const QString& filePath)
     status_ = "Ingesting " + QFileInfo(filePath).fileName() + "...";
     emit collectionStatusChanged();
 
-    QtConcurrent::run(
+    QFuture<void> f = QtConcurrent::run(
         [this, filePath]()
         {
             processFileInternal(filePath);
@@ -35,7 +32,7 @@ void RAGService::ingestDirectory(const QString& dirPath)
     status_ = "Ingesting directory...";
     emit collectionStatusChanged();
 
-    QtConcurrent::run(
+    QFuture<void> f = QtConcurrent::run(
         [this, dirPath]()
         {
             QDirIterator it(
@@ -143,4 +140,3 @@ QString RAGService::getCollectionStatus() const
     return status_;
 }
 
-}

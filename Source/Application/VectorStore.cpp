@@ -7,9 +7,6 @@
 
 #include "VectorStore.h"
 
-namespace RAG
-{
-
 // Magic header for our file format
 static const quint32 MAGIC = 0x52414731; // "RAG1"
 static const quint32 VERSION = 1;
@@ -153,4 +150,3 @@ float VectorStore::cosineSimilarity(const std::vector<float>& a, const std::vect
     return dot;
 }
 
-}

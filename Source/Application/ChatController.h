@@ -15,7 +15,7 @@ class ChatController : public QObject
     Q_PROPERTY(QVariantList chatList READ chatList NOTIFY chatListChanged)
     Q_PROPERTY(int currentChatIndex READ currentChatIndex NOTIFY currentChatChanged)
     Q_PROPERTY(bool ragEnabled READ ragEnabled WRITE setRagEnabled NOTIFY ragEnabledChanged)
-    Q_PROPERTY(RAG::RAGService* ragService READ ragService CONSTANT)
+    Q_PROPERTY(RAGService* ragService READ ragService CONSTANT)
 
 public:
     explicit ChatController(LLMService* service, QObject* parent = nullptr);
@@ -56,7 +56,7 @@ private:
     void connectAPIsSignals();
 
     LLMService* service_;
-    RAG::RAGService* ragService_;
+    RAGService* ragService_;
     QList<Chat*> chats_;
     Chat* currentChat_;
     int chatCounter_;
@@ -72,7 +72,7 @@ public:
             emit ragEnabledChanged();
         }
     }
-    RAG::RAGService* ragService() const { return ragService_; }
+    RAGService* ragService() const { return ragService_; }
 
 signals:
     void ragEnabledChanged();

@@ -1,6 +1,7 @@
 #pragma once
 
 #include "LLMServiceDefs.h"
+#include "RAGService.h"
 
 class LLMService : public QObject
 {
@@ -8,6 +9,7 @@ class LLMService : public QObject
 
     friend class LLMAPIEntry;
     friend class OllamaService;
+    friend class RAGService;
 
 public:
     explicit LLMService(QObject* parent);
@@ -31,6 +33,7 @@ public:
     void receive(LLMAPIEntry* api, Chat* chat, const QByteArray& data);
     void stopStream(Chat* chat);
 
+protected:
     std::vector<float> getEmbedding(const QString& text);
 
 private:

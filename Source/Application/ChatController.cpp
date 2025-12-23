@@ -13,7 +13,7 @@ ChatController::ChatController(LLMService* service, QObject* parent) :
     service_(service),
     currentChat_(nullptr),
     chatCounter_(0),
-    ragService_(new RAG::RAGService(service, this))
+    ragService_(new RAGService(service, this))
 {
     // Try to load existing chats
     loadChats();

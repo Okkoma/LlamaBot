@@ -7,9 +7,6 @@
 
 class LLMService;
 
-namespace RAG
-{
-
 class RAGService : public QObject
 {
     Q_OBJECT
@@ -53,4 +50,3 @@ private:
     // For now simple direct calls
 };
 
-}

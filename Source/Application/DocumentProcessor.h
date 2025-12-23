@@ -3,9 +3,6 @@
 #include <QString>
 #include <vector>
 
-namespace RAG
-{
-
 struct DocumentChunk
 {
     QString content;
@@ -28,5 +25,3 @@ private:
     // Chunking logic
     static std::vector<QString> chunkText(const QString& text, int size, int overlap);
 };
-
-}
