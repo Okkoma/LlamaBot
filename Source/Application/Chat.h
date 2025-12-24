@@ -1,12 +1,8 @@
 #pragma once
 
-#include <QJsonObject>
-#include <QList>
-#include <QObject>
-#include <QString>
-#include <QStringList>
+#include "LLMServiceDefs.h"
 
-#include "LLMService.h"
+class LLMServices;
 
 struct ChatMessage
 {
@@ -17,49 +13,60 @@ struct ChatMessage
 class Chat : public QObject
 {
     Q_OBJECT
-    Q_PROPERTY(QString currentApi READ currentApi WRITE setApi NOTIFY currentApiChanged)
-    Q_PROPERTY(QString currentModel READ currentModel WRITE setModel NOTIFY currentModelChanged)
-    Q_PROPERTY(QStringList messages READ messages NOTIFY messagesChanged)
+    Q_PROPERTY(const QString& currentApi READ getCurrentApi WRITE setApi NOTIFY currentApiChanged)
+    Q_PROPERTY(const QString& currentModel READ getCurrentModel WRITE setModel NOTIFY currentModelChanged)
+    Q_PROPERTY(const QStringList& messages READ getMessages NOTIFY messagesChanged)
     Q_PROPERTY(QVariantList history READ historyList NOTIFY historyChanged)
 
 public:
-    explicit Chat(LLMService* service, const QString& name = "new_chat", const QString& initialContext = "",
-        bool streamed = true, QObject* parent = nullptr);
+    Chat(LLMServices* llmservices, const QString& name = "new_chat", const QString& initialContext = "",
+        bool streamed = true, QObject* parent = nullptr) :
+        QObject(parent),
+        llmservices_(llmservices),
+        streamed_(streamed),
+        processing_(false),
+        name_(name),
+        currentApi_("none"),
+        currentModel_("none"),
+        initialContext_(initialContext) {}
+    virtual ~Chat() {}
+    
+    virtual void setApi(const QString& api) = 0;
+    virtual void setModel(const QString& model) = 0;
+    void setName(const QString& name) { name_ = name; }
+    void setStreamed(bool enable) { streamed_ = enable; }
+    void setProcessing(bool processing)
+    {
+        processing_ = processing;
+        if (processing)
+            emit processingStarted();
+        else
+            emit processingFinished();        
+    }
 
-    void initialize();
+    virtual void updateContent(const QString& content) = 0;
+    virtual void updateCurrentAIStream(const QString& text) = 0;
 
-    QVariantList historyList() const;
+    const QString& getName() const { return name_; }
+    bool getStreamed() const { return streamed_; }
 
-    QString currentApi() const { return currentApi_; }
-    void setApi(const QString& api);
-
-    QString currentModel() const { return currentModel_; }
-    void setModel(const QString& model);
-
-    QStringList messages() const { return messages_; }
-
-    void updateContent(const QString& content);
-
-    void addContent(const QString& role, const QString& content);
-    void finalizeStream();
-
-    void addUserContent(const QString& text);
-    void addAIContent(const QString& text);
-    void updateCurrentAIStream(const QString& text);
-    void updateObject();
+    virtual QVariantList historyList() const = 0;
+    const QString& getCurrentApi() const { return currentApi_; }
+    const QString& getCurrentModel() const { return currentModel_; }
+    const QStringList& getMessages() const { return messages_; }
+    const QString& getMessagesRaw() const { return messagesRaw_; }
+    QList<ChatMessage>& getHistory() { return history_; }
+    QJsonObject& getInfo() { return info_; }
+    bool isProcessing() const { return processing_; }
 
     // Serialization
-    QJsonObject toJson() const;
-    void fromJson(const QJsonObject& json);
+    virtual QJsonObject toJson() const = 0;
+    virtual void fromJson(const QJsonObject& json) = 0;
 
     // Export Helpers
-    Q_INVOKABLE QString getFullConversation() const;
-    Q_INVOKABLE QString getUserPrompts() const;
-    Q_INVOKABLE QString getBotResponses() const;
-
-    void setProcessing(bool processing);
-
-    bool isProcessing() const { return processing_; }
+    Q_INVOKABLE virtual QString getFullConversation() const = 0;
+    Q_INVOKABLE virtual QString getUserPrompts() const = 0;
+    Q_INVOKABLE virtual QString getBotResponses() const = 0;
 
 signals:
     void currentApiChanged();
@@ -73,26 +80,21 @@ signals:
     void streamFinishedSignal();
     void historyChanged();
 
-public:
+protected:
     // Data members
     bool streamed_;
     bool processing_;
-    int lastBotIndex_;
 
     QString name_;
     QString currentApi_;
     QString currentModel_;
-
-    QString userPrompt_;
-    QString aiPrompt_;
-
     QString initialContext_;
-    QString rawMessages_;
 
     QStringList messages_;
-    QList<ChatMessage> history_;
-    QString currentAIStream_;
-    QJsonObject jsonObject_;
+    QString messagesRaw_;
 
-    LLMService* service_;
+    QList<ChatMessage> history_;
+    QJsonObject info_;
+
+    LLMServices* llmservices_;
 };

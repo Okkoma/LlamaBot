@@ -3,7 +3,7 @@
 
 #include "ApplicationServices.h"
 
-#include "LLMService.h"
+#include "LLMServices.h"
 #include "LlamaCppService.h"
 #include "OllamaService.h"
 
@@ -14,12 +14,12 @@ ApplicationServices::ApplicationServices(QObject* parent) :
     QObject(parent)
 {
     // register llm api entries
-    LLMAPIEntry::registerService<LlamaCppService>(LLMEnum::LLMType::LlamaCpp);    
-    LLMAPIEntry::registerService<OllamaService>(LLMEnum::LLMType::Ollama);
+    LLMService::registerService<LlamaCppService>(LLMEnum::LLMType::LlamaCpp);    
+    LLMService::registerService<OllamaService>(LLMEnum::LLMType::Ollama);
 
     // add service
-    services_.emplace(std::make_pair(LLMService::staticMetaObject.className(), std::unique_ptr<LLMService>(new LLMService(this))));
-    qDebug() << "ApplicationServices: add" << get<LLMService>();
+    services_.emplace(std::make_pair(LLMServices::staticMetaObject.className(), std::unique_ptr<LLMServices>(new LLMServices(this))));
+    qDebug() << "ApplicationServices: add" << get<LLMServices>();
 }
 
 ApplicationServices::~ApplicationServices()

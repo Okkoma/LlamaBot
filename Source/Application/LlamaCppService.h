@@ -1,16 +1,14 @@
 #pragma once
 
-#include <QFuture>
+#include "LLMServices.h"
 
 #include "llama-cpp.h"
-
-#include "LLMServiceDefs.h"
 
 struct LlamaCppChatData;
 
 struct LlamaCppProcess
 {
-    LlamaCppProcess(int type, LlamaCppChatData* data, LLMService* service) : type_(type), data_(data), service_(service)
+    LlamaCppProcess(int type, LlamaCppChatData* data, LLMServices* service) : type_(type), data_(data), service_(service)
     {
     }
     virtual ~LlamaCppProcess() {}
@@ -22,7 +20,7 @@ struct LlamaCppProcess
 
     int type_;
     LlamaCppChatData* data_;
-    LLMService* service_;
+    LLMServices* service_;
 };
 
 struct LlamaModelData
@@ -58,9 +56,6 @@ struct LlamaCppChatData
 
     QString response_;
 
-    QString pendingModelName_;
-    QFuture<void> loadingFuture_;
-
     LlamaCppProcess* generateProcess_ = nullptr;
 };
 
@@ -86,13 +81,13 @@ private:
     QThread* thread_;
 };
 
-class LlamaCppService : public LLMAPIEntry
+class LlamaCppService : public LLMService
 {
     Q_OBJECT
 
 public:
-    LlamaCppService(LLMService* service, const QString& name);
-    LlamaCppService(const QVariantMap& params);
+    LlamaCppService(LLMServices* service, const QString& name);
+    LlamaCppService(LLMServices* service, const QVariantMap& params);
     ~LlamaCppService() override;
 
     void setModel(Chat* chat, QString model = "") override;
@@ -102,8 +97,6 @@ public:
     void post(Chat* chat, const QString& content, bool streamed = true) override;
     QString formatMessage(Chat* chat, const QString& role, const QString& content) override;
     void stopStream(Chat* chat) override;
-
-    QJsonObject toJson() const override;
 
     LlamaCppChatData* createData(Chat* chat);
     void initializeData(LlamaCppChatData* data, LlamaModelData* model = nullptr);
@@ -134,7 +127,7 @@ public:
     // Informations sur les backends disponibles
     static QStringList getAvailableBackends();
     static QString getBackendInfo();
-    static LlamaCppService* createDefault(LLMService* service, const QString& name);
+    static LlamaCppService* createDefault(LLMServices* service, const QString& name);
 
     QHash<QString, LlamaModelData> models_;
     QHash<Chat*, LlamaCppChatData> datas_;

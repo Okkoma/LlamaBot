@@ -1,4 +1,3 @@
-
 set(CMAKE_AUTOUIC ON)
 set(CMAKE_AUTOMOC ON)
 set(CMAKE_AUTORCC ON)
@@ -6,28 +5,24 @@ set(CMAKE_AUTORCC ON)
 find_package(Qt6 REQUIRED COMPONENTS Core Widgets Network Qml Quick QuickWidgets QuickControls2)
 
 set(PROJECT_SOURCES
-        main.cpp
-        Application.cpp
-        Application.h
-        ApplicationServices.cpp
-        ApplicationServices.h
-        LLMServiceDefs.cpp
-        LLMServiceDefs.h        
-        LLMService.cpp
-        LLMService.h
-        LlamaCppService.cpp
-        LlamaCppService.h 
-        OllamaService.cpp
-        OllamaService.h
-        OllamaModelStoreDialog.cpp
-        OllamaModelStoreDialog.h         
-        Chat.cpp Chat.h
-        ChatController.h ChatController.cpp
-        ThemeManager.h ThemeManager.cpp
-        Clipboard.h
-        DocumentProcessor.h DocumentProcessor.cpp
-        RAGService.h RAGService.cpp
-        VectorStore.h VectorStore.cpp
+    main.cpp
+    Application.cpp
+    Application.h
+    ApplicationServices.cpp
+    ApplicationServices.h
+    LLMServiceDefs.h
+    LLMServices.h LLMServices.cpp
+    LLMService.h LLMService.cpp
+    LlamaCppService.h LlamaCppService.cpp
+    OllamaService.h OllamaService.cpp
+    OllamaModelStoreDialog.h OllamaModelStoreDialog.cpp
+    Chat.h ChatImpl.h ChatImpl.cpp
+    ChatController.h ChatController.cpp
+    ThemeManager.h ThemeManager.cpp
+    Clipboard.h
+    DocumentProcessor.h DocumentProcessor.cpp
+    RAGService.h RAGService.cpp
+    VectorStore.h VectorStore.cpp
 )
 
 qt_add_resources(PROJECT_SOURCES ressources.qrc)
@@ -38,7 +33,7 @@ qt_add_executable(ChatBot MANUAL_FINALIZATION ${PROJECT_SOURCES})
 #                 ${CMAKE_CURRENT_SOURCE_DIR}/android)
 # For more information, see https://doc.qt.io/qt-6/qt-add-executable.html#target-creation
 
-target_link_libraries(ChatBot PRIVATE Qt6::Core Qt6::Network Qt6::Widgets Qt6::Widgets Qt6::Qml Qt6::Quick Qt6::QuickControls2 llama)
+target_link_libraries(ChatBot PRIVATE Qt6::Core Qt6::Widgets Qt6::Network Qt6::Qml Qt6::Quick Qt6::QuickWidgets Qt6::QuickControls2 llama)
 target_link_libraries(ChatBot PRIVATE poppler-qt6)
 
 # Qt for iOS sets MACOSX_BUNDLE_GUI_IDENTIFIER automatically since Qt 6.1.

@@ -3,11 +3,13 @@
 #include <QDirIterator>
 #include <QtConcurrent/QtConcurrent>
 
-#include "LLMService.h"
+#include "DocumentProcessor.h"
+#include "LLMServices.h"
+
 #include "RAGService.h"
 
-RAGService::RAGService(LLMService* llmService, QObject* parent) :
-    QObject(parent), llmService_(llmService), status_("Ready")
+RAGService::RAGService(LLMServices* llmservices, QObject* parent) :
+    QObject(parent), llmServices_(llmservices), status_("Ready")
 {
     // Try to load default collection on startup
     loadCollection();
@@ -57,7 +59,7 @@ void RAGService::ingestDirectory(const QString& dirPath)
 
 void RAGService::processFileInternal(const QString& filePath)
 {
-    if (!llmService_)
+    if (!llmServices_)
         return;
 
     // 1. Process Doc
@@ -66,8 +68,8 @@ void RAGService::processFileInternal(const QString& filePath)
     // 2. Compute Embeddings & Store
     for (const auto& chunk : chunks)
     {
-        // Blocking call to get embedding (ensure your LLMService::getEmbedding is thread-safe or handles validation)
-        std::vector<float> emb = llmService_->getEmbedding(chunk.content);
+        // Blocking call to get embedding (ensure your LLMServices::getEmbedding is thread-safe or handles validation)
+        std::vector<float> emb = llmServices_->getEmbedding(chunk.content);
 
         if (!emb.empty())
         {
@@ -77,8 +79,8 @@ void RAGService::processFileInternal(const QString& filePath)
             entry.source = QString("%1 (Page %2)").arg(chunk.sourceFile).arg(chunk.pageNumber);
 
             // Normalize if not already
-            // LLMService should return normalized embeddings, but let's be sure?
-            // Assuming LLMService returns normalized for now.
+            // LLMServices should return normalized embeddings, but let's be sure?
+            // Assuming LLMServices returns normalized for now.
 
             vectorStore_.addEntry(entry);
         }
@@ -124,11 +126,11 @@ QString RAGService::retrieveContext(const QString& query, int topK)
 
 std::vector<SearchResult> RAGService::search(const QString& query, int topK)
 {
-    if (!llmService_)
+    if (!llmServices_)
         return {};
 
     // Generate query embedding
-    std::vector<float> queryEmb = llmService_->getEmbedding(query);
+    std::vector<float> queryEmb = llmServices_->getEmbedding(query);
     if (queryEmb.empty())
         return {};
 

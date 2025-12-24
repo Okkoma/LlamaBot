@@ -1,16 +1,8 @@
-#include <QDebug>
-#include <QDir>
-#include <QJsonArray>
-#include <QJsonDocument>
 #include <QMessageBox>
 #include <QNetworkAccessManager>
 #include <QNetworkReply>
 #include <QNetworkRequest>
-#include <QPushButton>
 
-#include "Chat.h"
-
-#include "LLMService.h"
 #include "OllamaService.h"
 
 
@@ -37,7 +29,7 @@ std::vector<LLMModel> OllamaService::getAvailableModels() const
 {
     std::vector<LLMModel> result;
 
-    if (service_->allowSharedModels_)
+    if (llmservices_->hasSharedModels())
     {
         OllamaService::getOllamaModels(OllamaService::ollamaSystemDir, result);
         OllamaService::getOllamaModels(QDir::homePath() + "/", result);
@@ -101,9 +93,9 @@ void OllamaService::getOllamaModels(const QString& ollamaDir, std::vector<LLMMod
     }
 }
 
-OllamaService::OllamaService(LLMService* service, const QString& name, const QString& url, const QString& ver,
+OllamaService::OllamaService(LLMServices* service, const QString& name, const QString& url, const QString& ver,
     const QString& gen, const QString& apiKey, const QString& programPath, const QStringList& programArguments) :
-    LLMAPIEntry(LLMEnum::LLMType::Ollama, service, name),
+    LLMService(LLMEnum::LLMType::Ollama, service, name),
     url_(url),
     api_version_(ver),
     api_generate_(gen),
@@ -113,8 +105,8 @@ OllamaService::OllamaService(LLMService* service, const QString& name, const QSt
 {
 }
 
-OllamaService::OllamaService(const QVariantMap& params) :
-    LLMAPIEntry(params),
+OllamaService::OllamaService(LLMServices* service, const QVariantMap& params) :
+    LLMService(service, params),
     url_(params["url"].toString()),
     api_version_(params["apiver"].toString()),
     api_generate_(params["apigen"].toString()),
@@ -134,6 +126,8 @@ bool OllamaService::start()
     if (!canStartProcess())
         return false;
 
+    networkManager_ = new QNetworkAccessManager(this);
+
     if (!programProcess_)
         programProcess_ = std::shared_ptr<QProcess>(new QProcess());
 
@@ -150,6 +144,8 @@ bool OllamaService::stop()
 {
     if (!isProcessStarted())
         return true;
+
+    delete networkManager_;
 
     qDebug() << "OllamaService: stopProcess:" << name_;
 
@@ -180,7 +176,7 @@ bool OllamaService::isUrlAccessible() const
         qDebug() << "OllamaService::isUrlAccessible() ...";
 
         QEventLoop loop;
-        QNetworkReply* reply = service_->networkManager_->get(QNetworkRequest(url_ + api_version_));
+        QNetworkReply* reply = networkManager_->get(QNetworkRequest(url_ + api_version_));
 
         // Gestion du timeout
         QTimer timer;
@@ -245,13 +241,13 @@ void OllamaService::postInternal(Chat* chat, const QString& content, bool stream
         chat->setProcessing(true);
 
     // post the request
-    QJsonObject payload = chat->jsonObject_;
+    QJsonObject payload = chat->getInfo();
 
     if (useChatApi)
     {
         // Construct messages array for /api/chat
         QJsonArray messagesArray;
-        for (const ChatMessage& msg : chat->history_)
+        for (const ChatMessage& msg : chat->getHistory())
         {
             QJsonObject msgObj;
             msgObj["role"] = msg.role;
@@ -273,42 +269,42 @@ void OllamaService::postInternal(Chat* chat, const QString& content, bool stream
 
     QJsonDocument jsonDoc(payload);
     QByteArray data = jsonDoc.toJson();
-    QNetworkReply* reply = service_->networkManager_->post(request, data);
+    QNetworkReply* reply = networkManager_->post(request, data);
     qDebug() << jsonDoc;
 
     // connect signals to receive datas
     if (streamed)
     {
-        service_->connect(reply, &QNetworkReply::readyRead, service_,
+        llmservices_->connect(reply, &QNetworkReply::readyRead, llmservices_,
             [this, chat, reply, useChatApi]()
             {
                 // qDebug() << "OllamaService::postInternal streamed: received data";
 
                 // For /api/chat, the response format is different:
                 // "message": { "role": "assistant", "content": "..." } instead of "response": "..."
-                // We need to handle this in LLMService::receive or handle it here.
-                // LLMService::receive expects "response".
+                // We need to handle this in LLMServices::receive or handle it here.
+                // LLMServices::receive expects "response".
 
-                // Let's modify LLMService::receive to handle both or intercept here.
-                // Since LLMService::receive is generic, we should probably intercept or ensure LLMService handles it.
-                // But wait, LLMService::receive parses lines.
+                // Let's modify LLMServices::receive to handle both or intercept here.
+                // Since LLMServices::receive is generic, we should probably intercept or ensure LLMServices handles it.
+                // But wait, LLMServices::receive parses lines.
                 // If we use /api/chat, the stream chunks look like: { "model": "...", "created_at": "...", "message": {
                 // "role": "assistant", "content": "Hello" }, "done": false }
 
-                // LLMService::receive checks for "response". We need it to check for "message.content" too.
-                // But LLMService::receive is in LLMService.cpp.
+                // LLMServices::receive checks for "response". We need it to check for "message.content" too.
+                // But LLMServices::receive is in LLMServices.cpp.
 
                 // Actually, let's keep it simple: pass the raw data to service_->receive,
-                // and update LLMService::receive to handle "message" object.
+                // and update LLMServices::receive to handle "message" object.
 
-                service_->receive(this, chat, reply->readAll());
+                llmservices_->receive(this, chat, reply->readAll());
             });
-        service_->connect(reply, &QNetworkReply::finished, service_,
+        llmservices_->connect(reply, &QNetworkReply::finished, llmservices_,
             [this, chat, reply]()
             {
                 qDebug() << "OllamaService::postInternal streamed: finished";
                 if (reply->error() == QNetworkReply::NoError)
-                    service_->receive(this, chat, reply->readAll());
+                    llmservices_->receive(this, chat, reply->readAll());
                 else
                     qDebug() << "Error:" << reply->errorString();
                 reply->deleteLater();
@@ -318,11 +314,11 @@ void OllamaService::postInternal(Chat* chat, const QString& content, bool stream
     }
     else
     {
-        service_->connect(service_->networkManager_, &QNetworkAccessManager::finished, service_,
+        llmservices_->connect(networkManager_, &QNetworkAccessManager::finished, llmservices_,
             [this, chat, reply]()
             {
                 if (reply->error() == QNetworkReply::NoError)
-                    service_->receive(this, chat, reply->readAll());
+                    llmservices_->receive(this, chat, reply->readAll());
                 else
                     qDebug() << "Error:" << reply->errorString();
                 reply->deleteLater();
@@ -339,13 +335,13 @@ void OllamaService::post(Chat* chat, const QString& content, bool streamed)
     {
         qDebug() << "OllamaService::post: api not started";
 
-        if (canStartProcess() && service_->requireStartProcess(this))
+        if (canStartProcess() && requireStartProcess())
         {
             start();
 
             qDebug() << "OllamaService::post: api launched";
 
-            service_->connect(programProcess_.get(), &QProcess::started, service_,
+            llmservices_->connect(programProcess_.get(), &QProcess::started, llmservices_,
                 [this, chat, content, streamed]()
                 {
                     qDebug() << "OllamaService::post: api started : state=" << programProcess_->state();
@@ -361,9 +357,19 @@ void OllamaService::post(Chat* chat, const QString& content, bool streamed)
     }
 }
 
+bool OllamaService::requireStartProcess()
+{
+    qDebug() << "Require the user authorization for starting the service" << name_;
+    // Demander la confirmation à l'utilisateur
+    QMessageBox::StandardButton reply;
+    reply = QMessageBox::question(nullptr, "Confirmation", "Do you want to start the service " + name_ + "?",
+        QMessageBox::Yes | QMessageBox::No);
+    return (reply == QMessageBox::Yes);
+}
+
 bool OllamaService::handleMessageError(Chat* chat, const QString& message)
 {
-    if (message.contains("model") && message.contains("not found") && chat->currentApi_ == "Ollama")
+    if (message.contains("model") && message.contains("not found") && chat->getCurrentApi() == "Ollama")
     {
         // Ollama : model not found, try to import the model from ollama shared directory in user land
         const QString homePath = QDir::homePath() + "/";
@@ -420,21 +426,4 @@ bool OllamaService::handleMessageError(Chat* chat, const QString& message)
     }
 
     return false;
-}
-
-QJsonObject OllamaService::toJson() const
-{
-    QJsonObject obj;
-    obj["type"] = enumValueToString<LLMEnum>("LLMType", type_);
-    obj["name"] = name_;
-    obj["url"] = url_;
-    obj["apiver"] = api_version_;
-    obj["apigen"] = api_generate_;
-    obj["apikey"] = apiKey_; // TODO : encode ?
-    obj["executable"] = programPath_;
-    QJsonArray argsArray;
-    for (const QString& arg : programArguments_)
-        argsArray.append(arg);
-    obj["args"] = argsArray;
-    return obj;
 }

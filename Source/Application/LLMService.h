@@ -1,56 +1,105 @@
 #pragma once
 
 #include "LLMServiceDefs.h"
-#include "RAGService.h"
+
+class Chat;
+class LLMServices;
 
 class LLMService : public QObject
 {
     Q_OBJECT
 
-    friend class LLMAPIEntry;
-    friend class OllamaService;
-    friend class RAGService;
-
 public:
-    explicit LLMService(QObject* parent);
-    ~LLMService();
+    using LLMAPIFactory = std::function<LLMService*(LLMServices* llmservices, const QVariantMap& params)>;
+    template <typename T>
+    static void registerService(int type)
+    {
+        factories_[type] = [](LLMServices* llmservices, const QVariantMap& params)
+        {
+            return new T(llmservices, params);
+        };
+    }
+    static LLMService* createService(LLMServices* llmservices, const QVariantMap& params)
+    {
+        if (!params.contains("type"))
+            return nullptr;
+        int type = params["type"].value<int>();
+        auto it = factories_.find(type);
+        return it != factories_.end() ? it->second(llmservices, params) : nullptr;
+    }
 
-    void setWidget(QWidget* widget);
-    void allowSharedModels(bool enable);
+    LLMService(int type, LLMServices* llmservices, const QString& name) :
+        llmservices_(llmservices),
+        type_(type),
+        name_(name) {}
 
-    bool isServiceAvailable(LLMEnum::LLMType service) const;
-    LLMAPIEntry* get(LLMEnum::LLMType service) const;
-    LLMAPIEntry* get(const QString& name) const;
+    LLMService(LLMServices* llmservices, const QVariantMap& params) :
+        llmservices_(llmservices),
+        type_(params["type"].toInt()),
+        name_(params["name"].toString()) {}
 
-    const std::vector<LLMAPIEntry*>& getAPIs() const { return apiEntries_; }
-    std::vector<LLMAPIEntry*> getAvailableAPIs() const;
-    std::vector<LLMModel> getAvailableModels(const LLMAPIEntry* api = nullptr) const;
-    LLMModel* getModel(const QString& name) const;
+    virtual ~LLMService() { stop(); }
 
-    void addAPI(LLMAPIEntry* info);
+    virtual bool start() { return true; };
+    virtual bool stop() { return true; };
+    virtual void setModel(Chat* chat, QString model = "") {}
+    virtual bool isReady() const { return true; }
 
-    void post(LLMAPIEntry* api, Chat* chat, const QString& content, bool streamed = true);
-    void receive(LLMAPIEntry* api, Chat* chat, const QByteArray& data);
-    void stopStream(Chat* chat);
+    virtual void post(Chat* chat, const QString& content, bool streamed = true) {}
+    virtual QString formatMessage(Chat* chat, const QString& role, const QString& content) { return content; }
+    virtual void stopStream(Chat* chat) { Q_UNUSED(chat); }
 
-protected:
-    std::vector<float> getEmbedding(const QString& text);
+    virtual bool handleMessageError(Chat* chat, const QString& message) { return false; }
+
+    QJsonObject toJson() const
+    {
+        QJsonObject obj;
+        obj["type"] = enumValueToString<LLMEnum>("LLMType", type_);
+        obj["name"] = name_;
+        obj["url"] = params_["url"].toString();
+        obj["apiver"] = params_["apiver"].toString();
+        obj["apigen"] = params_["apigen"].toString();
+        obj["apikey"] = params_["apikey"].toString();
+        obj["executable"] = params_["executable"].toString();
+        obj["args"] = params_["programargs"].toJsonArray();
+        return obj;
+    }
+    static LLMService* fromJson(LLMServices* llmservices, const QJsonObject& obj)
+    {
+        QVariantMap params;
+        QString exe = obj["executable"].toString(); 
+        if (exe != "" && !QFile::exists(exe))
+        {
+            qDebug() << "LLMService executable not find" << exe;
+            return nullptr;
+        }
+        params["executable"] = exe;
+        params["type"] = stringToEnumValue<LLMEnum>("LLMType", obj["type"].toString());
+        params["name"] = obj["name"].toString();
+        params["url"] = obj["url"].toString();
+        params["apiver"] = obj["apiver"].toString();
+        params["apigen"] = obj["apigen"].toString();
+        params["apikey"] = obj["apikey"].toString();
+        QStringList programArguments;
+        QJsonArray argsArray = obj["args"].toArray();
+        for (const QJsonValue& val : argsArray)
+            programArguments << val.toString();        
+        params["programargs"] = programArguments;
+        return LLMService::createService(llmservices, params);
+    }
+
+    virtual std::vector<float> getEmbedding(const QString& text) { return {}; }
+    virtual std::vector<LLMModel> getAvailableModels() const { return {}; }
+
+    LLMServices* llmservices_;
+    int type_;
+    QString name_;
+    QVariantMap params_;
+
+signals:
+    void modelLoadingStarted(const QString& modelName);
+    void modelLoadingFinished(const QString& modelName, bool success);
 
 private:
-    void initialize();
-
-    bool loadServiceJsonFile();
-    bool saveServiceJsonFile();
-    void createDefaultServiceJsonFile();
-
-    bool requireStartProcess(LLMAPIEntry* api);
-
-    void handleMessageError(Chat* chat, const QString& message);
-
-    std::vector<LLMAPIEntry*> apiEntries_;
-
-    QWidget* widget_;
-    bool allowSharedModels_;
-
-    QNetworkAccessManager* networkManager_;
+    static std::unordered_map<int, LLMAPIFactory> factories_;
 };

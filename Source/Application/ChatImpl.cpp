@@ -1,10 +1,6 @@
-#include <QCommandLineParser>
-#include <QDebug>
-#include <QJsonArray>
-#include <QJsonObject>
+#include "LLMServices.h"
 
-#include "Chat.h"
-#include "LLMService.h"
+#include "ChatImpl.h"
 
 // const char* rawHumanPrompt = "human:";
 // const char* rawAiPrompt = "ai:";
@@ -13,42 +9,40 @@ const char* rawHumanPrompt = "";
 const char* rawAiPrompt = "";
 const char* rawDefaultInitialPrompt = "";
 
-Chat::Chat(LLMService* service, const QString& name, const QString& initialPrompt, bool streamed, QObject* parent) :
-    QObject(parent),
-    service_(service),
-    streamed_(streamed),
-    processing_(false),
+ChatImpl::ChatImpl(LLMServices* llmservices, const QString& name, const QString& initialPrompt, bool streamed, QObject* parent) :
+    Chat(llmservices, name, initialPrompt, streamed, parent),
     lastBotIndex_(-1),
-    name_(name),
-    currentApi_("none"),
-    currentModel_("none"),
-    aiPrompt_("🤖 >"),
-    initialContext_(initialPrompt)
+    aiPrompt_("🤖 >")
 {
+    setObjectName(name);
     initialize();
 
-    rawMessages_ = !initialContext_.isEmpty() ? initialContext_ : rawDefaultInitialPrompt;
+    messagesRaw_ = !initialContext_.isEmpty() ? initialContext_ : rawDefaultInitialPrompt;
 }
 
-void Chat::initialize()
+void ChatImpl::initialize()
 {
-    LLMAPIEntry* defaultApi = service_->getAvailableAPIs().front();
-    if (defaultApi)
+    const auto& availableAPIs = llmservices_->getAvailableAPIs();
+    if (!availableAPIs.empty())
     {
-        currentApi_ = defaultApi->name_;
-        std::vector<LLMModel> models = defaultApi->getAvailableModels();
-        if (models.size())
-            currentModel_ = models.front().toString();
+        LLMService* defaultApi = availableAPIs.front();
+        if (defaultApi)
+        {
+            currentApi_ = defaultApi->name_;
+            std::vector<LLMModel> models = defaultApi->getAvailableModels();
+            if (models.size())
+                currentModel_ = models.front().toString();
+        }
     }
 
-    jsonObject_["model"] = currentModel_;
-    jsonObject_["stream"] = streamed_;
+    info_["model"] = currentModel_;
+    info_["stream"] = streamed_;
 
     history_.clear();
     emit historyChanged();
 }
 
-void Chat::setApi(const QString& api)
+void ChatImpl::setApi(const QString& api)
 {
     if (currentApi_ != api)
     {
@@ -57,32 +51,30 @@ void Chat::setApi(const QString& api)
     }
 }
 
-void Chat::setModel(const QString& model)
+void ChatImpl::setModel(const QString& model)
 {
-    LLMModel* modelptr = service_->getModel(model);
-    qDebug() << "Chat::setModel: modelptr:" << modelptr << "model:" << model;
-    if (modelptr)
+    LLMModel modelInfo = llmservices_->getModel(model);
+    if (!modelInfo.name_.isEmpty())
     {
-        if (modelptr->filePath_.contains(".gguf") && currentApi_ == "Ollama")
+        if (modelInfo.filePath_.contains(".gguf") && currentApi_ == "Ollama")
         {
-            qDebug() << "Chat::setModel: Detected local model file, switching API to LlamaCpp";
             setApi("LlamaCpp");
         }
 
-        LLMAPIEntry* api = service_->get(currentApi_);
+        LLMService* api = llmservices_->get(currentApi_);
         if (api)
             api->setModel(this, model);
 
         if (currentModel_ != model)
         {
             currentModel_ = model;
-            jsonObject_["model"] = model;
+            info_["model"] = model;
             emit currentModelChanged();
         }
     }
 }
 
-void Chat::updateContent(const QString& content)
+void ChatImpl::updateContent(const QString& content)
 {
     // Ajoute le message utilisateur
     addContent("user", content);
@@ -95,7 +87,7 @@ void Chat::updateContent(const QString& content)
     updateObject();
 }
 
-void Chat::addContent(const QString& role, const QString& content)
+void ChatImpl::addContent(const QString& role, const QString& content)
 {
     qDebug() << "Chat::addContent: role:" << role << "content:" << content;
 
@@ -111,28 +103,36 @@ void Chat::addContent(const QString& role, const QString& content)
     {
         messages_.append(QString("%1 %2\n").arg(isUserContent ? userPrompt_ : aiPrompt_, content));
 
-        LLMAPIEntry* api = service_->get(currentApi_);
-        rawMessages_ += api ? api->formatMessage(this, role, content) : content + "\n";
+        LLMService* api = llmservices_->get(currentApi_);
+        messagesRaw_ += api ? api->formatMessage(this, role, content) : content + "\n";
+        
+        // Si c'est un message assistant, mettre à jour lastBotIndex_ et currentAIStream_
+        if (!isUserContent)
+        {
+            lastBotIndex_ = messages_.size() - 1;
+            currentAIStream_ = content;
+        }
     }
     else
     {
         messages_.append("");
         lastBotIndex_ = messages_.size() - 1;
+        currentAIStream_.clear();
     }
 
     emit messageAdded(role, content);
     emit historyChanged();
 }
 
-void Chat::finalizeStream()
+void ChatImpl::finalizeStream()
 {
     // finalize to add the last streamed response
     if (!currentAIStream_.isEmpty())
     {
         qDebug() << "Chat::finalizeStream: ";
 
-        LLMAPIEntry* api = service_->get(currentApi_);
-        rawMessages_ += api ? api->formatMessage(this, "assistant", currentAIStream_) : currentAIStream_ + "\n";
+        LLMService* api = llmservices_->get(currentApi_);
+        messagesRaw_ += api ? api->formatMessage(this, "assistant", currentAIStream_) : currentAIStream_ + "\n";
 
         // History is already updated during streaming in updateCurrentAIStream()
         // No need to append again, just verify it's there
@@ -149,7 +149,7 @@ void Chat::finalizeStream()
     }
 }
 
-void Chat::updateCurrentAIStream(const QString& text)
+void ChatImpl::updateCurrentAIStream(const QString& text)
 {
     if (!text.isEmpty())
     {
@@ -192,31 +192,22 @@ void Chat::updateCurrentAIStream(const QString& text)
     }
 }
 
-void Chat::setProcessing(bool processing)
+void ChatImpl::updateObject()
 {
-    processing_ = processing;
-    if (processing)
-        emit processingStarted();
-    else
-        emit processingFinished();
+    info_["prompt"] = messagesRaw_;
 }
 
-void Chat::updateObject()
-{
-    jsonObject_["prompt"] = rawMessages_;
-}
-
-void Chat::addUserContent(const QString& text)
+void ChatImpl::addUserContent(const QString& text)
 {
     addContent("user", text);
 }
 
-void Chat::addAIContent(const QString& text)
+void ChatImpl::addAIContent(const QString& text)
 {
     addContent("assistant", text);
 }
 
-QVariantList Chat::historyList() const
+QVariantList ChatImpl::historyList() const
 {
     QVariantList list;
     for (const auto& msg : history_)
@@ -229,7 +220,7 @@ QVariantList Chat::historyList() const
     return list;
 }
 
-QJsonObject Chat::toJson() const
+QJsonObject ChatImpl::toJson() const
 {
     QJsonObject json;
     json["name"] = name_;
@@ -252,7 +243,7 @@ QJsonObject Chat::toJson() const
     return json;
 }
 
-void Chat::fromJson(const QJsonObject& json)
+void ChatImpl::fromJson(const QJsonObject& json)
 {
     name_ = json["name"].toString();
     QString api = json["api"].toString();
@@ -279,19 +270,19 @@ void Chat::fromJson(const QJsonObject& json)
     // Reconstruct messages for UI
     messages_.clear();
     if (!initialContext_.isEmpty())
-        rawMessages_ = initialContext_;
+        messagesRaw_ = initialContext_;
     else
-        rawMessages_ = rawDefaultInitialPrompt;
+        messagesRaw_ = rawDefaultInitialPrompt;
 
     for (const auto& msg : history_)
     {
         bool isUser = (msg.role == "user");
         messages_.append(QString("%1 %2\n").arg(isUser ? userPrompt_ : aiPrompt_, msg.content));
 
-        if (service_)
+        if (llmservices_)
         {
-            LLMAPIEntry* apiEntry = service_->get(currentApi_);
-            rawMessages_ += apiEntry ? apiEntry->formatMessage(this, msg.role, msg.content) : msg.content + "\n";
+            LLMService* apiEntry = llmservices_->get(currentApi_);
+            messagesRaw_ += apiEntry ? apiEntry->formatMessage(this, msg.role, msg.content) : msg.content + "\n";
         }
     }
 
@@ -301,7 +292,7 @@ void Chat::fromJson(const QJsonObject& json)
     emit currentModelChanged();
 }
 
-QString Chat::getFullConversation() const
+QString ChatImpl::getFullConversation() const
 {
     QString result;
     for (const auto& msg : history_)
@@ -312,7 +303,7 @@ QString Chat::getFullConversation() const
     return result.trimmed();
 }
 
-QString Chat::getUserPrompts() const
+QString ChatImpl::getUserPrompts() const
 {
     QString result;
     for (const auto& msg : history_)
@@ -323,7 +314,7 @@ QString Chat::getUserPrompts() const
     return result.trimmed();
 }
 
-QString Chat::getBotResponses() const
+QString ChatImpl::getBotResponses() const
 {
     QString result;
     for (const auto& msg : history_)

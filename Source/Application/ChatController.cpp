@@ -1,19 +1,14 @@
-#include <QDebug>
-#include <QDir>
-#include <QFile>
-#include <QJsonArray>
-#include <QJsonDocument>
-#include <QJsonObject>
-#include <QStandardPaths>
+#include "LLMService.h"
+#include "ChatImpl.h"
 
 #include "ChatController.h"
 
-ChatController::ChatController(LLMService* service, QObject* parent) :
+ChatController::ChatController(LLMServices* llmservices, QObject* parent) :
     QObject(parent),
-    service_(service),
+    llmServices_(llmservices),
     currentChat_(nullptr),
     chatCounter_(0),
-    ragService_(new RAGService(service, this))
+    ragService_(new RAGService(llmservices, this))
 {
     // Try to load existing chats
     loadChats();
@@ -22,11 +17,11 @@ ChatController::ChatController(LLMService* service, QObject* parent) :
     if (chats_.isEmpty())
         createChat();
 
-    const std::vector<LLMAPIEntry*>& apiList = service_->getAPIs();
+    const std::vector<LLMService*>& apiList = llmServices_->getAPIs();
     if (apiList.size() && apiList.front())
     {
         // If loaded chats have no API set (or were created from scratch), set default
-        if (currentChat_ && currentChat_->currentApi() == "none")
+        if (currentChat_ && currentChat_->getCurrentApi() == "none")
             setAPI(apiList.front()->name_);
     }
 }
@@ -43,9 +38,9 @@ QVariantList ChatController::chatList() const
     {
         QVariantMap chatInfo;
         chatInfo["index"] = i;
-        chatInfo["name"] = chats_[i]->name_;
-        chatInfo["model"] = chats_[i]->currentModel();
-        chatInfo["messageCount"] = chats_[i]->history_.size();
+        chatInfo["name"] = chats_[i]->getName();
+        chatInfo["model"] = chats_[i]->getCurrentModel();
+        chatInfo["messageCount"] = chats_[i]->getMessages().size();
         list.append(chatInfo);
     }
     return list;
@@ -75,8 +70,8 @@ void ChatController::checkChatsProcessingFinished()
 
 void ChatController::connectAPIsSignals()
 {
-    const std::vector<LLMAPIEntry*>& apiList = service_->getAPIs();
-    for (LLMAPIEntry* api : apiList)
+    const std::vector<LLMService*>& apiList = llmServices_->getAPIs();
+    for (LLMService* api : apiList)
     {
         QObject::connect(api, SIGNAL(modelLoadingStarted(const QString&)), this, SIGNAL(loadingStarted()));
         QObject::connect(api, SIGNAL(modelLoadingFinished(const QString&, bool)), this, SIGNAL(loadingFinished()));
@@ -87,7 +82,7 @@ void ChatController::createChat()
 {
     chatCounter_++;
     QString chatName = QString("Chat %1").arg(chatCounter_);
-    Chat* chat = new Chat(service_, chatName, "", true, this);
+    Chat* chat = new ChatImpl(llmServices_, chatName, "", true, this);
     chats_.append(chat);
 
     currentChat_ = chat;
@@ -148,7 +143,7 @@ void ChatController::renameChat(int index, const QString& name)
 {
     if (index >= 0 && index < chats_.size())
     {
-        chats_[index]->name_ = name;
+        chats_[index]->setName(name);
         saveChats();
         emit chatListChanged();
     }
@@ -159,7 +154,7 @@ void ChatController::sendMessage(const QString& text)
     if (!currentChat_)
         return;
 
-    LLMAPIEntry* api = service_->get(currentChat_->currentApi());
+    LLMService* api = llmServices_->get(currentChat_->getCurrentApi());
     if (api)
     {
         qDebug() << "ChatController::sendMessage ... start loading spinner";
@@ -177,16 +172,14 @@ void ChatController::sendMessage(const QString& text)
             }
         }
 
-        service_->post(api, currentChat_, prompt, true);
+        llmServices_->post(api, currentChat_, prompt, true);
     }
 }
 
 void ChatController::stopGeneration()
 {
     if (currentChat_)
-    {
-        service_->stopStream(currentChat_);
-    }
+        llmServices_->stop(currentChat_);
 }
 
 QVariantList ChatController::getAvailableModels()
@@ -194,8 +187,8 @@ QVariantList ChatController::getAvailableModels()
     QVariantList models;
 
     // Get models from current API or all APIs
-    LLMAPIEntry* currentApi = currentChat_ ? service_->get(currentChat_->currentApi()) : nullptr;
-    std::vector<LLMModel> modelList = service_->getAvailableModels(currentApi);
+    LLMService* currentApi = currentChat_ ? llmServices_->get(currentChat_->getCurrentApi()) : nullptr;
+    std::vector<LLMModel> modelList = llmServices_->getAvailableModels(currentApi);
 
     for (const LLMModel& model : modelList)
     {
@@ -213,8 +206,8 @@ QVariantList ChatController::getAvailableAPIs()
 {
     QVariantList apis;
 
-    const std::vector<LLMAPIEntry*>& apiList = service_->getAPIs();
-    for (LLMAPIEntry* api : apiList)
+    const std::vector<LLMService*>& apiList = llmServices_->getAPIs();
+    for (LLMService* api : apiList)
     {
         QVariantMap apiInfo;
         apiInfo["name"] = api->name_;
@@ -307,13 +300,13 @@ void ChatController::loadChats()
             // then overwrite Actually standard creation connects signals which is good. But standard creation appends
             // to list. Let's create chat manually here to control initialization from JSON.
 
-            Chat* chat = new Chat(service_, "", "", true, this);
+            Chat* chat = new ChatImpl(llmServices_, "", "", true, this);
             chat->fromJson(val.toObject());
 
             // Ensure unique name handling if needed, but for now trust JSON or just let it be.
             // If chat name is empty (legacy?), give it a name.
-            if (chat->name_.isEmpty())
-                chat->name_ = QString("Chat %1").arg(chatCounter_);
+            if (chat->getName().isEmpty())
+                chat->setName(QString("Chat %1").arg(chatCounter_));
 
             chats_.append(chat);
 

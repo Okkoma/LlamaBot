@@ -8,7 +8,7 @@
 #include "Application.h"
 #include "ChatController.h"
 #include "Clipboard.h"
-#include "LLMService.h"
+#include "LLMServices.h"
 #include "OllamaModelStoreDialog.h"
 #include "ThemeManager.h"
 
@@ -38,7 +38,7 @@ Application::Application(int& argc, char** argv) :
     clipboard_ = new Clipboard(this);
 
     // Initialize Controller
-    chatController_ = new ChatController(ApplicationServices::get<LLMService>(), this);
+    chatController_ = new ChatController(ApplicationServices::get<LLMServices>(), this);
 
     // Initialize Model Store Dialog
     modelStoreDialog_ = new OllamaModelStoreDialog(this);

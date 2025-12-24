@@ -1,23 +1,8 @@
-#include <QDebug>
-#include <QDir>
-#include <QJsonArray>
-#include <QJsonDocument>
-
-#include <QPushButton>
-
 #include <QNetworkAccessManager>
 #include <QNetworkReply>
 #include <QNetworkRequest>
 
-#include <QFuture>
-#include <QMutex>
-#include <QThread>
-#include <QWaitCondition>
 #include <QtConcurrent/QtConcurrent>
-#include <atomic>
-
-#include "Chat.h"
-#include "LLMService.h"
 
 #include "LlamaCppService.h"
 
@@ -293,14 +278,14 @@ void LlamaCppChatData::deinitialize()
 
 struct LlamaCppProcessAsync : public LlamaCppProcess
 {
-    LlamaCppProcessAsync(LlamaCppChatData* data, LLMService* service) : LlamaCppProcess(0, data, service) {}
+    LlamaCppProcessAsync(LlamaCppChatData* data, LLMServices* service) : LlamaCppProcess(0, data, service) {}
     ~LlamaCppProcessAsync() override { stop(); }
 
     void start(Chat* chat, const QString& content, bool streamed) override
     {
         // Prepare tokens and batch for asynchronous generation
         data_->chat_ = chat;
-        data_->tokens_ = LlamaTokenize(*data_, chat->rawMessages_);
+        data_->tokens_ = LlamaTokenize(*data_, chat->getMessagesRaw());
         data_->tokenId_ = 1; // initial value > 0 to enter the loop
         data_->response_.clear();
         data_->batch_ = llama_batch_get_one(data_->tokens_.data(), data_->tokens_.size());
@@ -370,7 +355,7 @@ struct LlamaCppProcessAsync : public LlamaCppProcess
 
 struct LlamaCppProcessThread : public LlamaCppProcess
 {
-    LlamaCppProcessThread(LlamaCppChatData* data, LLMService* service) : LlamaCppProcess(1, data, service) {}
+    LlamaCppProcessThread(LlamaCppChatData* data, LLMServices* service) : LlamaCppProcess(1, data, service) {}
     ~LlamaCppProcessThread() override { stop(); }
 
     void start(Chat* chat, const QString& content, bool streamed) override
@@ -378,7 +363,7 @@ struct LlamaCppProcessThread : public LlamaCppProcess
         // Prepare data for threaded generation
         QMutexLocker locker(&mutex_);
         data_->chat_ = chat;
-        data_->tokens_ = LlamaTokenize(*data_, data_->chat_->rawMessages_);
+        data_->tokens_ = LlamaTokenize(*data_, data_->chat_->getMessagesRaw());
         data_->tokenId_ = 1; // initial value > 0 to enter the loop
         data_->response_.clear();
         stopRequested_ = false;
@@ -542,8 +527,8 @@ void LlamaCppWorker::stopProcessing()
 }
 
 
-LlamaCppService::LlamaCppService(LLMService* service, const QString& name) :
-    LLMAPIEntry(LLMEnum::LLMType::LlamaCpp, service, name)
+LlamaCppService::LlamaCppService(LLMServices* service, const QString& name) :
+    LLMService(LLMEnum::LLMType::LlamaCpp, service, name)
 {
     bool check = checkGpuMemoryAvailable(0);
 
@@ -554,8 +539,8 @@ LlamaCppService::LlamaCppService(LLMService* service, const QString& name) :
     qDebug().noquote() << getBackendInfo();
 }
 
-LlamaCppService::LlamaCppService(const QVariantMap& params) :
-    LLMAPIEntry(params)
+LlamaCppService::LlamaCppService(LLMServices* service, const QVariantMap& params) :
+    LLMService(service, params)
 {
     // Default GPU configuration
     setDefaultUseGpu(true);
@@ -604,9 +589,9 @@ void LlamaCppService::initializeData(LlamaCppChatData* data, LlamaModelData* mod
     data->initialize(model);
 
     if (useThreadedVersion_)
-        data->generateProcess_ = new LlamaCppProcessThread(data, service_);
+        data->generateProcess_ = new LlamaCppProcessThread(data, llmservices_);
     else
-        data->generateProcess_ = new LlamaCppProcessAsync(data, service_);
+        data->generateProcess_ = new LlamaCppProcessAsync(data, llmservices_);
 }
 
 void LlamaCppService::clearData(LlamaCppChatData* data)
@@ -722,7 +707,7 @@ void LlamaCppService::setModel(Chat* chat, QString modelName)
         data = createData(chat);
 
     if (modelName.isEmpty())
-        modelName = data->model_ ? data->model_->modelName_ : chat->currentModel_;
+        modelName = data->model_ ? data->model_->modelName_ : chat->getCurrentModel();
 
     if (!modelName.isEmpty() && (!data->model_ || modelName != data->model_->modelName_))    
         QFuture<void> f = QtConcurrent::run([this, data, modelName](){ setModelInternal(data, modelName);});    
@@ -752,7 +737,7 @@ void LlamaCppService::post(Chat* chat, const QString& content, bool streamed)
     QFuture<void> f = QtConcurrent::run(
         [this, data, chat]() 
         {
-            setModelInternal(data, chat->currentModel_);
+            setModelInternal(data, chat->getCurrentModel());
         })
         .then(
         [this, data, chat, content, streamed]() 
@@ -851,14 +836,6 @@ void LlamaCppService::stopStream(Chat* chat)
         data->generateProcess_->stopProcess();
 }
 
-QJsonObject LlamaCppService::toJson() const
-{
-    QJsonObject obj;
-    obj["type"] = enumValueToString<LLMEnum>("LLMType", type_);
-    obj["name"] = name_;
-    return obj;
-}
-
 // GPU configuration methods
 void LlamaCppService::setDefaultGpuLayers(int n_gpu_layers)
 {
@@ -948,9 +925,9 @@ std::vector<LLMModel> LlamaCppService::getAvailableModels() const
     std::vector<LLMModel> result;
 
     // LlamaCpp can use shared models from Ollama.
-    LLMAPIEntry* ollamaApi = service_->get(LLMEnum::LLMType::Ollama);
+    LLMService* ollamaApi = llmservices_->get(LLMEnum::LLMType::Ollama);
     if (ollamaApi)
-        result = service_->getAvailableModels(ollamaApi);
+        result = llmservices_->getAvailableModels(ollamaApi);
 
     QString appDataModelsPath = QStandardPaths::writableLocation(QStandardPaths::AppDataLocation) + "/models";
     QDir appDataModelsDir(appDataModelsPath);

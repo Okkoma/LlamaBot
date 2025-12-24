@@ -1,6 +1,8 @@
 #pragma once
 
-#include "LLMServiceDefs.h"
+#include "LLMServices.h"
+
+class QNetworkAccessManager;
 
 class OllamaManifest
 {
@@ -94,12 +96,12 @@ public:
     QList<Layer> layers_;
 };
 
-class OllamaService : public LLMAPIEntry
+class OllamaService : public LLMService
 {
 public:
-    OllamaService(LLMService* service, const QString& name, const QString& url, const QString& ver, const QString& gen,
+    OllamaService(LLMServices* service, const QString& name, const QString& url, const QString& ver, const QString& gen,
         const QString& apiKey, const QString& programPath, const QStringList& programArguments);
-    OllamaService(const QVariantMap& params);
+    OllamaService(LLMServices* service, const QVariantMap& params);
     ~OllamaService() override;
 
     bool start() override;
@@ -110,15 +112,12 @@ public:
 
     bool handleMessageError(Chat* chat, const QString& message) override;
 
-    QJsonObject toJson() const override;
-
     bool isUrlAccessible() const;
     bool isAPIAccessible() const;
     bool isProcessStarted() const;
     bool canStartProcess() const;
 
     std::vector<LLMModel> getAvailableModels() const override;
-
     static OllamaManifest getOllamaManifest(const QString& ollamaDir, const QString& model, const QString& num_params);
     static std::vector<OllamaManifest> getOllamaManifests(const QString& ollamaDir);
     static void getOllamaModels(const QString& ollamaDir, std::vector<LLMModel>& models);
@@ -126,6 +125,10 @@ public:
     static const QString ollamaSystemDir;
     static const QString ollamaManifestBaseDir;
     static const QString ollamaBlobsBaseDir;
+
+private:
+    void postInternal(Chat* chat, const QString& content, bool streamed);
+    bool requireStartProcess();
 
     QString url_;
     QString api_version_;
@@ -136,6 +139,5 @@ public:
     QStringList programArguments_;
     std::shared_ptr<QProcess> programProcess_;
 
-private:
-    void postInternal(Chat* chat, const QString& content, bool streamed);
+    QNetworkAccessManager* networkManager_;    
 };

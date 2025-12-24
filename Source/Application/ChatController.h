@@ -1,11 +1,6 @@
 #pragma once
 
-#include <QObject>
-#include <QVariantList>
-#include <QVariantMap>
-
-#include "Chat.h"
-#include "LLMService.h"
+#include "LLMServices.h"
 #include "RAGService.h"
 
 class ChatController : public QObject
@@ -18,7 +13,7 @@ class ChatController : public QObject
     Q_PROPERTY(RAGService* ragService READ ragService CONSTANT)
 
 public:
-    explicit ChatController(LLMService* service, QObject* parent = nullptr);
+    explicit ChatController(LLMServices* service, QObject* parent = nullptr);
     ~ChatController();
 
     Chat* currentChat() const { return currentChat_; }
@@ -55,7 +50,7 @@ private:
     void checkChatsProcessingFinished();
     void connectAPIsSignals();
 
-    LLMService* service_;
+    LLMServices* llmServices_;
     RAGService* ragService_;
     QList<Chat*> chats_;
     Chat* currentChat_;

@@ -1,11 +1,11 @@
 #pragma once
 
-#include "DocumentProcessor.h"
-#include "VectorStore.h"
 #include <QFutureWatcher>
 #include <QObject>
 
-class LLMService;
+#include "VectorStore.h"
+
+class LLMServices;
 
 class RAGService : public QObject
 {
@@ -13,7 +13,7 @@ class RAGService : public QObject
     Q_PROPERTY(QString collectionStatus READ getCollectionStatus NOTIFY collectionStatusChanged)
 
 public:
-    explicit RAGService(LLMService* llmService, QObject* parent = nullptr);
+    explicit RAGService(LLMServices* LLMServices, QObject* parent = nullptr);
     ~RAGService();
 
     // Ingestion
@@ -42,7 +42,7 @@ signals:
 private:
     void processFileInternal(const QString& filePath);
 
-    LLMService* llmService_;
+    LLMServices* llmServices_;
     VectorStore vectorStore_;
     QString status_;
 
