@@ -27,7 +27,7 @@ Item {
         Rectangle {
             id: userframe
             width: 40; height: 40; radius: 20
-            color: isUser ? themeManager.color("borderEnabled") : themeManager.color("borderDisabled")
+            color: isUser ? themeManager.color("windowDarker") : themeManager.color("windowDarker2")
             Layout.alignment: Qt.AlignTop
             Label {
                 anchors.centerIn: parent
@@ -41,7 +41,7 @@ Item {
             Layout.maximumWidth: root.width * 0.95
             Layout.preferredWidth: bubbleWidth()
             Layout.preferredHeight: msgText.implicitHeight + 20
-            color: isUser ? themeManager.color("borderEnabled") : themeManager.color("borderDisabled")
+            color: isUser ? themeManager.color("windowDarker") : themeManager.color("windowDarker2")
             radius: 10
             
             Item {
@@ -76,8 +76,8 @@ Item {
     Connections {
         target: themeManager
         function onDarkModeChanged() {
-            userframe.color = isUser ? themeManager.color("borderEnabled") : themeManager.color("borderDisabled")
-            bubble.color = isUser ? themeManager.color("borderEnabled") : themeManager.color("borderDisabled")
+            userframe.color = isUser ? themeManager.color("windowDarker") : themeManager.color("windowDarker2")
+            bubble.color = isUser ? themeManager.color("windowDarker") : themeManager.color("windowDarker2")
             msgText.color = themeManager.color("text")
         }
     }    

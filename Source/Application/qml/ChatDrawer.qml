@@ -61,7 +61,7 @@ Drawer {
                 property int themeDependency: drawer.themeRefresh
 
                 background: Rectangle {
-                    color: isCurrent ? themeManager.color("borderEnabled") : (parent.hovered ? themeManager.color("borderDisabled") : "transparent")
+                    color: isCurrent ? themeManager.color("windowDarker") : (parent.hovered ? themeManager.color("windowDarker2") : "transparent")
                     radius: 5
                 }
 

@@ -87,7 +87,7 @@ Rectangle {
                 property int themeDependency: root.themeRefresh
 
                 background: Rectangle {
-                    color: modelListView.isCurrentItem ? themeManager.color("borderEnabled") : (modelDelegate.hovered ? themeManager.color("borderDisabled") : "transparent")
+                    color: modelListView.isCurrentItem ? themeManager.color("windowDarker") : (modelDelegate.hovered ? themeManager.color("windowDarker2") : "transparent")
                 }
 
                 contentItem: Text {

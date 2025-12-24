@@ -26,7 +26,7 @@ ComboBox {
             }
             Label {
                 text: modelData.ready ? "●" : "○"
-                color: modelData.ready ? themeManager.color("borderEnabled") : themeManager.color("borderDisabled")
+                color: modelData.ready ? themeManager.color("windowDarker") : themeManager.color("windowDarker2")
                 font.pixelSize: 16
                 anchors.verticalCenter: parent.verticalCenter
             }
