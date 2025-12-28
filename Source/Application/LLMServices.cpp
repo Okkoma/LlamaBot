@@ -172,6 +172,8 @@ bool LLMServices::loadServiceJsonFile()
             addAPI(LLMService::fromJson(this, value.toObject()));
     }
 
+    qDebug() << "loadServiceJsonFile ... " << file.fileName();
+
     return true;
 }
 
@@ -195,6 +197,8 @@ bool LLMServices::saveServiceJsonFile()
     doc.setArray(array);
     QByteArray data = doc.toJson();
     file.write(data);
+
+    qDebug() << "saveServiceJsonFile ... " << file.fileName();
 
     return true;
 }

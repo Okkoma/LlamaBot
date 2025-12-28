@@ -36,7 +36,8 @@ public:
     LLMService(LLMServices* llmservices, const QVariantMap& params) :
         llmservices_(llmservices),
         type_(params["type"].toInt()),
-        name_(params["name"].toString()) {}
+        name_(params["name"].toString()),
+        params_(params) {}
 
     virtual ~LLMService() { stop(); }
 

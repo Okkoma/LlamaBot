@@ -114,6 +114,7 @@ OllamaService::OllamaService(LLMServices* service, const QVariantMap& params) :
     programPath_(params["executable"].toString()),
     programArguments_(params["programargs"].toStringList())
 {
+    networkManager_ = new QNetworkAccessManager(this);
 }
 
 OllamaService::~OllamaService()
@@ -125,8 +126,6 @@ bool OllamaService::start()
 {
     if (!canStartProcess())
         return false;
-
-    networkManager_ = new QNetworkAccessManager(this);
 
     if (!programProcess_)
         programProcess_ = std::shared_ptr<QProcess>(new QProcess());
@@ -173,7 +172,7 @@ bool OllamaService::isUrlAccessible() const
 {
     if (!url_.isEmpty())
     {
-        qDebug() << "OllamaService::isUrlAccessible() ...";
+        qDebug() << "OllamaService::isUrlAccessible() ..." << url_;
 
         QEventLoop loop;
         QNetworkReply* reply = networkManager_->get(QNetworkRequest(url_ + api_version_));
