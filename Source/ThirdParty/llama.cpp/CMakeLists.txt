@@ -12,6 +12,8 @@ if (NOT XCODE AND NOT MSVC AND NOT CMAKE_BUILD_TYPE)
     set_property(CACHE CMAKE_BUILD_TYPE PROPERTY STRINGS "Debug" "Release" "MinSizeRel" "RelWithDebInfo")
 endif()
 
+message("CMAKE_BUILD_TYPE=${CMAKE_BUILD_TYPE}")
+
 # Add path to modules
 list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake/")
 
@@ -31,10 +33,24 @@ endif()
 
 option(LLAMA_USE_SYSTEM_GGML "Use system libggml" OFF)
 
+option(LLAMA_WASM_MEM64 "llama: use 64-bit memory in WASM builds" ON)
+
 if (EMSCRIPTEN)
     set(BUILD_SHARED_LIBS_DEFAULT OFF)
 
-    option(LLAMA_WASM_SINGLE_FILE "llama: embed WASM inside the generated llama.js" ON)
+    # Use 64-bit memory to support backend_get_memory queries
+    # TODO: analyze performance impact, see https://spidermonkey.dev/blog/2025/01/15/is-memory64-actually-worth-using
+    if (LLAMA_WASM_MEM64)
+      add_compile_options("-sMEMORY64=1")
+      add_link_options("-sMEMORY64=1")
+    endif()
+    add_link_options("-sALLOW_MEMORY_GROWTH=1")
+
+    option(LLAMA_WASM_SINGLE_FILE "llama: embed WASM inside the generated llama.js" OFF)
+    option(LLAMA_BUILD_HTML "llama: build HTML file" ON)
+    if (LLAMA_BUILD_HTML)
+        set(CMAKE_EXECUTABLE_SUFFIX ".html")
+    endif()
 else()
     if (MINGW)
         set(BUILD_SHARED_LIBS_DEFAULT OFF)
@@ -56,6 +72,18 @@ if (MSVC)
     add_compile_options("$<$<COMPILE_LANGUAGE:CXX>:/bigobj>")
 endif()
 
+if (LLAMA_STANDALONE)
+    # enable parallel builds for msbuild
+    list(APPEND CMAKE_VS_GLOBALS UseMultiToolTask=true)
+    list(APPEND CMAKE_VS_GLOBALS EnforceProcessCountAcrossBuilds=true)
+endif()
+
+if (CMAKE_SYSTEM_NAME STREQUAL "iOS")
+    set(LLAMA_TOOLS_INSTALL_DEFAULT OFF)
+else()
+    set(LLAMA_TOOLS_INSTALL_DEFAULT ${LLAMA_STANDALONE})
+endif()
+
 #
 # option list
 #
@@ -71,6 +99,22 @@ option(LLAMA_FATAL_WARNINGS "llama: enable -Werror flag" OFF)
 option(LLAMA_SANITIZE_THREAD    "llama: enable thread sanitizer"    OFF)
 option(LLAMA_SANITIZE_ADDRESS   "llama: enable address sanitizer"   OFF)
 option(LLAMA_SANITIZE_UNDEFINED "llama: enable undefined sanitizer" OFF)
+
+# utils
+option(LLAMA_BUILD_COMMON "llama: build common utils library" ${LLAMA_STANDALONE})
+
+# extra artifacts
+option(LLAMA_BUILD_TESTS    "llama: build tests"          ${LLAMA_STANDALONE})
+option(LLAMA_BUILD_TOOLS    "llama: build tools"          ${LLAMA_STANDALONE})
+option(LLAMA_BUILD_EXAMPLES "llama: build examples"       ${LLAMA_STANDALONE})
+option(LLAMA_BUILD_SERVER   "llama: build server example" ${LLAMA_STANDALONE})
+option(LLAMA_TOOLS_INSTALL  "llama: install tools"        ${LLAMA_TOOLS_INSTALL_DEFAULT})
+
+# 3rd party libs
+option(LLAMA_CURL       "llama: use libcurl to download model from an URL" ON)
+option(LLAMA_HTTPLIB    "llama: if libcurl is disabled, use httplib to download model from an URL" ON)
+option(LLAMA_OPENSSL    "llama: use openssl to support HTTPS" OFF)
+option(LLAMA_LLGUIDANCE "llama-common: include LLGuidance library for structured output in common utils" OFF)
 
 # Required for relocatable CMake package
 include(${CMAKE_CURRENT_SOURCE_DIR}/cmake/build-info.cmake)
@@ -155,14 +199,95 @@ if (NOT TARGET ggml AND NOT LLAMA_USE_SYSTEM_GGML)
     # ... otherwise assume ggml is added by a parent CMakeLists.txt
 endif()
 
-if (MINGW)
-    # Target Windows 8 for PrefetchVirtualMemory
-    add_compile_definitions(_WIN32_WINNT=${GGML_WIN_VER})
-endif()
-
 #
 # build the library
 #
 
 add_subdirectory(src)
 
+#
+# utils, programs, examples and tests
+#
+
+if (NOT LLAMA_BUILD_COMMON)
+    message(STATUS "LLAMA_BUILD_COMMON is OFF, disabling LLAMA_CURL")
+    set(LLAMA_CURL OFF)
+endif()
+
+if (LLAMA_BUILD_COMMON)
+    add_subdirectory(common)
+    if (LLAMA_HTTPLIB)
+        add_subdirectory(vendor/cpp-httplib)
+    endif()
+endif()
+
+if (LLAMA_BUILD_COMMON AND LLAMA_BUILD_TESTS AND NOT CMAKE_JS_VERSION)
+    include(CTest)
+    add_subdirectory(tests)
+endif()
+
+if (LLAMA_BUILD_COMMON AND LLAMA_BUILD_EXAMPLES)
+    add_subdirectory(examples)
+    add_subdirectory(pocs)
+endif()
+
+if (LLAMA_BUILD_COMMON AND LLAMA_BUILD_TOOLS)
+    add_subdirectory(tools)
+endif()
+
+#
+# install
+#
+
+include(GNUInstallDirs)
+include(CMakePackageConfigHelpers)
+
+set(LLAMA_INCLUDE_INSTALL_DIR ${CMAKE_INSTALL_INCLUDEDIR} CACHE PATH "Location of header  files")
+set(LLAMA_LIB_INSTALL_DIR     ${CMAKE_INSTALL_LIBDIR}     CACHE PATH "Location of library files")
+set(LLAMA_BIN_INSTALL_DIR     ${CMAKE_INSTALL_BINDIR}     CACHE PATH "Location of binary  files")
+
+set(LLAMA_PUBLIC_HEADERS
+    ${CMAKE_CURRENT_SOURCE_DIR}/include/llama.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/include/llama-cpp.h)
+
+set_target_properties(llama
+    PROPERTIES
+        PUBLIC_HEADER "${LLAMA_PUBLIC_HEADERS}")
+
+install(TARGETS llama LIBRARY PUBLIC_HEADER)
+
+configure_package_config_file(
+        ${CMAKE_CURRENT_SOURCE_DIR}/cmake/llama-config.cmake.in
+        ${CMAKE_CURRENT_BINARY_DIR}/llama-config.cmake
+    INSTALL_DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/llama
+    PATH_VARS LLAMA_INCLUDE_INSTALL_DIR
+              LLAMA_LIB_INSTALL_DIR
+              LLAMA_BIN_INSTALL_DIR )
+
+write_basic_package_version_file(
+        ${CMAKE_CURRENT_BINARY_DIR}/llama-version.cmake
+    VERSION ${LLAMA_INSTALL_VERSION}
+    COMPATIBILITY SameMajorVersion)
+
+install(FILES ${CMAKE_CURRENT_BINARY_DIR}/llama-config.cmake
+              ${CMAKE_CURRENT_BINARY_DIR}/llama-version.cmake
+        DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/llama)
+
+install(
+    FILES convert_hf_to_gguf.py
+    PERMISSIONS
+        OWNER_READ
+        OWNER_WRITE
+        OWNER_EXECUTE
+        GROUP_READ
+        GROUP_EXECUTE
+        WORLD_READ
+        WORLD_EXECUTE
+    DESTINATION ${CMAKE_INSTALL_BINDIR})
+
+configure_file(cmake/llama.pc.in
+        "${CMAKE_CURRENT_BINARY_DIR}/llama.pc"
+        @ONLY)
+
+install(FILES "${CMAKE_CURRENT_BINARY_DIR}/llama.pc"
+        DESTINATION ${CMAKE_INSTALL_LIBDIR}/pkgconfig)
