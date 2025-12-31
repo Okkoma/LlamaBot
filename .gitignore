@@ -9,3 +9,5 @@ diagnose*.sh
 create_android_project.sh
 .vscode
 .cursorignore
+tmp*
+coverage*
