@@ -1,0 +1,16 @@
+[Desktop Entry]
+Version=1.0
+Type=Application
+Name=LlamaBot
+GenericName=AI Chat Application
+Comment=Chat with AI models using LlamaBot
+Exec=LlamaBot
+Icon=llamabot
+Terminal=false
+Categories=Utility;AI;Chat;
+StartupWMClass=LlamaBot
+
+[Desktop Action NewWindow]
+Name=New Window
+Exec=LlamaBot
+OnlyShowIn=Unity;

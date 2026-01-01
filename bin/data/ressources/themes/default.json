@@ -1,0 +1,27 @@
+{
+    "name": "Default",
+    "dark":
+    {
+        "window": "#121212",
+        "windowText": "#C0C0C0",
+        "base": "#121212",
+        "accent": "#4CAF50",
+        "windowDarker": "#222222",
+        "windowDarker2": "#323232",
+        "text": "#C0C0C0",
+        "button": "#1E1E1E",
+        "buttonText": "#C0C0C0"
+    },
+    "light":
+    {
+        "window": "#FAFAFA",
+        "windowText": "#040404",
+        "base": "#FAFAFA",
+        "accent": "#4CAF50",
+        "windowDarker": "#EAEAEA",
+        "windowDarker2": "#DADADA",
+        "text": "#040404",
+        "button": "#F5F5F5",
+        "buttonText": "#414141"
+    }
+}
