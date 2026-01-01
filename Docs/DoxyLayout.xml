@@ -1,0 +1,147 @@
+<doxygenlayout version="1.0">
+  <!-- Navigation panel -->
+  <navindex>
+    <tab type="mainpage" title="Accueil"/>
+    <tab type="pages" title="Pages"/>
+    <tab type="modules" title="Modules" visible="no"/>
+    <tab type="namespaces" title="Espaces de noms" visible="no"/>
+    <tab type="classes" title="Classes">
+      <tab type="classes" title="Liste des classes" intro="yes"/>
+      <tab type="classindex" title="Index des classes"/>
+      <tab type="classhierarchy" title="Hiérarchie des classes"/>
+      <tab type="classmembers" title="Membres des classes"/>
+    </tab>
+    <tab type="files" title="Fichiers">
+      <tab type="files" title="Liste des fichiers" intro="yes"/>
+      <tab type="globals" title="Éléments globaux"/>
+    </tab>
+    <tab type="examples" title="Exemples" visible="no"/>
+  </navindex>
+
+  <!-- Layout definition -->
+  <layout>
+    <class>
+      <briefdescription/>
+      <includes/>
+      <inheritancegraph/>
+      <collaborationgraph/>
+      <allmemberslink/>
+      <detaileddescription/>
+      <memberdecl>
+        <public/>
+        <signals/>
+        <publicslots/>
+        <protected/>
+        <protectedslots/>
+        <private/>
+        <privateslots/>
+        <friends/>
+        <related/>
+        <membergroups/>
+      </memberdecl>
+      <memberdef>
+        <inlineclasses value="no"/>
+        <typedefs/>
+        <enums/>
+        <constructors/>
+        <functions/>
+        <related/>
+        <variables/>
+        <properties/>
+        <events/>
+      </memberdef>
+      <usedfiles/>
+      <examples/>
+    </class>
+
+    <namespace>
+      <briefdescription/>
+      <memberdecl>
+        <nestednamespaces/>
+        <classes/>
+        <typedefs/>
+        <enums/>
+        <functions/>
+        <variables/>
+      </memberdecl>
+      <detaileddescription/>
+      <memberdef>
+        <inlineclasses value="no"/>
+        <typedefs/>
+        <enums/>
+        <functions/>
+        <variables/>
+      </memberdef>
+    </namespace>
+
+    <file>
+      <briefdescription/>
+      <includes/>
+      <includegraph/>
+      <includedbygraph/>
+      <sourcelink/>
+      <detaileddescription/>
+      <memberdecl>
+        <classes/>
+        <namespaces/>
+        <typedefs/>
+        <enums/>
+        <functions/>
+        <variables/>
+        <defines/>
+      </memberdecl>
+      <memberdef>
+        <inlineclasses value="no"/>
+        <typedefs/>
+        <enums/>
+        <functions/>
+        <variables/>
+        <defines/>
+      </memberdef>
+      <examples/>
+    </file>
+
+    <group>
+      <briefdescription/>
+      <groupgraph/>
+      <memberdecl>
+        <nestedgroups/>
+        <dirs/>
+        <files/>
+        <namespaces/>
+        <classes/>
+        <typedefs/>
+        <enums/>
+        <enumvalues/>
+        <functions/>
+        <variables/>
+        <signals/>
+        <publicslots/>
+        <protectedslots/>
+        <privateslots/>
+        <friends/>
+        <defines/>
+      </memberdecl>
+      <detaileddescription/>
+      <memberdef>
+        <inlineclasses value="no"/>
+        <typedefs/>
+        <enums/>
+        <enumvalues/>
+        <functions/>
+        <variables/>
+        <defines/>
+      </memberdef>
+    </group>
+
+    <directory>
+      <briefdescription/>
+      <detaileddescription/>
+      <dirgraph/>
+      <memberdecl>
+        <dirs/>
+        <files/>
+      </memberdecl>
+    </directory>
+  </layout>
+</doxygenlayout>

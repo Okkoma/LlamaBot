@@ -1,0 +1,164 @@
+/**
+ * @mainpage Documentation LlamaBot
+ * 
+ * @tableofcontents
+ * 
+ * # Bienvenue dans la documentation LlamaBot
+ * 
+ * LlamaBot est une application moderne de chat LLM (Large Language Model) construite avec Qt et C++. 
+ * Elle permet aux utilisateurs d'interagir avec différents modèles de langage localement ou via des APIs distantes.
+ * 
+ * ## Fonctionnalités principales
+ * 
+ * - **Multi-backend LLM** : Support pour Llama.cpp (local) et Ollama (serveur)
+ * - **Interface utilisateur moderne** : Interface QML réactive et personnalisable
+ * - **Gestion des chats** : Création, suppression et organisation des conversations
+ * - **RAG (Retrieval-Augmented Generation)** : Augmentation des réponses avec des documents personnels
+ * - **Thèmes personnalisables** : Mode sombre/clair et personnalisation des couleurs
+ * - **Streaming en temps réel** : Réponses générées progressivement
+ * - **Gestion des modèles** : Téléchargement et configuration des modèles LLM
+ * 
+ * ## Architecture Logicielle
+ * 
+ * LlamaBot suit une architecture MVC (Modèle-Vue-Contrôleur) avec les composants principaux suivants :
+ * 
+ * ### Couche Application
+ * - Application : Point d'entrée principal
+ * - ChatController : Gestion centrale des chats et conversations  
+ * - ThemeManager : Gestion des thèmes et de l'apparence
+ * 
+ * ### Couche Services LLM
+ * - LLMServices : Gestion unifiée des services LLM
+ * - LlamaCppService : Intégration avec Llama.cpp pour l'exécution locale
+ * - OllamaService : Communication avec le serveur Ollama
+ * 
+ * ### Couche Données
+ * - Chat / ChatImpl : Modèles de données pour les conversations
+ * - RAGService : Recherche et récupération de contexte
+ * - VectorStore : Stockage vectoriel pour les embeddings
+ * 
+ * ### Couche Interface
+ * - QML Components : Interface utilisateur réactive
+ * - API Selector : Sélection des APIs LLM
+ * - Model Selector : Gestion des modèles disponibles
+ * 
+ * ## Diagramme d'Architecture
+ * 
+ * @dot
+ * digraph architecture {
+ *     rankdir=LR;
+ *     node [shape=box, style=rounded, fontsize=12];
+ *     edge [fontsize=10];
+ * 
+ *     // Couches
+ *     subgraph cluster_application {
+ *         label="Couche Application";
+ *         color=lightblue;
+ *         style=filled;
+ *         bgcolor="#e6f3ff";
+ * 
+ *         Application;
+ *         ChatController;
+ *         ThemeManager;
+ *     }
+ * 
+ *     subgraph cluster_services {
+ *         label="Couche Services LLM";
+ *         color=lightgreen;
+ *         style=filled;
+ *         bgcolor="#e6ffe6";
+ * 
+ *         LLMServices;
+ *         LlamaCppService;
+ *         OllamaService;
+ *     }
+ * 
+ *     subgraph cluster_data {
+ *         label="Couche Données";
+ *         color=lightyellow;
+ *         style=filled;
+ *         bgcolor="#ffffe6";
+ * 
+ *         Chat;
+ *         RAGService;
+ *         VectorStore;
+ *     }
+ * 
+ *     subgraph cluster_ui {
+ *         label="Couche Interface";
+ *         color=lightpink;
+ *         style=filled;
+ *         bgcolor="#ffe6e6";
+ * 
+ *         QML;
+ *         APISelector;
+ *         ModelSelector;
+ *     }
+ * 
+ *     // Connexions
+ *     Application -> ChatController;
+ *     ChatController -> LLMServices;
+ *     ChatController -> Chat;
+ *     ChatController -> RAGService;
+ *     ChatController -> ThemeManager;
+ * 
+ *     LLMServices -> LlamaCppService;
+ *     LLMServices -> OllamaService;
+ * 
+ *     Chat -> ChatImpl [label="implémente"];
+ * 
+ *     ChatController -> QML [label="contrôle"];
+ *     QML -> APISelector;
+ *     QML -> ModelSelector;
+ * 
+ *     RAGService -> VectorStore;
+ * }
+ * @enddot
+ * 
+ * ## Guide de Démarrage Rapide
+ * 
+ * ### Prérequis
+ * - Qt 6.x ou supérieur
+ * - C++17 ou supérieur
+ * - Doxygen (pour la documentation)
+ * - Graphviz (pour les diagrammes)
+ * 
+ * ### Installation
+ * ```bash
+ * # Clonez le dépôt
+ * git clone https://github.com/votre-repo/llamabot.git
+ * cd llamabot
+ * 
+ * # Configurez et construisez
+ * mkdir build && cd build
+ * cmake ..
+ * cmake --build . --config Release
+ * 
+ * # Exécutez l'application
+ * ./LlamaBot
+ * ```
+ * 
+ * ### Configuration
+ * La configuration se fait via le fichier `config.json` ou l'interface utilisateur :
+ * - Sélectionnez l'API LLM (Llama.cpp ou Ollama)
+ * - Choisissez un modèle disponible
+ * - Configurez les paramètres de génération
+ * - Activez/désactivez le RAG selon vos besoins
+ * 
+ * ## Exemples d'Utilisation
+ * 
+ * Consultez la page @ref examples pour des exemples complets d'utilisation de l'API.
+ * 
+ * ## Documentation Technique
+ * 
+ * - @subpage architecture "Architecture détaillée"
+ * - @subpage api "Documentation de l'API"
+ * - @subpage examples "Exemples d'utilisation"
+ * - @subpage contribution "Guide de contribution"
+ * 
+ * ## Ressources Externes
+ * 
+ * - [Documentation Qt](https://doc.qt.io/)
+ * - [Documentation Llama.cpp](https://github.com/ggerganov/llama.cpp)
+ * - [Documentation Ollama](https://ollama.ai/)
+ */

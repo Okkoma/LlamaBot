@@ -1,0 +1,252 @@
+/**
+ * @page architecture Architecture Détaillée
+ * 
+ * @tableofcontents
+ * 
+ * # Architecture Détaillée de LlamaBot
+ * 
+ * Cette page décrit en détail l'architecture logicielle de LlamaBot.
+ * 
+ * ## Vue d'Ensemble
+ * 
+ * LlamaBot suit une architecture modulaire basée sur le pattern MVC (Modèle-Vue-Contrôleur) 
+ * avec une séparation claire des responsabilités entre les différentes couches.
+ * 
+ * @dot
+ * digraph overview {
+ *     rankdir=TB;
+ *     node [shape=box, style=rounded];
+ * 
+ *     "Interface Utilisateur" -> "Contrôleurs"
+ *     "Contrôleurs" -> "Services"
+ *     "Services" -> "Modèles de Données"
+ *     "Modèles de Données" -> "Stockage"
+ * }
+ * @enddot
+ * 
+ * ## Couche Application (Contrôleurs)
+ * 
+ * La couche application gère la logique métier et coordonne les interactions 
+ * entre l'interface utilisateur et les services.
+ * 
+ * ### Composants Principaux
+ * 
+ * #### Application
+ * - Point d'entrée principal de l'application
+ * - Initialise tous les composants
+ * - Gère le cycle de vie de l'application
+ * 
+ * #### ChatController
+ * - Gestion centrale des chats et conversations
+ * - Coordination entre l'interface et les services LLM
+ * - Gestion des états des chats
+ * - Émission des signaux pour l'interface
+ * 
+ * #### ThemeManager
+ * - Gestion des thèmes et de l'apparence
+ * - Chargement et application des styles
+ * - Gestion du mode sombre/clair
+ * - Personnalisation des couleurs
+ * 
+ * ## Couche Services LLM
+ * 
+ * Cette couche fournit une abstraction unifiée pour interagir avec différents 
+ * backends LLM (Llama.cpp, Ollama, etc.).
+ * 
+ * ### LLMServices
+ * - Interface unifiée pour tous les services LLM
+ * - Gestion du cycle de vie des services
+ * - Routage des requêtes vers les backends appropriés
+ * - Gestion des modèles partagés
+ * 
+ * ### LlamaCppService
+ * - Intégration avec la bibliothèque Llama.cpp
+ * - Chargement et gestion des modèles locaux
+ * - Configuration GPU/CPU
+ * - Gestion des contextes et du streaming
+ * 
+ * ### OllamaService
+ * - Communication avec le serveur Ollama
+ * - Gestion des requêtes HTTP
+ * - Démarrage/arrêt du serveur Ollama
+ * - Gestion des modèles distants
+ * 
+ * ## Couche Données
+ * 
+ * Cette couche gère les modèles de données et la persistance.
+ * 
+ * ### Chat et ChatImpl
+ * - Modèle de données pour les conversations
+ * - Gestion de l'historique des messages
+ * - Sérialisation/désérialisation
+ * - Support du streaming
+ * 
+ * ### RAGService
+ * - Implémentation du Retrieval-Augmented Generation
+ * - Ingestion et indexation des documents
+ * - Recherche vectorielle
+ * - Génération de contexte pertinent
+ * 
+ * ### VectorStore
+ * - Stockage vectoriel pour les embeddings
+ * - Indexation des documents
+ * - Recherche de similarité
+ * - Persistance des données
+ * 
+ * ## Couche Interface
+ * 
+ * L'interface utilisateur est implémentée en QML pour une expérience 
+ * utilisateur moderne et réactive.
+ * 
+ * ### Composants QML Principaux
+ * 
+ * #### Main.qml
+ * - Structure principale de l'application
+ * - Gestion de la navigation
+ * - Intégration des différents composants
+ * 
+ * #### ChatView.qml
+ * - Affichage des conversations
+ * - Gestion des messages
+ * - Support du streaming en temps réel
+ * 
+ * #### InputArea.qml
+ * - Zone de saisie des messages
+ * - Gestion des commandes
+ * - Suggestions et complétion
+ * 
+ * #### APISelector.qml
+ * - Sélection des backends LLM
+ * - Configuration des APIs
+ * - Gestion des connexions
+ * 
+ * #### ModelSelector.qml
+ * - Liste des modèles disponibles
+ * - Téléchargement des modèles
+ * - Configuration des paramètres
+ * 
+ * ## Flux de Données
+ * 
+ * @dot
+ * digraph dataflow {
+ *     rankdir=LR;
+ *     node [shape=box];
+ *     edge [fontsize=10];
+ * 
+ *     "Utilisateur" -> "Interface QML" [label="Interaction"];
+ *     "Interface QML" -> "ChatController" [label="Commandes"];
+ *     "ChatController" -> "LLMServices" [label="Requêtes"];
+ *     "LLMServices" -> "LlamaCpp/Ollama" [label="Traitement"];
+ *     "LlamaCpp/Ollama" -> "LLMServices" [label="Réponses"];
+ *     "LLMServices" -> "ChatController" [label="Mise à jour"];
+ *     "ChatController" -> "Interface QML" [label="Affichage"];
+ *     "Interface QML" -> "Utilisateur" [label="Feedback"];
+ * 
+ *     "ChatController" -> "RAGService" [label="Recherche"];
+ *     "RAGService" -> "VectorStore" [label="Requête"];
+ *     "VectorStore" -> "RAGService" [label="Résultats"];
+ *     "RAGService" -> "ChatController" [label="Contexte"];
+ * }
+ * @enddot
+ * 
+ * ## Patterns de Conception
+ * 
+ * ### Singleton
+ * - Utilisé pour les services principaux (LLMServices, RAGService)
+ * - Garantit une seule instance accessible globalement
+ * - Facilite la gestion des ressources
+ * 
+ * ### Observer
+ * - Implémenté via les signaux/slots Qt
+ * - Notification des changements d'état
+ * - Mise à jour de l'interface en temps réel
+ * 
+ * ### Factory
+ * - Création des services LLM
+ * - Instanciation des modèles de chat
+ * - Gestion des différents backends
+ * 
+ * ### Strategy
+ * - Différentes stratégies de génération
+ * - Choix entre streaming et génération complète
+ * - Sélection des backends LLM
+ * 
+ * ## Gestion des États
+ * 
+ * ### États du Chat
+ * - **Idle** : Chat créé mais aucun traitement en cours
+ * - **Processing** : Génération de réponse en cours
+ * - **Streaming** : Réponse générée progressivement
+ * - **Error** : Erreur lors du traitement
+ * 
+ * ### États du Service
+ * - **NotReady** : Service non initialisé
+ * - **Ready** : Service prêt à recevoir des requêtes
+ * - **Busy** : Service en cours de traitement
+ * - **Error** : Erreur dans le service
+ * 
+ * ## Persistance des Données
+ * 
+ * ### Formats de Stockage
+ * - **JSON** : Pour la configuration et les chats
+ * - **Binaire** : Pour les embeddings et le VectorStore
+ * - **SQLite** : Pour les métadonnées (future implémentation)
+ * 
+ * ### Emplacements de Stockage
+ * - `~/.config/LlamaBot/` : Configuration utilisateur
+ * - `~/.local/share/LlamaBot/` : Données de l'application
+ * - `chats/` : Sauvegarde des conversations
+ * - `models/` : Cache des modèles
+ * - `rag/` : Index RAG et documents
+ * 
+ * ## Intégration avec Qt
+ * 
+ * ### Modules Qt Utilisés
+ * - **Qt Core** : Base de l'application
+ * - **Qt GUI** : Composants d'interface
+ * - **Qt QML** : Interface utilisateur moderne
+ * - **Qt Network** : Communication réseau
+ * - **Qt Concurrent** : Traitement asynchrone
+ * - **Qt Quick Controls 2** : Composants QML
+ * 
+ * ### Fonctionnalités Qt Exploitées
+ * - Signaux et slots pour la communication
+ * - Modèle/vue pour les listes de données
+ * - Threads pour le traitement asynchrone
+ * - Système de propriétés pour la liaison de données
+ * - Internationalisation (i18n) pour le support multilingue
+ * 
+ * ## Bonnes Pratiques
+ * 
+ * ### Gestion de la Mémoire
+ * - Utilisation des pointeurs intelligents (QSharedPointer)
+ * - Nettoyage explicite des ressources
+ * - Gestion du cycle de vie des objets
+ * 
+ * ### Performance
+ * - Traitement asynchrone pour ne pas bloquer l'UI
+ * - Cache des modèles et embeddings
+ * - Optimisation GPU pour Llama.cpp
+ * - Streaming pour les réponses longues
+ * 
+ * ### Maintenabilité
+ * - Séparation claire des responsabilités
+ * - Documentation complète avec Doxygen
+ * - Tests unitaires pour les composants critiques
+ * - Respect des conventions de codage
+ * 
+ * ## Évolution Future
+ * 
+ * ### Améliorations Prévues
+ * - Support de nouveaux backends LLM
+ * - Amélioration du RAG avec plus de formats de documents
+ * - Interface utilisateur plus personnalisable
+ * - Meilleure gestion des erreurs et récupération
+ * - Support multi-plateforme amélioré
+ * 
+ * ### Architecture Future
+ * - Plugin system pour les backends LLM
+ * - Micro-services pour les composants critiques
+ * - Support du cloud pour la synchronisation
+ * - Intégration avec d'autres applications
+ */
