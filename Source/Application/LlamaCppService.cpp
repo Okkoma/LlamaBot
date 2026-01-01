@@ -171,14 +171,23 @@ std::vector<llama_token> LlamaTokenize(LlamaCppChatData& data, const QString& pr
     return LlamaTokenize(data.ctx_, data.model_->model_, prompt);
 }
 
+QString LlamaGenerationErrors_[4] =
+{
+    QString("end of generation"),
+    QString("ontext exceeded"),
+    QString("failed to decode"),
+    QString("failed to convert token to piece")
+};
+
 int LlamaGenerateStep(LlamaCppChatData& data, std::vector<llama_token>& prompt_tokens, QString& response)
 {
     const llama_vocab* vocab = llama_model_get_vocab(data.model_->model_);
 
     // check if we have enough space in the context to evaluate this batch
-    int n_ctx = llama_n_ctx(data.ctx_);
-    int n_ctx_used = llama_memory_seq_pos_max(llama_get_memory(data.ctx_), 0) + 1;
-    if (n_ctx_used + data.batch_.n_tokens > n_ctx)
+    data.n_ctx_ = llama_n_ctx(data.ctx_);
+    data.n_ctx_used_ = llama_memory_seq_pos_max(llama_get_memory(data.ctx_), 0) + 1;
+
+    if (data.n_ctx_used_ + data.batch_.n_tokens > data.n_ctx_)
     {
         qWarning() << "LlamaGenerateStep: error -1 = ontext exceeded";
         return -1;
@@ -331,8 +340,9 @@ struct LlamaCppProcessAsync : public LlamaCppProcess
         }
 
         data_->tokenId_ = LlamaGenerateStep(*data_, data_->tokens_, data_->response_);
+        data_->chat_->updateContextStates(data_->n_ctx_, data_->n_ctx_used_);
         data_->chat_->updateCurrentAIStream(data_->response_);
-
+        
         if (data_->tokenId_ <= 0)
         {
             stopProcess();
@@ -381,6 +391,7 @@ struct LlamaCppProcessThread : public LlamaCppProcess
             QObject::connect(worker_, &LlamaCppWorker::tokenGenerated, service_,
                 [this, chat](const QString& token)
                 {
+                    chat->updateContextStates(data_->n_ctx_, data_->n_ctx_used_);
                     chat->updateCurrentAIStream(token);
                 });
 
@@ -388,7 +399,9 @@ struct LlamaCppProcessThread : public LlamaCppProcess
                 [this, chat]()
                 {
                     if (chat)
+                    {
                         chat->setProcessing(false);
+                    }
 
                     QMutexLocker locker(&mutex_);
                     data_->chat_ = nullptr;
@@ -507,7 +520,11 @@ void LlamaCppWorker::processRequest()
         locker.relock();
 
         if (data.tokenId_ <= 0) // End of generation
+        {
+            if (data.tokenId_ < 0)
+                emit errorOccurred(LlamaGenerationErrors_[-data.tokenId_]);
             break;
+        }
 
         // Emit generated token
         emit tokenGenerated(data.response_);
@@ -964,13 +981,13 @@ const LlamaModelData* LlamaCppService::getModel(const QString& modelname) const
 
 LlamaCppChatData* LlamaCppService::getData(Chat* chat)
 {
-    QHash<Chat*, LlamaCppChatData>::iterator it = datas_.find(chat);
+    QHash<const Chat*, LlamaCppChatData>::iterator it = datas_.find(chat);
     return it != datas_.end() ? &it.value() : nullptr;
 }
 
-const LlamaCppChatData* LlamaCppService::getData(Chat* chat) const
+const LlamaCppChatData* LlamaCppService::getData(const Chat* chat) const
 {
-    QHash<Chat*, LlamaCppChatData>::const_iterator it = datas_.find(chat);
+    QHash<const Chat*, LlamaCppChatData>::const_iterator it = datas_.find(chat);
     return it != datas_.end() ? &it.value() : nullptr;
 }
 

@@ -37,6 +37,7 @@ public:
     Q_INVOKABLE void setAPI(const QString& apiName);
 
 signals:
+    void chatContentUpdated(Chat* chat);
     void currentChatChanged();
     void chatListChanged();
     void availableModelsChanged();
@@ -46,7 +47,9 @@ signals:
 private:
     void saveChats();
     void loadChats();
+    
     QString getChatsFilePath() const;
+    void notifyUpdatedChat(Chat* chat);
     void checkChatsProcessingFinished();
     void connectAPIsSignals();
 

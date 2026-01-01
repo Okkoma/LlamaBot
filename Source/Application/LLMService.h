@@ -91,7 +91,7 @@ public:
 
     virtual std::vector<float> getEmbedding(const QString& text) { return {}; }
     virtual std::vector<LLMModel> getAvailableModels() const { return {}; }
-
+    
     LLMServices* llmservices_;
     int type_;
     QString name_;

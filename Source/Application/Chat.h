@@ -10,6 +10,12 @@ struct ChatMessage
     QString content;
 };
 
+struct ChatData
+{
+    int n_ctx_{2048};
+    int n_ctx_used_{0};
+};
+
 class Chat : public QObject
 {
     Q_OBJECT
@@ -17,6 +23,8 @@ class Chat : public QObject
     Q_PROPERTY(const QString& currentModel READ getCurrentModel WRITE setModel NOTIFY currentModelChanged)
     Q_PROPERTY(const QStringList& messages READ getMessages NOTIFY messagesChanged)
     Q_PROPERTY(QVariantList history READ historyList NOTIFY historyChanged)
+    Q_PROPERTY(int tokensConsumed READ getNumContextSizeUsed NOTIFY messagesChanged)
+    Q_PROPERTY(int tokensTotal READ getNumContextSize NOTIFY messagesChanged)
 
 public:
     Chat(LLMServices* llmservices, const QString& name = "new_chat", const QString& initialContext = "",
@@ -39,13 +47,25 @@ public:
     {
         processing_ = processing;
         if (processing)
-            emit processingStarted();
+        {
+            emit processingStarted(this);
+        }
         else
-            emit processingFinished();        
+        {
+            if (streamed_)
+                finalizeStream();
+            emit processingFinished(this);
+        }
     }
 
     virtual void updateContent(const QString& content) = 0;
     virtual void updateCurrentAIStream(const QString& text) = 0;
+
+    void updateContextStates(int n_ctx, int n_ctx_used)
+    { 
+        data_.n_ctx_ = n_ctx; 
+        data_.n_ctx_used_ = n_ctx_used;
+    }
 
     const QString& getName() const { return name_; }
     bool getStreamed() const { return streamed_; }
@@ -58,6 +78,9 @@ public:
     QList<ChatMessage>& getHistory() { return history_; }
     QJsonObject& getInfo() { return info_; }
     bool isProcessing() const { return processing_; }
+    
+    int getNumContextSize() const { return data_.n_ctx_; };    
+    int getNumContextSizeUsed() const { return data_.n_ctx_used_; };
 
     // Serialization
     virtual QJsonObject toJson() const = 0;
@@ -74,14 +97,18 @@ signals:
     void messagesChanged();
     void streamUpdated(const QString& text); // For raw stream chunks if needed, or just rely on messagesChanged
     void inputCleared();                     // Request to clear input
-    void processingStarted();
-    void processingFinished();
+    void processingStarted(Chat* chat);
+    void processingFinished(Chat* Chat);
     void messageAdded(const QString& role, const QString& content);
     void streamFinishedSignal();
     void historyChanged();
 
 protected:
+    virtual void finalizeStream() = 0;
+
     // Data members
+    ChatData data_;
+
     bool streamed_;
     bool processing_;
 

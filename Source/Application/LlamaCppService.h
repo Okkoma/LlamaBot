@@ -27,12 +27,12 @@ struct LlamaModelData
 {
     QString modelName_;
     QString modelPath_;
-    int n_gpu_layers_ = 99; // Nombre de couches à charger sur GPU (99 = toutes)
-    bool use_gpu_ = true;   // Activer/désactiver GPU
-    llama_model* model_ = nullptr;
+    int n_gpu_layers_{99}; // Nombre de couches à charger sur GPU (99 = toutes)
+    bool use_gpu_{true};   // Activer/désactiver GPU
+    llama_model* model_{nullptr};
 };
 
-struct LlamaCppChatData
+struct LlamaCppChatData : public ChatData
 {
     LlamaCppChatData() = default;
     ~LlamaCppChatData();
@@ -40,13 +40,14 @@ struct LlamaCppChatData
     void initialize(LlamaModelData* model = nullptr);
     void deinitialize();
 
-    Chat* chat_ = nullptr;
+    Chat* chat_{nullptr};
 
-    LlamaModelData* model_ = nullptr;
-    int n_ctx_ = 2048; // Taille du contexte
-    llama_context* ctx_ = nullptr;
-    llama_sampler* smpl_ = nullptr;
-    const char* llamaCppChattemplate_ = nullptr;
+    QString response_;
+
+    LlamaModelData* model_{nullptr};
+    llama_context* ctx_{nullptr};
+    llama_sampler* smpl_{nullptr};
+    const char* llamaCppChattemplate_{nullptr};
 
     llama_batch batch_;
     llama_token tokenId_;
@@ -54,9 +55,7 @@ struct LlamaCppChatData
     std::vector<llama_token> tokens_;
     std::vector<llama_chat_message> llamaCppChatMessages_;
 
-    QString response_;
-
-    LlamaCppProcess* generateProcess_ = nullptr;
+    LlamaCppProcess* generateProcess_{nullptr};
 };
 
 class LlamaCppWorker : public QObject
@@ -120,7 +119,7 @@ public:
     const LlamaModelData* getModel(const QString& modelname) const;
     std::vector<LLMModel> getAvailableModels() const override;
     LlamaCppChatData* getData(Chat* chat);
-    const LlamaCppChatData* getData(Chat* chat) const;
+    const LlamaCppChatData* getData(const Chat* chat) const;
 
     std::vector<float> getEmbedding(const QString& text) override;
 
@@ -130,18 +129,18 @@ public:
     static LlamaCppService* createDefault(LLMServices* service, const QString& name);
 
     QHash<QString, LlamaModelData> models_;
-    QHash<Chat*, LlamaCppChatData> datas_;
+    QHash<const Chat*, LlamaCppChatData> datas_;
 
-    int defaultGpuLayers_ = 99;
-    int defaultContextSize_ = 2048;
-    bool defaultUseGpu_ = true;
-    bool useThreadedVersion_ = false;
-    bool onlyOneModelInMemory_ = true;
+    int defaultGpuLayers_{99};
+    int defaultContextSize_{2048};
+    bool defaultUseGpu_{true};
+    bool useThreadedVersion_{false};
+    bool onlyOneModelInMemory_{true};
 
 private:
     LlamaModelData* loadModel(const QString& model, int numGpuLayers, bool clearOtherModels);
     void setModelInternal(LlamaCppChatData* data, const QString& modelName);
 
-    LlamaModelData* lastModelAddedInMemory_ = nullptr;
-    LlamaModelData* embeddingModel_ = nullptr;
+    LlamaModelData* lastModelAddedInMemory_{nullptr};
+    LlamaModelData* embeddingModel_{nullptr};
 };

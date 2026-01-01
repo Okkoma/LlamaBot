@@ -12,7 +12,7 @@ Drawer {
     }
 
     // Property to force delegate refresh
-    property int themeRefresh: 0
+    property int forceRefresh: 0
 
     ColumnLayout {
         anchors.fill: parent
@@ -58,7 +58,9 @@ Drawer {
                 property var chatData: modelData
                 property bool isCurrent: chatController && chatController.currentChatIndex === chatData.index
                 // Property to force refresh when theme changes
-                property int themeDependency: drawer.themeRefresh
+                property int themeDependency: drawer.forceRefresh
+                // Get the actual Chat object directly from model data
+                property var chatObject: chatData.chatObject
 
                 background: Rectangle {
                     color: isCurrent ? themeManager.color("windowDarker") : (parent.hovered ? themeManager.color("windowDarker2") : "transparent")
@@ -76,12 +78,25 @@ Drawer {
                         Layout.fillWidth: true
                     }
 
-                    Label {
-                        id: chatModelLabel
-                        text: chatData.model + " • " + chatData.messageCount + " messages"
-                        color: themeManager.color("text")
-                        font.pixelSize: 10
+                    RowLayout {
+                        spacing: 5
                         Layout.fillWidth: true
+
+                        Label {
+                            id: chatModelLabel
+                            text: chatData.model
+                            color: themeManager.color("text")
+                            font.pixelSize: 10
+                            Layout.fillWidth: true
+                        }
+
+                        Label {
+                            id: tokensLabel
+                            text: chatObject ? " • " + chatObject.tokensConsumed + "/" + chatObject.tokensTotal + " tokens" : ""
+                            color: themeManager.color("textSecondary")
+                            font.pixelSize: 10
+                            Layout.alignment: Qt.AlignRight
+                        }
                     }
                 }
                 
@@ -164,7 +179,7 @@ Drawer {
             chatBtn.palette.button = themeManager.color("button")
             
             // Force delegates to refresh by incrementing the dependency property
-            drawer.themeRefresh++
+            drawer.forceRefresh++
         }
     }
 }

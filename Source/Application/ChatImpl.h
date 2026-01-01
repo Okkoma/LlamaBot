@@ -25,6 +25,9 @@ public:
     Q_INVOKABLE QString getUserPrompts() const override;
     Q_INVOKABLE QString getBotResponses() const override;
 
+protected:
+    void finalizeStream() override;
+
 private:
     void initialize();
 
@@ -33,8 +36,7 @@ private:
     void addAIContent(const QString& text);
     
     void updateObject();
-    void finalizeStream();
-
+   
     int lastBotIndex_;
 
     QString userPrompt_;

@@ -44,7 +44,7 @@ void ChatImpl::initialize()
 
 void ChatImpl::setApi(const QString& api)
 {
-    if (currentApi_ != api)
+    if (currentApi_ != api && llmservices_->get(api))
     {
         currentApi_ = api;
         emit currentApiChanged();
@@ -166,16 +166,14 @@ void ChatImpl::updateCurrentAIStream(const QString& text)
                 currentAIStream_.removeFirst();
         }
 
+        qDebug() << "Chat::updateCurrentAIStream: " << currentAIStream_;
+        qDebug() << "Chat::updateCurrentAIStream: lastBotIndex_" << lastBotIndex_;
+        qDebug() << "Chat::updateCurrentAIStream: messages_ size" << messages_.size();
+
         messages_[lastBotIndex_] = QString("%1 %2\n").arg(aiPrompt_, currentAIStream_);
 
         // Update history in real-time for QML display
-        // Check if the last entry is an assistant message (streaming placeholder)
-        if (!history_.isEmpty() && history_.last().role == "assistant" && history_.last().content.isEmpty())
-        {
-            // Update the existing empty assistant entry
-            history_.last().content = currentAIStream_;
-        }
-        else if (!history_.isEmpty() && history_.last().role == "assistant")
+        if (!history_.isEmpty() && history_.last().role == "assistant")
         {
             // Update existing assistant message (already streaming)
             history_.last().content = currentAIStream_;
@@ -223,6 +221,8 @@ QVariantList ChatImpl::historyList() const
 QJsonObject ChatImpl::toJson() const
 {
     QJsonObject json;
+    json["n_ctx"] = data_.n_ctx_;
+    json["n_ctx_used"] = data_.n_ctx_used_;
     json["name"] = name_;
     json["api"] = currentApi_;
     json["model"] = currentModel_;
@@ -245,6 +245,9 @@ QJsonObject ChatImpl::toJson() const
 
 void ChatImpl::fromJson(const QJsonObject& json)
 {
+    data_.n_ctx_ = json["n_ctx"].toInt();
+    data_.n_ctx_used_ = json["n_ctx_used"].toInt();
+
     name_ = json["name"].toString();
     QString api = json["api"].toString();
     QString model = json["model"].toString();
@@ -285,6 +288,8 @@ void ChatImpl::fromJson(const QJsonObject& json)
             messagesRaw_ += apiEntry ? apiEntry->formatMessage(this, msg.role, msg.content) : msg.content + "\n";
         }
     }
+
+    qDebug() << "ChatImpl::fromJson" << this;
 
     emit historyChanged();
     emit messagesChanged();

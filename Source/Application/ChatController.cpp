@@ -36,11 +36,13 @@ QVariantList ChatController::chatList() const
     QVariantList list;
     for (int i = 0; i < chats_.size(); ++i)
     {
+        Chat* chat = chats_[i];
         QVariantMap chatInfo;
         chatInfo["index"] = i;
-        chatInfo["name"] = chats_[i]->getName();
-        chatInfo["model"] = chats_[i]->getCurrentModel();
-        chatInfo["messageCount"] = chats_[i]->getMessages().size();
+        chatInfo["name"] = chat->getName();
+        chatInfo["model"] = chat->getCurrentModel();
+        // Add a reference to the Chat object itself
+        chatInfo["chatObject"] = QVariant::fromValue(chat);
         list.append(chatInfo);
     }
     return list;
@@ -49,6 +51,13 @@ QVariantList ChatController::chatList() const
 int ChatController::currentChatIndex() const
 {
     return chats_.indexOf(currentChat_);
+}
+
+void ChatController::notifyUpdatedChat(Chat* chat)
+{
+    qDebug() << "ChatController::notifyUpdatedChat";
+    emit chatContentUpdated(chat);
+    checkChatsProcessingFinished();
 }
 
 void ChatController::checkChatsProcessingFinished()
@@ -87,7 +96,7 @@ void ChatController::createChat()
 
     currentChat_ = chat;
 
-    QObject::connect(chat, &Chat::processingFinished, this, &ChatController::checkChatsProcessingFinished);
+    QObject::connect(chat, &Chat::processingFinished, this, &ChatController::notifyUpdatedChat);
 
     // Save new chat creation
     saveChats();
@@ -116,7 +125,7 @@ void ChatController::deleteChat(int index)
         Chat* chatToRemove = chats_[index];
 
         QObject::disconnect(
-            chatToRemove, &Chat::processingFinished, this, &ChatController::checkChatsProcessingFinished);
+            chatToRemove, &Chat::processingFinished, this, &ChatController::notifyUpdatedChat);
 
         chats_.removeAt(index);
 
@@ -276,6 +285,10 @@ void ChatController::saveChats()
 
 void ChatController::loadChats()
 {
+    qDebug() << "ChatController::loadChats()";
+    
+    chats_.clear();
+
     QFile file(getChatsFilePath());
     if (!file.exists() || !file.open(QIODevice::ReadOnly))
     {
@@ -311,7 +324,7 @@ void ChatController::loadChats()
             chats_.append(chat);
 
             // Connect signals
-            QObject::connect(chat, &Chat::processingFinished, this, &ChatController::checkChatsProcessingFinished);
+            QObject::connect(chat, &Chat::processingFinished, this, &ChatController::notifyUpdatedChat);
         }
     }
 
