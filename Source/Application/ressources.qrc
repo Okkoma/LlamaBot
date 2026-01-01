@@ -3,8 +3,7 @@
     <file alias="LoadingSpinner.png">images/LoadingSpinner.png</file>
   </qresource>
   <qresource prefix="icons">
-    <file alias="icon1.png">../../bin/data/images/icon1.png</file>
-    <file alias="icon2.png">../../bin/data/images/icon2.png</file>
+    <file alias="icon1.png">../../bin/data/images/llamabot.png</file>
   </qresource>
   <qresource prefix="ressources">
     <file alias="OllamaModelStoreDialog.qml">qml/OllamaModelStoreDialog.qml</file>
