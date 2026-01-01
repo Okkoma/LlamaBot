@@ -111,6 +111,7 @@ void ChatImpl::addContent(const QString& role, const QString& content)
         {
             lastBotIndex_ = messages_.size() - 1;
             currentAIStream_ = content;
+            currentAIRole_ = role;
         }
     }
     else
@@ -118,6 +119,7 @@ void ChatImpl::addContent(const QString& role, const QString& content)
         messages_.append("");
         lastBotIndex_ = messages_.size() - 1;
         currentAIStream_.clear();
+        currentAIRole_ = role;
     }
 
     emit messageAdded(role, content);
@@ -132,30 +134,83 @@ void ChatImpl::finalizeStream()
         qDebug() << "Chat::finalizeStream: ";
 
         LLMService* api = llmservices_->get(currentApi_);
-        messagesRaw_ += api ? api->formatMessage(this, "assistant", currentAIStream_) : currentAIStream_ + "\n";
+        // Map "thought" back to "assistant" for raw storage if needed, but wait.
+        // If we want the raw prompt to be correct, we should probably have kept the tags.
+        // Actually, LLM handles its own history in LlamaCppService. 
+        // This messagesRaw_ is for OTHER services or reloading.
+        
+        QString roleForRaw = (currentAIRole_ == "thought") ? "assistant" : currentAIRole_;
+        QString contentForRaw = currentAIStream_;
+        if (currentAIRole_ == "thought") contentForRaw = "<think>" + contentForRaw + "</think>";
+
+        messagesRaw_ += api ? api->formatMessage(this, roleForRaw, contentForRaw) : contentForRaw + "\n";
 
         // History is already updated during streaming in updateCurrentAIStream()
-        // No need to append again, just verify it's there
-        if (history_.isEmpty() || history_.last().role != "assistant" || history_.last().content != currentAIStream_)
+        if (history_.isEmpty() || history_.last().role != currentAIRole_ || history_.last().content != currentAIStream_)
         {
-            // Fallback: if for some reason history wasn't updated during streaming
             qWarning() << "Chat::finalizeStream: history was not updated during streaming, adding now";
-            history_.append({ "assistant", currentAIStream_ });
+            history_.append({ currentAIRole_, currentAIStream_ });
             emit historyChanged();
         }
 
         currentAIStream_.clear();
+        currentAIRole_ = "assistant";
         emit streamFinishedSignal();
     }
 }
 
 void ChatImpl::updateCurrentAIStream(const QString& text)
 {
-    if (!text.isEmpty())
-    {
-        currentAIStream_ += text;
+    if (text.isEmpty())
+        return;
 
-        // some sanitization
+    currentAIStream_ += text;
+
+    // Detection of <think>
+    if (currentAIStream_.contains("<think>"))
+    {
+        currentAIStream_.remove("<think>");
+        currentAIRole_ = "thought";
+        if (!history_.isEmpty() && history_.last().role == "assistant")
+        {
+            history_.last().role = "thought";
+        }
+    }
+
+    // Detection of </think>
+    if (currentAIStream_.contains("</think>"))
+    {
+        int tagPos = currentAIStream_.indexOf("</think>");
+        QString before = currentAIStream_.left(tagPos);
+        QString after = currentAIStream_.mid(tagPos + 8); // 8 = length of </think>
+
+        // Finalize "thought" part
+        if (!history_.isEmpty() && history_.last().role == "thought")
+        {
+            history_.last().content = before;
+            messages_[lastBotIndex_] = QString("%1 %2\n").arg(aiPrompt_, before);
+        }
+
+        // Start "assistant" part
+        currentAIStream_ = after;
+        currentAIRole_ = "assistant";
+
+        // Add new assistant entry in history
+        history_.append({ "assistant", currentAIStream_ });
+        
+        // Add new entry in messages_
+        messages_.append(QString("%1 %2\n").arg(aiPrompt_, currentAIStream_));
+        lastBotIndex_ = messages_.size() - 1;
+
+        emit messagesChanged();
+        emit historyChanged();
+        emit streamUpdated(text);
+        return;
+    }
+
+    // some sanitization (only if at start)
+    if (currentAIStream_.length() < 5)
+    {
         if (currentAIStream_.startsWith("|"))
             currentAIStream_.removeFirst();
 
@@ -165,29 +220,23 @@ void ChatImpl::updateCurrentAIStream(const QString& text)
             if (currentAIStream_.startsWith("\n"))
                 currentAIStream_.removeFirst();
         }
-
-        qDebug() << "Chat::updateCurrentAIStream: " << currentAIStream_;
-        qDebug() << "Chat::updateCurrentAIStream: lastBotIndex_" << lastBotIndex_;
-        qDebug() << "Chat::updateCurrentAIStream: messages_ size" << messages_.size();
-
-        messages_[lastBotIndex_] = QString("%1 %2\n").arg(aiPrompt_, currentAIStream_);
-
-        // Update history in real-time for QML display
-        if (!history_.isEmpty() && history_.last().role == "assistant")
-        {
-            // Update existing assistant message (already streaming)
-            history_.last().content = currentAIStream_;
-        }
-        else
-        {
-            // No assistant entry yet, create one
-            history_.append({ "assistant", currentAIStream_ });
-        }
-
-        emit streamUpdated(text); // Signal for partial updates
-        emit messagesChanged();   // Signal for full text updates
-        emit historyChanged();    // Signal that history has been updated
     }
+
+    messages_[lastBotIndex_] = QString("%1 %2\n").arg(aiPrompt_, currentAIStream_);
+
+    // Update history in real-time for QML display
+    if (!history_.isEmpty() && history_.last().role == currentAIRole_)
+    {
+        history_.last().content = currentAIStream_;
+    }
+    else
+    {
+        history_.append({ currentAIRole_, currentAIStream_ });
+    }
+
+    emit streamUpdated(text);
+    emit messagesChanged();
+    emit historyChanged();
 }
 
 void ChatImpl::updateObject()

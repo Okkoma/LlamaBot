@@ -133,6 +133,6 @@ private:
 
     QString userPrompt_;     ///< Prompt utilisateur courant
     QString aiPrompt_;       ///< Prompt de l'IA courant
-
+    QString currentAIRole_{"assistant"};  ///< Rôle courant de l'IA (assistant, thought)
     QString currentAIStream_; ///< Flux courant de l'IA en cours de streaming
 };

@@ -12,8 +12,8 @@ Item {
     }
 
     property var messageData: modelData // {role, content}
-
     property bool isUser: messageData ? messageData.role === "user" : false
+    property bool isThought: messageData ? messageData.role === "thought" : false
 
     RowLayout {
         id: contentLayout
@@ -28,11 +28,13 @@ Item {
             id: userframe
             width: 40; height: 40; radius: 20
             color: isUser ? themeManager.color("windowDarker") : themeManager.color("windowDarker2")
+            opacity: isThought ? 0.6 : 1.0
             Layout.alignment: Qt.AlignTop
             Label {
                 anchors.centerIn: parent
-                text: isUser ? "🧑" : "🤖"
+                text: isUser ? "🧑" : (isThought ? "💭" : "🤖")
                 font.pixelSize: 20
+                opacity: isThought ? 0.7 : 1.0
             }
         }
         
@@ -42,6 +44,9 @@ Item {
             Layout.preferredWidth: bubbleWidth()
             Layout.preferredHeight: msgText.implicitHeight + 20
             color: isUser ? themeManager.color("windowDarker") : themeManager.color("windowDarker2")
+            border.width: isThought ? 1 : 0
+            border.color: themeManager.color("windowDarker")
+            opacity: isThought ? 0.8 : 1.0
             radius: 10
             
             Item {
@@ -55,7 +60,9 @@ Item {
                     anchors.verticalCenter: parent.verticalCenter
                     height: implicitHeight
                     text: messageData ? messageData.content : ""
-                    color: themeManager.color("text")
+                    color: isThought ? themeManager.color("textDisabled") : themeManager.color("text")
+                    font.italic: isThought
+                    font.pixelSize: isThought ? 13 : 14
                     wrapMode: TextEdit.Wrap
                     textFormat: TextEdit.MarkdownText
                     selectByMouse: true
@@ -78,7 +85,8 @@ Item {
         function onDarkModeChanged() {
             userframe.color = isUser ? themeManager.color("windowDarker") : themeManager.color("windowDarker2")
             bubble.color = isUser ? themeManager.color("windowDarker") : themeManager.color("windowDarker2")
-            msgText.color = themeManager.color("text")
+            msgText.color = isThought ? themeManager.color("textDisabled") : themeManager.color("text")
         }
-    }    
+    }
+    
 }
