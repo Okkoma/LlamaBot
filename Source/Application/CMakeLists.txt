@@ -2,7 +2,7 @@ set(CMAKE_AUTOUIC ON)
 set(CMAKE_AUTOMOC ON)
 set(CMAKE_AUTORCC ON)
 
-find_package(Qt6 REQUIRED COMPONENTS Core Widgets Network Qml Quick QuickWidgets QuickControls2)
+# Qt6 est déjà trouvé au niveau racine
 
 set(PROJECT_SOURCES
     main.cpp

@@ -59,6 +59,26 @@ else()
     endif()
 endif()
 
+# Recherche de Qt6 globale pour tout le projet (y compris les dépendances)
+if(DEFINED ENV{Qt6})
+    list(APPEND CMAKE_PREFIX_PATH "$ENV{Qt6}")
+endif()
+if(DEFINED ENV{QT6})
+    list(APPEND CMAKE_PREFIX_PATH "$ENV{QT6}")
+endif()
+
+find_package(Qt6 REQUIRED COMPONENTS 
+    Core 
+    Widgets 
+    Network 
+    Qml 
+    Quick 
+    QuickWidgets 
+    QuickControls2
+    Test
+    Gui
+)
+
 add_subdirectory (Source/ThirdParty/llama.cpp)
 add_subdirectory (Source/ThirdParty/poppler)
 add_subdirectory (Source/Application)

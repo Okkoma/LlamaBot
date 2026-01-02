@@ -20,16 +20,8 @@ list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake/")
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
 set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
 
-if (CMAKE_SOURCE_DIR STREQUAL CMAKE_CURRENT_SOURCE_DIR)
-    set(LLAMA_STANDALONE ON)
-
-    include(git-vars)
-
-    # configure project version
-    # TODO
-else()
-    set(LLAMA_STANDALONE OFF)
-endif()
+# C.VILLE : Don't build standalone for external projects
+set(LLAMA_STANDALONE OFF)
 
 option(LLAMA_USE_SYSTEM_GGML "Use system libggml" OFF)
 
@@ -235,59 +227,4 @@ if (LLAMA_BUILD_COMMON AND LLAMA_BUILD_TOOLS)
     add_subdirectory(tools)
 endif()
 
-#
-# install
-#
-
-include(GNUInstallDirs)
-include(CMakePackageConfigHelpers)
-
-set(LLAMA_INCLUDE_INSTALL_DIR ${CMAKE_INSTALL_INCLUDEDIR} CACHE PATH "Location of header  files")
-set(LLAMA_LIB_INSTALL_DIR     ${CMAKE_INSTALL_LIBDIR}     CACHE PATH "Location of library files")
-set(LLAMA_BIN_INSTALL_DIR     ${CMAKE_INSTALL_BINDIR}     CACHE PATH "Location of binary  files")
-
-set(LLAMA_PUBLIC_HEADERS
-    ${CMAKE_CURRENT_SOURCE_DIR}/include/llama.h
-    ${CMAKE_CURRENT_SOURCE_DIR}/include/llama-cpp.h)
-
-set_target_properties(llama
-    PROPERTIES
-        PUBLIC_HEADER "${LLAMA_PUBLIC_HEADERS}")
-
-install(TARGETS llama LIBRARY PUBLIC_HEADER)
-
-configure_package_config_file(
-        ${CMAKE_CURRENT_SOURCE_DIR}/cmake/llama-config.cmake.in
-        ${CMAKE_CURRENT_BINARY_DIR}/llama-config.cmake
-    INSTALL_DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/llama
-    PATH_VARS LLAMA_INCLUDE_INSTALL_DIR
-              LLAMA_LIB_INSTALL_DIR
-              LLAMA_BIN_INSTALL_DIR )
-
-write_basic_package_version_file(
-        ${CMAKE_CURRENT_BINARY_DIR}/llama-version.cmake
-    VERSION ${LLAMA_INSTALL_VERSION}
-    COMPATIBILITY SameMajorVersion)
-
-install(FILES ${CMAKE_CURRENT_BINARY_DIR}/llama-config.cmake
-              ${CMAKE_CURRENT_BINARY_DIR}/llama-version.cmake
-        DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/llama)
-
-install(
-    FILES convert_hf_to_gguf.py
-    PERMISSIONS
-        OWNER_READ
-        OWNER_WRITE
-        OWNER_EXECUTE
-        GROUP_READ
-        GROUP_EXECUTE
-        WORLD_READ
-        WORLD_EXECUTE
-    DESTINATION ${CMAKE_INSTALL_BINDIR})
-
-configure_file(cmake/llama.pc.in
-        "${CMAKE_CURRENT_BINARY_DIR}/llama.pc"
-        @ONLY)
-
-install(FILES "${CMAKE_CURRENT_BINARY_DIR}/llama.pc"
-        DESTINATION ${CMAKE_INSTALL_LIBDIR}/pkgconfig)
+# C.VILLE : Removed install section
