@@ -67,35 +67,54 @@ Drawer {
                     radius: 5
                 }
 
-                contentItem: ColumnLayout {
-                    spacing: 2
-
-                    Label {
-                        id: chatNameLabel
-                        text: chatData.name
-                        color: themeManager.color("text")
-                        font.bold: isCurrent
+                contentItem: RowLayout {
+                    spacing: 8
+                    
+                    ColumnLayout {
                         Layout.fillWidth: true
-                    }
-
-                    RowLayout {
-                        spacing: 5
-                        Layout.fillWidth: true
+                        spacing: 2
 
                         Label {
-                            id: chatModelLabel
-                            text: chatData.model
+                            id: chatNameLabel
+                            text: chatData.name
                             color: themeManager.color("text")
-                            font.pixelSize: 10
+                            font.bold: isCurrent
                             Layout.fillWidth: true
+                            elide: Text.ElideRight
                         }
 
-                        Label {
-                            id: tokensLabel
-                            text: chatObject ? " • " + chatObject.tokensConsumed + "/" + chatObject.tokensTotal + " tokens" : ""
-                            color: themeManager.color("textSecondary")
-                            font.pixelSize: 10
-                            Layout.alignment: Qt.AlignRight
+                        RowLayout {
+                            spacing: 5
+                            Layout.fillWidth: true
+
+                            Label {
+                                id: chatModelLabel
+                                text: chatData.model
+                                color: themeManager.color("text")
+                                font.pixelSize: 10
+                                Layout.fillWidth: true
+                                elide: Text.ElideRight
+                            }
+
+                            Label {
+                                id: tokensLabel
+                                text: chatObject ? " • " + chatObject.tokensConsumed + "/" + chatObject.tokensTotal + " tokens" : ""
+                                color: themeManager.color("textSecondary")
+                                font.pixelSize: 10
+                                Layout.alignment: Qt.AlignRight
+                            }
+                        }
+                    }
+
+                    ToolButton {
+                        id: optionsButton
+                        text: "⋮"
+                        Layout.alignment: Qt.AlignVCenter
+                        onClicked: contextMenu.popup()
+                        
+                        background: Rectangle {
+                            color: optionsButton.hovered ? themeManager.color("windowDarker2") : "transparent"
+                            radius: 4
                         }
                     }
                 }
@@ -112,12 +131,8 @@ Drawer {
                     drawer.close()
                 }
 
-                // Right-click menu
-                MouseArea {
-                    anchors.fill: parent
-                    acceptedButtons: Qt.RightButton
-                    onClicked: contextMenu.popup()
-                }
+                // Support for mobile long press
+                onPressAndHold: contextMenu.popup()
 
                 Menu {
                     id: contextMenu
