@@ -10,6 +10,10 @@ ChatController::ChatController(LLMServices* llmservices, QObject* parent) :
     chatCounter_(0),
     ragService_(new RAGService(llmservices, this))
 {
+    // Fix: Connect LLMServices signals to ChatController signals to notify QML
+    connect(llmServices_, &LLMServices::defaultContextSizeChanged, this, &ChatController::defaultContextSizeChanged);
+    connect(llmServices_, &LLMServices::autoExpandContextChanged, this, &ChatController::autoExpandContextChanged);
+
     // Try to load existing chats
     loadChats();
 
@@ -93,7 +97,6 @@ void ChatController::createChat()
     QString chatName = QString("Chat %1").arg(chatCounter_);
     Chat* chat = new ChatImpl(llmServices_, chatName, "", true, this);
     chats_.append(chat);
-
     currentChat_ = chat;
 
     QObject::connect(chat, &Chat::processingFinished, this, &ChatController::notifyUpdatedChat);
@@ -103,6 +106,8 @@ void ChatController::createChat()
 
     emit chatListChanged();
     emit currentChatChanged();
+
+    chat->setContextSize(llmServices_->getDefaultContextSize());
 }
 
 void ChatController::switchToChat(int index)
@@ -334,4 +339,16 @@ void ChatController::loadChats()
         emit currentChatChanged();
         emit chatListChanged();
     }
+}
+
+void ChatController::setDefaultContextSize(int size)
+{
+    if (llmServices_->getDefaultContextSize() != size)
+        llmServices_->setDefaultContextSize(size);        
+}
+
+void ChatController::setAutoExpandContext(bool enabled)
+{
+    if (llmServices_->getAutoExpandContext() != enabled)
+        llmServices_->setAutoExpandContext(enabled);
 }

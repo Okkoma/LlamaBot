@@ -20,6 +20,8 @@ class ChatController : public QObject
     Q_PROPERTY(int currentChatIndex READ currentChatIndex NOTIFY currentChatChanged)
     Q_PROPERTY(bool ragEnabled READ ragEnabled WRITE setRagEnabled NOTIFY ragEnabledChanged)
     Q_PROPERTY(RAGService* ragService READ ragService CONSTANT)
+    Q_PROPERTY(int defaultContextSize READ getDefaultContextSize WRITE setDefaultContextSize NOTIFY defaultContextSizeChanged)
+    Q_PROPERTY(bool autoExpandContext READ getAutoExpandContext WRITE setAutoExpandContext NOTIFY autoExpandContextChanged)
 
 public:
     /**
@@ -226,9 +228,24 @@ public:
      */
     RAGService* ragService() const { return ragService_; }
 
+    int getDefaultContextSize() const { return llmServices_->getDefaultContextSize(); }
+    void setDefaultContextSize(int size);
+    bool getAutoExpandContext() const { return llmServices_->getAutoExpandContext(); }
+    void setAutoExpandContext(bool enabled);
+
 signals:
     /**
      * @brief Signal émis lorsque l'état du RAG change
      */
     void ragEnabledChanged();
+
+    /**
+     * @brief Signal émis lorsque la taille de contexte par défaut change
+     */
+    void defaultContextSizeChanged();
+
+    /**
+     * @brief Signal émis lorsque l'auto-expansion du contexte change
+     */
+    void autoExpandContextChanged();
 };

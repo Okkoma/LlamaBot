@@ -130,6 +130,59 @@ public:
     std::vector<float> getEmbedding(const QString& text);
 
     /**
+     * @brief Retourne la taille de contexte par défaut
+     * @return Taille de contexte par défaut
+     */
+    int getDefaultContextSize() const { return defaultContextSize_; }
+
+    /**
+     * @brief Définit la taille de contexte par défaut
+     * @param size Nouvelle taille de contexte par défaut
+     */
+    void setDefaultContextSize(int size)
+    {
+        if (defaultContextSize_ != size)
+        {
+            defaultContextSize_ = size;
+            emit defaultContextSizeChanged();
+            saveSettings();
+        }
+    }
+
+    /**
+     * @brief Retourne si l'auto-expansion du contexte est activée
+     * @return true si activée, false sinon
+     */
+    bool getAutoExpandContext() const { return autoExpandContext_; }
+
+    /**
+     * @brief Définit l'état de l'auto-expansion du contexte
+     * @param enabled Nouvel état
+     */
+    void setAutoExpandContext(bool enabled)
+    {
+        if (autoExpandContext_ != enabled)
+        {
+            autoExpandContext_ = enabled;
+            emit autoExpandContextChanged();
+            saveSettings();
+        }
+    }
+
+signals:
+    /**
+     * @brief Signal émis lorsque la taille de contexte par défaut change
+     */
+    void defaultContextSizeChanged();
+
+    /**
+     * @brief Signal émis lorsque l'auto-expansion du contexte change
+     */
+    void autoExpandContextChanged();
+
+public:
+
+    /**
      * @brief Charge la configuration des services depuis un fichier JSON
      * @return true si le chargement a réussi, false sinon
      */
@@ -148,6 +201,16 @@ private:
      * Crée et configure les services par défaut.
      */
     void initialize();
+
+    /**
+     * @brief Sauvegarde les paramètres globaux (taille contexte, etc.)
+     */
+    void saveSettings();
+
+    /**
+     * @brief Charge les paramètres globaux
+     */
+    void loadSettings();
     
     /**
      * @brief Crée un fichier JSON de configuration par défaut
@@ -172,4 +235,6 @@ private:
 
     std::vector<LLMService*> apiEntries_;    ///< Liste des APIs LLM enregistrées
     bool allowSharedModels_;                 ///< Indique si le partage des modèles est activé
+    int defaultContextSize_ = LLM_DEFAULT_CONTEXT_SIZE; ///< Taille de contexte par défaut
+    bool autoExpandContext_ = true;          ///< Auto-expansion du contexte
 };

@@ -259,6 +259,11 @@ void OllamaService::postInternal(Chat* chat, const QString& content, bool stream
 
         payload["messages"] = messagesArray;
         payload.remove("prompt"); // Remove 'prompt' if present, as it conflicts with 'messages' in some versions
+
+        // Add options including num_ctx
+        QJsonObject options;
+        options["num_ctx"] = chat->getContextSize();
+        payload["options"] = options;
     }
     else
     {

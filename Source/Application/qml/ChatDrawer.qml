@@ -98,7 +98,7 @@ Drawer {
 
                             Label {
                                 id: tokensLabel
-                                text: chatObject ? " • " + chatObject.tokensConsumed + "/" + chatObject.tokensTotal + " tokens" : ""
+                                text: chatObject ? " • " + chatObject.contextSizeUsed + "/" + chatObject.contextSize : ""
                                 color: themeManager.color("textSecondary")
                                 font.pixelSize: 10
                                 Layout.alignment: Qt.AlignRight
@@ -143,6 +143,14 @@ Drawer {
                             if (chatController)
                                 chatController.deleteChat(chatData.index)
                         }
+                    }
+                    Menu {
+                        title: "Set Context Size"
+                        MenuItem { text: "2048"; onTriggered: chatObject.contextSize = 2048 }
+                        MenuItem { text: "8192"; onTriggered: chatObject.contextSize = 8192 }
+                        MenuItem { text: "16384"; onTriggered: chatObject.contextSize = 16384 }
+                        MenuItem { text: "65536"; onTriggered: chatObject.contextSize = 65536 }
+                        MenuItem { text: "128000"; onTriggered: chatObject.contextSize = 128000 }
                     }
                     MenuSeparator {}                    
                     Menu {

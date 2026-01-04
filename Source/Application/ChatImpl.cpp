@@ -14,6 +14,9 @@ ChatImpl::ChatImpl(LLMServices* llmservices, const QString& name, const QString&
     lastBotIndex_(-1),
     aiPrompt_("🤖 >")
 {
+    if (llmservices)
+        getData()->n_ctx_ = llmservices->getDefaultContextSize();
+
     setObjectName(name);
     initialize();
 
@@ -205,6 +208,7 @@ void ChatImpl::updateCurrentAIStream(const QString& text)
         emit messagesChanged();
         emit historyChanged();
         emit streamUpdated(text);
+        emit contextSizeUsedChanged();
         return;
     }
 
@@ -237,6 +241,7 @@ void ChatImpl::updateCurrentAIStream(const QString& text)
     emit streamUpdated(text);
     emit messagesChanged();
     emit historyChanged();
+    emit contextSizeUsedChanged();
 }
 
 void ChatImpl::updateObject()
@@ -270,8 +275,8 @@ QVariantList ChatImpl::historyList() const
 QJsonObject ChatImpl::toJson() const
 {
     QJsonObject json;
-    json["n_ctx"] = data_.n_ctx_;
-    json["n_ctx_used"] = data_.n_ctx_used_;
+    json["n_ctx"] = getData()->n_ctx_;
+    json["n_ctx_used"] = getData()->n_ctx_used_;
     json["name"] = name_;
     json["api"] = currentApi_;
     json["model"] = currentModel_;
@@ -294,8 +299,8 @@ QJsonObject ChatImpl::toJson() const
 
 void ChatImpl::fromJson(const QJsonObject& json)
 {
-    data_.n_ctx_ = json["n_ctx"].toInt();
-    data_.n_ctx_used_ = json["n_ctx_used"].toInt();
+    getData()->n_ctx_ = json["n_ctx"].toInt();
+    getData()->n_ctx_used_ = json["n_ctx_used"].toInt();
 
     name_ = json["name"].toString();
     QString api = json["api"].toString();

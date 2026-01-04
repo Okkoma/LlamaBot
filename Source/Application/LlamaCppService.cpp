@@ -6,6 +6,16 @@
 
 #include "LlamaCppService.h"
 
+
+const QString LlamaGenerationErrors_[4] =
+{
+    QString("end of generation"),
+    QString("ontext exceeded"),
+    QString("failed to decode"),
+    QString("failed to convert token to piece")
+};
+
+
 // Utility function to check available GPU memory
 bool checkGpuMemoryAvailable(size_t requiredBytes)
 {
@@ -171,13 +181,33 @@ std::vector<llama_token> LlamaTokenize(LlamaCppChatData& data, const QString& pr
     return LlamaTokenize(data.ctx_, data.model_->model_, prompt);
 }
 
-QString LlamaGenerationErrors_[4] =
+int LlamaDecode(LlamaCppChatData& data)
 {
-    QString("end of generation"),
-    QString("ontext exceeded"),
-    QString("failed to decode"),
-    QString("failed to convert token to piece")
-};
+    if (!data.ctx_)
+    {
+        qWarning() << "LlamaDecode: context is null, skipping decode";
+        return 0; // Not an error if we just haven't initialized yet
+    }
+
+    int n_batch = llama_n_batch(data.ctx_);
+    int n_tokens_total = static_cast<int>(data.tokens_.size());
+    qDebug() << "LLamaDecode n_batch:" << n_batch << "n_tokens_total:" << n_tokens_total; 
+    for (int i = 0; i < n_tokens_total; i += n_batch)
+    {
+        int n_tokens = std::min(n_batch, n_tokens_total - i);
+        if (i + n_tokens < n_tokens_total)
+        {
+            data.batch_ = llama_batch_get_one(data.tokens_.data() + i, n_tokens);
+            if (llama_decode(data.ctx_, data.batch_) != 0)            
+                return -1;            
+        }
+        else
+            data.batch_ = llama_batch_get_one(data.tokens_.data() + i, n_tokens);
+    }
+
+    data.n_ctx_used_ = llama_memory_seq_pos_max(llama_get_memory(data.ctx_), 0);
+    return 0;
+}
 
 int LlamaGenerateStep(LlamaCppChatData& data, std::vector<llama_token>& prompt_tokens, QString& response)
 {
@@ -186,10 +216,9 @@ int LlamaGenerateStep(LlamaCppChatData& data, std::vector<llama_token>& prompt_t
     // check if we have enough space in the context to evaluate this batch
     data.n_ctx_ = llama_n_ctx(data.ctx_);
     data.n_ctx_used_ = llama_memory_seq_pos_max(llama_get_memory(data.ctx_), 0) + 1;
-
-    if (data.n_ctx_used_ + data.batch_.n_tokens > data.n_ctx_)
+    if (data.n_ctx_used_ + data.batch_.n_tokens >= data.n_ctx_)
     {
-        qWarning() << "LlamaGenerateStep: error -1 = ontext exceeded";
+        qWarning() << "LlamaGenerateStep: error -1 = ontext exceeded (n_ctx_used:" << data.n_ctx_used_ << "batch_.n_tokens:" << data.batch_.n_tokens << "> data.n_ctx_:" << data.n_ctx_;
         return -1;
     }
 
@@ -221,24 +250,32 @@ int LlamaGenerateStep(LlamaCppChatData& data, std::vector<llama_token>& prompt_t
     }
 
     buf[n] = 0;
-    qDebug() << "LlamaGenerateStep: response:" << buf << "tokenid:" << data.tokenId_;
+    //qDebug() << "LlamaGenerateStep: response:" << buf << "tokenid:" << data.tokenId_;
     response = QString(buf);
 
     return static_cast<int>(data.tokenId_);
 }
 
+
 LlamaCppChatData::~LlamaCppChatData()
 {
     deinitialize();
+    clear();
 }
 
 void LlamaCppChatData::initialize(LlamaModelData* model)
 {
     model_ = model;
 
+    // check n_ctx
+    int chatMessageSize = chat_ ? chat_->getMessagesRaw().size() : 0;
+    while (n_ctx_ < chatMessageSize)
+        n_ctx_ *= 2;
+
     // initialize the context
     llama_context_params ctx_params = llama_context_default_params();
     ctx_params.n_ctx = n_ctx_;
+    //ctx_params.n_batch = n_ctx_ > LLM_BATCH_SIZE ? LLM_BATCH_SIZE : n_ctx_; // Limit batch size to reasonable value
     ctx_params.n_batch = n_ctx_;
 
     ctx_ = LLamaInitializeContext(model_->model_, ctx_params);
@@ -264,7 +301,7 @@ void LlamaCppChatData::deinitialize()
     }
     if (ctx_)
     {
-        qDebug() << "LlamaCppChatData::deinitialize: Freeing llama context";
+        qDebug() << "LlamaCppChatData::deinitialize: Freeing llama context ...";
         // Free the context
         llama_free(ctx_);
         ctx_ = nullptr;
@@ -276,6 +313,11 @@ void LlamaCppChatData::deinitialize()
         waitForGpuMemoryPurge();
         qDebug() << "LlamaCppChatData::deinitialize: Context freed";
     }
+}
+
+void LlamaCppChatData::clear()
+{
+    qDebug() << "LlamaCppChatData::clear";
 
     for (llama_chat_message& msg : llamaCppChatMessages_)
         free(const_cast<char*>(msg.content));
@@ -283,6 +325,16 @@ void LlamaCppChatData::deinitialize()
     tokens_.clear();
     llamaCppChatMessages_.clear();
     response_.clear();
+}
+
+bool LlamaCppChatData::reset()
+{
+    qDebug() << "LlamaCppChatData::reset";
+    deinitialize();
+    if (model_)
+        initialize(model_);
+    
+    return LlamaDecode(*this) == 0;
 }
 
 struct LlamaCppProcessAsync : public LlamaCppProcess
@@ -340,7 +392,28 @@ struct LlamaCppProcessAsync : public LlamaCppProcess
         }
 
         data_->tokenId_ = LlamaGenerateStep(*data_, data_->tokens_, data_->response_);
-        data_->chat_->updateContextStates(data_->n_ctx_, data_->n_ctx_used_);
+
+        if (data_->tokenId_ == -1 && data_->chat_ && data_->chat_->getLLMServices()->getAutoExpandContext())
+        {
+            qDebug() << "LlamaCppProcessAsync: Context auto-expanded. Re-initializing context...";   
+            // Auto-expand logic
+            int newSize = data_->n_ctx_ * 2;
+            int n_ctx_train = llama_model_n_ctx_train(data_->model_->model_);
+            if (newSize <= n_ctx_train)
+            {
+                qDebug() << "LlamaCppProcessAsync: Auto-expanding context to" << newSize;
+                if (!data_->chat_->setContextSize(newSize))
+                {
+                    qWarning() << "LlamaCppProcessAsync: Failed to re-initialize context after auto-expansion.";
+                    stopProcess();
+                    if (data_->chat_)
+                        data_->chat_->setProcessing(false);
+                    return;
+                }
+                data_->tokenId_ = LlamaGenerateStep(*data_, data_->tokens_, data_->response_);
+            }
+        }
+
         data_->chat_->updateCurrentAIStream(data_->response_);
         
         if (data_->tokenId_ <= 0)
@@ -370,12 +443,14 @@ struct LlamaCppProcessThread : public LlamaCppProcess
 
     void start(Chat* chat, const QString& content, bool streamed) override
     {
+        qDebug() << "LlamaCppProcessThread::start()";
         // Prepare data for threaded generation
         QMutexLocker locker(&mutex_);
         data_->chat_ = chat;
         data_->tokens_ = LlamaTokenize(*data_, data_->chat_->getMessagesRaw());
         data_->tokenId_ = 1; // initial value > 0 to enter the loop
         data_->response_.clear();
+        data_->batch_ = llama_batch_get_one(data_->tokens_.data(), data_->tokens_.size());
         stopRequested_ = false;
         locker.unlock();
 
@@ -385,28 +460,28 @@ struct LlamaCppProcessThread : public LlamaCppProcess
         // Create and configure worker thread
         if (!worker_)
         {
+            qDebug() << "LlamaCppProcessThread::start() ... create new worker";
             worker_ = new LlamaCppWorker(this);
 
             // Connect worker signals
             QObject::connect(worker_, &LlamaCppWorker::tokenGenerated, service_,
                 [this, chat](const QString& token)
                 {
-                    chat->updateContextStates(data_->n_ctx_, data_->n_ctx_used_);
                     chat->updateCurrentAIStream(token);
                 });
 
             QObject::connect(worker_, &LlamaCppWorker::generationFinished, service_,
                 [this, chat]()
                 {
-                    if (chat)
-                    {
+                    if (chat)                    
                         chat->setProcessing(false);
-                    }
-
+                    
                     QMutexLocker locker(&mutex_);
                     data_->chat_ = nullptr;
                     data_->tokens_.clear();
                     data_->response_.clear();
+
+                    this->stop();
                 });
 
             QObject::connect(worker_, &LlamaCppWorker::errorOccurred, service_,
@@ -426,13 +501,16 @@ struct LlamaCppProcessThread : public LlamaCppProcess
     {
         if (worker_)
         {
+            qDebug() << "LlamaCppProcessThread::startProcess()";
             if (!worker_->thread())
             {
                 qDebug() << "LlamaCppProcessThread : worker has no thread !";
                 return;
             }
-            if (!worker_->thread()->isRunning())
+            if (!worker_->thread()->isRunning())            
                 worker_->thread()->start();
+            else
+                qWarning() << "LlamaCppProcessThread::startProcess() : worker is already running!";
         }
     }
 
@@ -519,6 +597,25 @@ void LlamaCppWorker::processRequest()
 
         locker.relock();
 
+        if (data.tokenId_ == -1 && data.chat_ && data.chat_->getLLMServices()->getAutoExpandContext())
+        {
+            qDebug() << "LlamaCppWorker: Context auto-expanded. Re-initializing context...";
+            // Auto-expand logic
+            int newSize = data.n_ctx_ * 2;
+            int n_ctx_train = llama_model_n_ctx_train(data.model_->model_);
+            if (newSize <= n_ctx_train)
+            {
+                qDebug() << "LlamaCppWorker: Auto-expanding context to" << newSize;
+                if (!data.chat_->setContextSize(newSize))
+                {
+                    qWarning() << "LlamaCppWorker: Failed to re-initialize context after auto-expansion.";
+                    emit errorOccurred("Failed to re-initialize context after auto-expansion");
+                    break;
+                }
+                data.tokenId_ = LlamaGenerateStep(data, data.tokens_, data.response_);
+            }
+        }
+
         if (data.tokenId_ <= 0) // End of generation
         {
             if (data.tokenId_ < 0)
@@ -562,7 +659,7 @@ LlamaCppService::LlamaCppService(LLMServices* service, const QVariantMap& params
     // Default GPU configuration
     setDefaultUseGpu(true);
     setDefaultGpuLayers(99); // All layers on GPU
-    setDefaultContextSize(4096);
+    setDefaultContextSize(LLM_DEFAULT_CONTEXT_SIZE);
 
     // Enable threaded version by default
     setUseThreadedVersion(true);
@@ -598,17 +695,26 @@ LlamaCppChatData* LlamaCppService::createData(Chat* chat)
 {
     LlamaCppChatData& data = datas_[chat];
     data.chat_ = chat;
+    chat->setData(&data);
     return &data;
 }
 
 void LlamaCppService::initializeData(LlamaCppChatData* data, LlamaModelData* model)
 {
+    if (!model)
+    {
+        qWarning() << "LlamaCppService::initializeData ... no model !";
+        return;        
+    }
     data->initialize(model);
 
-    if (useThreadedVersion_)
-        data->generateProcess_ = new LlamaCppProcessThread(data, llmservices_);
-    else
-        data->generateProcess_ = new LlamaCppProcessAsync(data, llmservices_);
+    if (!data->generateProcess_)
+    {
+        if (useThreadedVersion_)
+            data->generateProcess_ = new LlamaCppProcessThread(data, llmservices_);
+        else
+            data->generateProcess_ = new LlamaCppProcessAsync(data, llmservices_);
+    }    
 }
 
 void LlamaCppService::clearData(LlamaCppChatData* data)
@@ -626,6 +732,7 @@ void LlamaCppService::clearData(LlamaCppChatData* data)
     
     // Free context resources
     data->deinitialize();
+    data->clear();
 
     // Wait for GPU memory to be released
     // CUDA operations are asynchronous, we need to wait for the driver to release memory
@@ -659,12 +766,14 @@ LlamaModelData* LlamaCppService::loadModel(const QString& modelName, int numGpuL
 {
     LlamaModelData modelData;
 
+    qDebug() << "LlamaCppService::loadModel ... start loading model";
+
     std::vector<LLMModel> models = getAvailableModels();
     for (LLMModel& model : models)
     {
         if (model.toString() == modelName)
         {
-            qDebug() << "LlamaCppService::addModel: model" << model.toString() << " file:" << model.filePath_;
+            qDebug() << "LlamaCppService::loadModel: model" << model.toString() << " file:" << model.filePath_;
             modelData.modelPath_ = model.filePath_;
             break;
         }
@@ -672,7 +781,7 @@ LlamaModelData* LlamaCppService::loadModel(const QString& modelName, int numGpuL
 
     if (clearOtherModels && lastModelAddedInMemory_ && modelName != lastModelAddedInMemory_->modelName_)
     {
-        qDebug() << "LlamaCppService::addModel: Clear last model" << modelName;
+        qDebug() << "LlamaCppService::loadModel: Clear last model" << modelName;
         clearModelInMemory(lastModelAddedInMemory_->modelName_);
     }
 
@@ -680,7 +789,7 @@ LlamaModelData* LlamaCppService::loadModel(const QString& modelName, int numGpuL
     llama_model_params model_params = llama_model_default_params();
     model_params.n_gpu_layers = numGpuLayers;
 
-    qDebug() << "LlamaCppService::addModel: Loading model with" << model_params.n_gpu_layers << "GPU layers";
+    qDebug() << "LlamaCppService::loadModel: Loading model with" << model_params.n_gpu_layers << "GPU layers";
 
     modelData.model_ = llama_model_load_from_file(qPrintable(modelData.modelPath_), model_params);
     if (!modelData.model_)
@@ -695,26 +804,29 @@ LlamaModelData* LlamaCppService::loadModel(const QString& modelName, int numGpuL
 
     lastModelAddedInMemory_ = &models_[modelName];
 
+    qDebug() << "LlamaCppService::loadModel ... end loading model";
+
     return lastModelAddedInMemory_;
 }
 
 void LlamaCppService::setModelInternal(LlamaCppChatData* data, const QString& modelName)
 {
-    qDebug() << "LlamaCppService::setModel ... start loading model";
-
     emit modelLoadingStarted(modelName);
-
-    clearData(data);
+    if (data->model_ && modelName != data->model_->modelName_)
+    {
+        qDebug() << "LlamaCppService::setModelInternal ... change to model:" << data->model_->modelName_ << " -> " << modelName;
+        clearData(data);
+    }
 
     LlamaModelData* model = this->getModel(modelName);
     if (!model || !model->model_)                        
         model = this->loadModel(modelName, 99, onlyOneModelInMemory_);
     
-    initializeData(data, model);
+    if (model && !data->model_)
+        initializeData(data, model);
 
     emit modelLoadingFinished(modelName, true);
-
-    qDebug() << "LlamaCppService::setModel ... end loading model";  
+    qDebug() << "LlamaCppService::setModelInternal ... end!";
 }
 
 void LlamaCppService::setModel(Chat* chat, QString modelName)
@@ -727,7 +839,14 @@ void LlamaCppService::setModel(Chat* chat, QString modelName)
         modelName = data->model_ ? data->model_->modelName_ : chat->getCurrentModel();
 
     if (!modelName.isEmpty() && (!data->model_ || modelName != data->model_->modelName_))    
-        QFuture<void> f = QtConcurrent::run([this, data, modelName](){ setModelInternal(data, modelName);});    
+    {
+        QFuture<void> f = QtConcurrent::run(
+            [this, data, modelName]()
+            {
+                setModelInternal(data, modelName);
+            }
+        );
+    }
 }
 
 bool LlamaCppService::isReady() const
@@ -737,16 +856,16 @@ bool LlamaCppService::isReady() const
 
 void LlamaCppService::post(Chat* chat, const QString& content, bool streamed)
 {
-    qDebug() << "LlamaCppService::post ...";
+    qDebug() << "LlamaCppService::post ... content:" << content;
 
     LlamaCppChatData* data = getData(chat);
     if (!data)
     {   
-        qDebug() << "LlamaCppService::setModel ... create data";
+        qDebug() << "LlamaCppService::post ... create data";
         data = createData(chat);
         if (!data)
         {
-            qWarning() << "LlamaCppService::setModel ... no data";
+            qWarning() << "LlamaCppService::post ... no data";
             return;
         }
     }

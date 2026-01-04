@@ -4,7 +4,22 @@ LLMServices::LLMServices(QObject* parent) :
     QObject(parent), 
     allowSharedModels_(false)
 {
+    loadSettings();
     initialize();
+}
+
+void LLMServices::saveSettings()
+{
+    QSettings settings;
+    settings.setValue("defaultContextSize", defaultContextSize_);
+    settings.setValue("autoExpandContext", autoExpandContext_);
+}
+
+void LLMServices::loadSettings()
+{
+    QSettings settings;
+    defaultContextSize_ = settings.value("defaultContextSize", LLM_DEFAULT_CONTEXT_SIZE).toInt();
+    autoExpandContext_ = settings.value("autoExpandContext", true).toBool();
 }
 
 LLMServices::~LLMServices()

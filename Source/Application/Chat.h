@@ -24,8 +24,9 @@ struct ChatMessage
  */
 struct ChatData
 {
-    int n_ctx_{2048};        ///< Taille totale du contexte en tokens
+    int n_ctx_{LLM_DEFAULT_CONTEXT_SIZE}; ///< Taille totale du contexte en tokens
     int n_ctx_used_{0};      ///< Nombre de tokens utilisés dans le contexte
+    virtual bool reset() { return true; };
 };
 
 /**
@@ -43,8 +44,8 @@ class Chat : public QObject
     Q_PROPERTY(const QString& currentModel READ getCurrentModel WRITE setModel NOTIFY currentModelChanged)
     Q_PROPERTY(const QStringList& messages READ getMessages NOTIFY messagesChanged)
     Q_PROPERTY(QVariantList history READ historyList NOTIFY historyChanged)
-    Q_PROPERTY(int tokensConsumed READ getNumContextSizeUsed NOTIFY messagesChanged)
-    Q_PROPERTY(int tokensTotal READ getNumContextSize NOTIFY messagesChanged)
+    Q_PROPERTY(int contextSizeUsed READ getContextSizeUsed NOTIFY contextSizeUsedChanged)
+    Q_PROPERTY(int contextSize READ getContextSize WRITE setContextSize NOTIFY contextSizeChanged)
 
 public:
     /**
@@ -126,24 +127,25 @@ public:
      * @brief Met à jour le flux courant de l'IA
      * @param text Texte à ajouter au flux courant
      */
-    virtual void updateCurrentAIStream(const QString& text) = 0;
-
-    /**
-     * @brief Met à jour les états de contexte
-     * @param n_ctx Taille totale du contexte en tokens
-     * @param n_ctx_used Nombre de tokens utilisés
-     */
-    void updateContextStates(int n_ctx, int n_ctx_used)
-    { 
-        data_.n_ctx_ = n_ctx; 
-        data_.n_ctx_used_ = n_ctx_used;
-    }
+    virtual void updateCurrentAIStream(const QString& text) 
+    {
+        emit contextSizeUsedChanged();
+        emit messagesChanged();
+        emit historyChanged();        
+        emit streamUpdated(text);
+    };
 
     /**
      * @brief Retourne le nom du chat
      * @return Nom du chat
      */
     const QString& getName() const { return name_; }
+
+    /**
+     * @brief Retourne les services LLM associés
+     * @return Pointeur vers les services LLM
+     */
+    LLMServices* getLLMServices() const { return llmservices_; }
     
     /**
      * @brief Retourne si le streaming est activé
@@ -203,13 +205,49 @@ public:
      * @brief Retourne la taille totale du contexte
      * @return Taille totale du contexte en tokens
      */
-    int getNumContextSize() const { return data_.n_ctx_; };
+    int getContextSize() const { return getData()->n_ctx_; };
     
     /**
      * @brief Retourne le nombre de tokens utilisés dans le contexte
      * @return Nombre de tokens utilisés
      */
-    int getNumContextSizeUsed() const { return data_.n_ctx_used_; };
+    int getContextSizeUsed() const { return getData()->n_ctx_used_; };
+
+    /**
+     * @brief Retourne les données de chat
+     * @return Pointeur vers les données de chat
+     */
+    ChatData* getData() { return dataPtr_ ? dataPtr_ : &data_; }
+    const ChatData* getData() const { return dataPtr_ ? dataPtr_ : &data_; }
+
+    /**
+     * @brief Définit les données de chat
+     * @param data Pointeur vers les données de chat
+     */
+    void setData(ChatData* data) 
+    {
+        data->n_ctx_ = data_.n_ctx_;
+        data->n_ctx_used_ = data_.n_ctx_used_;
+        dataPtr_ = data; 
+    }
+
+    /**
+     * @brief Définit la taille du contexte
+     * @param size Nouvelle taille du contexte
+     * @return true si le changement de taille est réalisé
+     */
+    bool setContextSize(int size)
+    { 
+        if (getData()->n_ctx_ != size)
+        {
+            qDebug() << "Chat::setContextSize" << size;
+            getData()->n_ctx_ = size;
+            bool ok = getData()->reset();
+            emit contextSizeChanged();
+            return ok;
+        }
+        return false;
+    }
 
     // Serialization
     /**
@@ -299,6 +337,16 @@ signals:
      */
     void historyChanged();
 
+    /**
+     * @brief Signal émis lorsque la taille du contexte change
+     */
+    void contextSizeChanged();
+
+    /**
+     * @brief Signal émis lorsque la consommation du contexte change
+     */
+    void contextSizeUsedChanged();
+
 protected:
     /**
      * @brief Finalise le flux de streaming
@@ -308,10 +356,11 @@ protected:
     virtual void finalizeStream() = 0;
 
     // Data members
-    ChatData data_;          ///< Données de contexte du chat
+    ChatData data_;                 ///< Données de contexte du chat
+    ChatData* dataPtr_{nullptr};    ///< Pointeur vers les données de contexte du chat
 
-    bool streamed_;          ///< Indique si le streaming est activé
-    bool processing_;        ///< Indique si le chat est en cours de traitement
+    bool streamed_{false};          ///< Indique si le streaming est activé
+    bool processing_{false};        ///< Indique si le chat est en cours de traitement
 
     QString name_;           ///< Nom du chat
     QString currentApi_;     ///< API LLM courante
@@ -324,5 +373,5 @@ protected:
     QList<ChatMessage> history_;  ///< Historique des messages structurés
     QJsonObject info_;            ///< Informations supplémentaires en JSON
 
-    LLMServices* llmservices_;   ///< Services LLM utilisés par ce chat
+    LLMServices* llmservices_{nullptr};   ///< Services LLM utilisés par ce chat
 };

@@ -106,6 +106,21 @@ struct LlamaCppChatData : public ChatData
      */
     void deinitialize();
 
+    /**
+     * @brief Réinitialise les données du chat
+     * 
+     * Réinitialise l'état sans libérer les ressources.
+     * @return true si succès, false si échec
+     */
+    bool reset() override;
+
+    /**
+     * @brief Vide les données du chat
+     * 
+     * Vide les données sans libérer les ressources.
+     */
+    void clear();
+
     Chat* chat_{nullptr};                     ///< Pointeur vers le chat associé
 
     QString response_;                         ///< Réponse courante
@@ -404,7 +419,7 @@ public:
     QHash<const Chat*, LlamaCppChatData> datas_;     ///< Données de chat
 
     int defaultGpuLayers_{99};                       ///< Couches GPU par défaut
-    int defaultContextSize_{2048};                   ///< Taille de contexte par défaut
+    int defaultContextSize_{LLM_DEFAULT_CONTEXT_SIZE}; ///< Taille de contexte par défaut
     bool defaultUseGpu_{true};                       ///< Utilisation GPU par défaut
     bool useThreadedVersion_{false};                 ///< Version threadée activée
     bool onlyOneModelInMemory_{true};                ///< Un seul modèle en mémoire
