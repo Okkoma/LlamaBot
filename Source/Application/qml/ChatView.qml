@@ -20,9 +20,26 @@ Item {
             messageData: modelData
         }
         
-        // Auto-scroll logic
+        add: Transition {
+            NumberAnimation { property: "opacity"; from: 0; to: 1.0; duration: 200 }
+            NumberAnimation { property: "scale"; from: 0.95; to: 1.0; duration: 200 }
+        }
+
+        displaced: Transition {
+            NumberAnimation { properties: "x,y"; duration: 200; easing.type: Easing.OutQuad }
+        }
+
+        // Auto-scroll when new messages are added
         onCountChanged: {
-            Qt.callLater(() => positionViewAtEnd())
+            positionViewAtEnd()
+        }
+        
+        // Auto-scroll during streaming updates
+        Connections {
+            target: chatController && chatController.currentChat ? chatController.currentChat : null
+            function onHistoryChanged() {
+                messageList.positionViewAtEnd()
+            }
         }
     }
     

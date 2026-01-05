@@ -38,11 +38,11 @@ Item {
             }
         }
         
-        Rectangle {
+            Rectangle {
             id: bubble
             Layout.maximumWidth: root.width * 0.95
             Layout.preferredWidth: bubbleWidth()
-            Layout.preferredHeight: msgText.implicitHeight + 20
+            Layout.preferredHeight: msgText.contentHeight + 20
             color: isUser ? themeManager.color("windowDarker") : themeManager.color("windowDarker2")
             border.width: isThought ? 1 : 0
             border.color: themeManager.color("windowDarker")
@@ -58,7 +58,6 @@ Item {
                     anchors.left: parent.left
                     anchors.right: parent.right
                     anchors.verticalCenter: parent.verticalCenter
-                    height: implicitHeight
                     text: messageData ? messageData.content : ""
                     color: isThought ? themeManager.color("textDisabled") : themeManager.color("text")
                     font.italic: isThought
@@ -67,11 +66,6 @@ Item {
                     textFormat: TextEdit.MarkdownText
                     selectByMouse: true
                     readOnly: true
-                    
-                    // Force proper height calculation
-                    onImplicitHeightChanged: {
-                        bubble.Layout.preferredHeight = Qt.binding(() => msgText.implicitHeight + 20)
-                    }
                 }
             }
         }
