@@ -28,6 +28,15 @@ QStringList quickStyles =
     "FluentWinUI3"
 };
 
+QStringList colorEmojiFonts = 
+{
+    "Noto Color Emoji", // Google, open source
+    "Twemoji", // Twitter, open source        
+    "Segoe UI Emoji", // Windows
+    "Apple Color Emoji", // macOS/iOS
+    "JoyPixels" // anciennement EmojiOne
+};
+
 bool isStyleAvailable(const QString &style)
 {
     QString path = QLibraryInfo::path(QLibraryInfo::QmlImportsPath) + "/QtQuick/Controls/" + style;
@@ -39,12 +48,19 @@ QStringList getPlatformStyles()
 {
     QStringList styles;
     for (QString style : quickStyles) 
-    {
         if (isStyleAvailable(style))
             styles.push_back(style);
-    }
     return styles;
 }
+
+QString findColorEmojiFont()
+{
+    for (const QString &family : QFontDatabase::families())
+        if (colorEmojiFonts.contains(family))
+            return family;
+    return {};
+}
+
 
 ThemeManager::ThemeManager(QObject* parent) : 
     QObject(parent)
@@ -90,6 +106,24 @@ void ThemeManager::setTheme(const QString& theme)
     }
 }
 
+void ThemeManager::setFont(const QString& font)
+{
+    if (currentFont_ != font)
+    {
+        currentFont_ = font;
+        emit fontChanged();
+    }
+}
+
+void ThemeManager::setFontSize(int size)
+{
+    if (currentFontSize_ != size)
+    {
+        currentFontSize_ = size;
+        emit fontChanged();
+    }
+}
+
 void ThemeManager::setDarkMode(bool dark)
 {
     if (darkMode_ != dark)
@@ -99,10 +133,14 @@ void ThemeManager::setDarkMode(bool dark)
     }
 }
 
-void ThemeManager::setFont(const QFont& font)
+const QString& ThemeManager::currentFont() const
 {
-    qDebug() << "Application::setFont deprecated:" << font;
-    currentFont_ = font;
+    return currentFont_;
+}
+
+int ThemeManager::currentFontSize() const
+{
+    return currentFontSize_;
 }
 
 const QString& ThemeManager::currentStyle() const 
@@ -200,24 +238,28 @@ void ThemeManager::applyTheme()
 void ThemeManager::loadSettings()
 {
     // Get default font from QApplication if available, otherwise use system default
-    QFont defaultFont = qApp ? qApp->font() : QFontDatabase::systemFont(QFontDatabase::GeneralFont);
+    QFont systemFont = qApp ? qApp->font() : QFontDatabase::systemFont(QFontDatabase::GeneralFont);
+    colorEmojiFont_ = findColorEmojiFont();
+    QString defaultFont = !colorEmojiFont_.isEmpty() ? colorEmojiFont_ : systemFont.family();
+    int defaultFontSize = 14;
 
     QSettings settings;
     settings.beginGroup("ui");
     currentStyle_ = settings.value("style", defaultStyle_).toString();
     currentTheme_ = settings.value("theme", "").toString();
     darkMode_ = settings.value("darkMode", false).toBool();
-    currentFont_ = QFont(settings.value("fontFamily", defaultFont.family()).toString(), 
-                         settings.value("fontSize", defaultFont.pointSize()).toInt());
-
+    currentFont_ =  settings.value("fontFamily", defaultFont).toString();
+    currentFontSize_ = settings.value("fontSize", defaultFontSize).toInt();
     settings.endGroup();
 
     qDebug() << "ThemeManager::loadSettings :"
         << "theme:" << currentTheme_
         << "style:" << currentStyle_
         << "dark:" << darkMode_        
-        << "font:" << currentFont_.family()
-        << "fontsize:" << currentFont_.pointSize();
+        << "font:" << currentFont_
+        << "fontsize:" << currentFontSize_;
+
+    emit fontChanged();
 }
 
 void ThemeManager::saveSettings()
@@ -227,14 +269,14 @@ void ThemeManager::saveSettings()
     settings.setValue("style", currentStyle_);
     settings.setValue("theme", currentTheme_);    
     settings.setValue("darkMode", darkMode_);
-    settings.setValue("fontFamily", currentFont_.family());
-    settings.setValue("fontSize", currentFont_.pointSize());
+    settings.setValue("fontFamily", currentFont_);
+    settings.setValue("fontSize", currentFontSize_);
     settings.endGroup();
 
     qDebug() << "ThemeManager::saveSettings :"
         << "theme:" << currentTheme_
         << "style:" << currentStyle_
         << "dark:" << darkMode_        
-        << "font:" << currentFont_.family()
-        << "fontsize:" << currentFont_.pointSize();
+        << "font:" << currentFont_
+        << "fontsize:" << currentFontSize_;
 }

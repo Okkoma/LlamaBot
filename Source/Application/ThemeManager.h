@@ -25,6 +25,9 @@ class ThemeManager : public QObject
     Q_OBJECT
     Q_PROPERTY(QString currentStyle READ currentStyle WRITE setStyle NOTIFY styleChanged);
     Q_PROPERTY(QString currentTheme READ currentTheme WRITE setTheme NOTIFY themeChanged);
+    Q_PROPERTY(QString currentFont READ currentFont WRITE setFont NOTIFY fontChanged);
+    Q_PROPERTY(QString colorEmojiFont READ colorEmojiFont NOTIFY fontChanged);
+    Q_PROPERTY(int currentFontSize READ currentFontSize WRITE setFontSize NOTIFY fontChanged);    
     Q_PROPERTY(bool darkMode READ darkMode WRITE setDarkMode NOTIFY darkModeChanged)
 
 public:
@@ -54,17 +57,23 @@ public:
     Q_INVOKABLE void setTheme(const QString& theme);
     
     /**
+     * @brief Définit la police courante
+     * @param font Nom de la police à appliquer
+     */
+    Q_INVOKABLE void setFont(const QString& font);
+    
+    /**
+     * @brief Définit la taille de la police courante
+     * @param size Taille de la police à appliquer
+     */
+    Q_INVOKABLE void setFontSize(int size);
+    
+    /**
      * @brief Active ou désactive le mode sombre
      * @param dark true pour activer le mode sombre, false pour le désactiver
      */
     Q_INVOKABLE void setDarkMode(bool dark);
     
-    /**
-     * @brief Définit la police courante
-     * @param font Police à appliquer
-     */
-    void setFont(const QFont& font);
-
     /**
      * @brief Retourne le style courant
      * @return Nom du style courant
@@ -76,6 +85,24 @@ public:
      * @return Nom du thème courant
      */
     const QString& currentTheme() const;
+    
+    /**
+     * @brief Retourne la police courante
+     * @return Nom de la police courante
+     */
+    const QString& currentFont() const;
+    
+    /**
+     * @brief Retourne la police pour les emojis colorés
+     * @return Nom de la police pour les emojis colorés
+     */
+    Q_INVOKABLE const QString& colorEmojiFont() const { return colorEmojiFont_; };
+    
+    /**
+     * @brief Retourne la taille de la police courante
+     * @return Taille de la police courante
+     */
+    int currentFontSize() const;
     
     /**
      * @brief Retourne si le mode sombre est activé
@@ -140,6 +167,11 @@ signals:
     void darkModeChanged();
     
     /**
+     * @brief Signal émis lorsque la police change
+     */
+    void fontChanged();
+
+    /**
      * @brief Signal émis lorsqu'un style n'est pas disponible
      * @param styleName Nom du style non disponible
      */
@@ -161,5 +193,7 @@ private:
     QString currentTheme_;            ///< Thème courant
     QJsonObject currentThemeData_;    ///< Données du thème courant
     QMap<QString, QJsonObject> dataThemes_; ///< Tous les thèmes chargés
-    QFont currentFont_;               ///< Police courante
+    QString currentFont_;             ///< Police courante
+    QString colorEmojiFont_;          ///< Police pour les emojis colorés
+    int currentFontSize_;             ///< Taille de la police courante
 };

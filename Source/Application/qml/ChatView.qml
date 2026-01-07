@@ -20,32 +20,36 @@ Item {
             messageData: modelData
         }
         
-        add: Transition {
-            NumberAnimation { property: "opacity"; from: 0; to: 1.0; duration: 200 }
-            NumberAnimation { property: "scale"; from: 0.95; to: 1.0; duration: 200 }
+        // Visible scrollbar
+        ScrollBar.vertical: ScrollBar {
+            policy: ScrollBar.AsNeeded
         }
-
-        displaced: Transition {
-            NumberAnimation { properties: "x,y"; duration: 200; easing.type: Easing.OutQuad }
+        
+        // Helper function to conditionally scroll only if user is at the bottom
+        function smartScroll() {
+            // Only auto-scroll if the user is already viewing the end
+            // atYEnd is true when the view is scrolled to the bottom
+            if (messageList.atYEnd) {
+                positionViewAtEnd()
+            }
         }
-
-        // Auto-scroll when new messages are added
+        
+        // Auto-scroll when new messages are added (always scroll for new messages)
         onCountChanged: {
             positionViewAtEnd()
         }
         
-        // Auto-scroll during streaming updates
+        // Smart auto-scroll during streaming updates (only if user is at bottom)
         Connections {
             target: chatController && chatController.currentChat ? chatController.currentChat : null
             function onHistoryChanged() {
-                messageList.positionViewAtEnd()
+                messageList.smartScroll()
             }
         }
     }
     
     InputArea {
         id: inputArea
-        height: 80
         anchors.bottom: parent.bottom
         anchors.left: parent.left
         anchors.right: parent.right

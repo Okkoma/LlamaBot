@@ -41,7 +41,7 @@ Dialog {
                 model: themeManager.availableStyles()
                 Component.onCompleted: {
                     currentIndex = find(themeManager.currentStyle)
-                }            
+                }
             }
 
             // Theme Selection
@@ -57,6 +57,21 @@ Dialog {
                 Component.onCompleted: {
                     currentIndex = find(themeManager.currentTheme)
                 }            
+            }
+
+            // FontSize Selection
+            Label {
+                text: "Font Size"
+                font.bold: true
+            }
+
+            Slider {
+                id: fontSizeSelector
+                Layout.fillWidth: true
+                from: 10
+                value: themeManager.currentFontSize
+                to: 40   
+                onMoved: themeManager.currentFontSize = value
             }
 
             // RAG Section

@@ -38,30 +38,29 @@ Item {
             }
         }
         
-            Rectangle {
+        Rectangle {
             id: bubble
             Layout.maximumWidth: root.width * 0.95
             Layout.preferredWidth: bubbleWidth()
             Layout.preferredHeight: msgText.contentHeight + 20
             color: isUser ? themeManager.color("windowDarker") : themeManager.color("windowDarker2")
-            border.width: isThought ? 1 : 0
-            border.color: themeManager.color("windowDarker")
+            border.width: 0
             opacity: isThought ? 0.8 : 1.0
             radius: 10
             
             Item {
                 anchors.fill: parent
                 anchors.margins: 10
-                
                 TextEdit {
                     id: msgText
                     anchors.left: parent.left
                     anchors.right: parent.right
                     anchors.verticalCenter: parent.verticalCenter
                     text: messageData ? messageData.content : ""
-                    color: isThought ? themeManager.color("textDisabled") : themeManager.color("text")
+                    color: isThought ? themeManager.color("buttonText") : themeManager.color("text")
+                    font.family: themeManager.currentFont
+                    font.pixelSize: isThought ? themeManager.currentFontSize * 0.8 : themeManager.currentFontSize
                     font.italic: isThought
-                    font.pixelSize: isThought ? 13 : 14
                     wrapMode: TextEdit.Wrap
                     textFormat: TextEdit.MarkdownText
                     selectByMouse: true
@@ -79,7 +78,11 @@ Item {
         function onDarkModeChanged() {
             userframe.color = isUser ? themeManager.color("windowDarker") : themeManager.color("windowDarker2")
             bubble.color = isUser ? themeManager.color("windowDarker") : themeManager.color("windowDarker2")
-            msgText.color = isThought ? themeManager.color("textDisabled") : themeManager.color("text")
+            msgText.color = isThought ? themeManager.color("buttonText") : themeManager.color("text")
+        }
+        function onFontChanged() {
+            msgText.font.family = themeManager.currentFont
+            msgText.font.pixelSize = isThought ? themeManager.currentFontSize * 0.8 : themeManager.currentFontSize
         }
     }
     

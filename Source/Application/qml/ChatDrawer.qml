@@ -11,9 +11,6 @@ Drawer {
         color: themeManager.color("window")
     }
 
-    // Property to force delegate refresh
-    property int forceRefresh: 0
-
     ColumnLayout {
         anchors.fill: parent
         anchors.margins: 10
@@ -57,8 +54,6 @@ Drawer {
 
                 property var chatData: modelData
                 property bool isCurrent: chatController && chatController.currentChatIndex === chatData.index
-                // Property to force refresh when theme changes
-                property int themeDependency: drawer.forceRefresh
                 // Get the actual Chat object directly from model data
                 property var chatObject: chatData.chatObject
 
@@ -77,7 +72,7 @@ Drawer {
                         Label {
                             id: chatNameLabel
                             text: chatData.name
-                            color: themeManager.color("text")
+                            color: themeManager.color("buttonText")
                             font.bold: isCurrent
                             Layout.fillWidth: true
                             elide: Text.ElideRight
@@ -90,7 +85,7 @@ Drawer {
                             Label {
                                 id: chatModelLabel
                                 text: chatData.model
-                                color: themeManager.color("text")
+                                color: themeManager.color("buttonText")
                                 font.pixelSize: 10
                                 Layout.fillWidth: true
                                 elide: Text.ElideRight
@@ -99,7 +94,7 @@ Drawer {
                             Label {
                                 id: tokensLabel
                                 text: chatObject ? " • " + chatObject.contextSizeUsed + "/" + chatObject.contextSize : ""
-                                color: themeManager.color("textSecondary")
+                                color: themeManager.color("buttonText")
                                 font.pixelSize: 10
                                 Layout.alignment: Qt.AlignRight
                             }
@@ -108,21 +103,26 @@ Drawer {
 
                     ToolButton {
                         id: optionsButton
-                        text: "⋮"
                         Layout.alignment: Qt.AlignVCenter
-                        onClicked: contextMenu.popup()
-                        
+
+                        contentItem: Text {
+                            id: optionsButtonText
+                            text: "⋮"
+                            font.pixelSize: 24
+                            color: themeManager.color("buttonText")
+                            horizontalAlignment: Text.AlignHCenter
+                            verticalAlignment: Text.AlignVCenter
+                        }
+
                         background: Rectangle {
+                            implicitWidth: 30
+                            implicitHeight: 30
                             color: optionsButton.hovered ? themeManager.color("windowDarker2") : "transparent"
                             radius: 4
                         }
+
+                        onClicked: contextMenu.popup()
                     }
-                }
-                
-                // Force color update when theme changes
-                onThemeDependencyChanged: {
-                    chatNameLabel.color = themeManager.color("text")
-                    chatModelLabel.color = themeManager.color("text")
                 }
 
                 onClicked: {
@@ -187,6 +187,17 @@ Drawer {
                         }
                     }
                 }
+
+                Connections {
+                    target: themeManager
+                    function onDarkModeChanged() {
+                        // Update colors for static elements
+                        chatNameLabel.color = themeManager.color("buttonText")
+                        chatModelLabel.color = themeManager.color("buttonText")
+                        tokensLabel.color = themeManager.color("buttonText")
+                        optionsButtonText.color = themeManager.color("buttonText")
+                    }
+                }
             }
         }
     }
@@ -200,9 +211,7 @@ Drawer {
             convers.color = themeManager.color("text")
             chatBtn.palette.buttonText = themeManager.color("buttonText")
             chatBtn.palette.button = themeManager.color("button")
-            
-            // Force delegates to refresh by incrementing the dependency property
-            drawer.forceRefresh++
+            chatListView.highlightItem = chatListView.currentItem
         }
     }
 }
