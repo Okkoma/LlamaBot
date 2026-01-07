@@ -150,6 +150,11 @@ public:
      */
     void saveSettings();
 
+    /**
+     * @brief Redémarre l'application
+     */
+    Q_INVOKABLE void restartApplication();
+
 signals:
     /**
      * @brief Signal émis lorsque le style change

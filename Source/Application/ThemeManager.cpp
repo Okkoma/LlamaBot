@@ -87,13 +87,18 @@ ThemeManager::~ThemeManager()
     saveSettings();
 }
 
+void ThemeManager::restartApplication()
+{
+    saveSettings();
+    QProcess::startDetached(QCoreApplication::applicationFilePath(), QCoreApplication::arguments());
+    QCoreApplication::quit();
+}
+
 void ThemeManager::setStyle(const QString& style) 
 {
     if (currentStyle_ != style)
     {
         currentStyle_ = style;
-        QProcess::startDetached(QCoreApplication::applicationFilePath(),QCoreApplication::arguments());
-        QCoreApplication::quit();
     }
 }
 

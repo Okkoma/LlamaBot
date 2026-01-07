@@ -119,7 +119,7 @@ Dialog {
             Label {
                 text: chatController && chatController.ragService ? chatController.ragService.collectionStatus : "N/A"
                 font.pixelSize: 12
-                color: themeManager.color("textSecondary")
+                color: themeManager.color("text")
                 Layout.fillWidth: true
                 wrapMode: Text.WordWrap
             }
@@ -172,10 +172,13 @@ Dialog {
             text: "Apply"
             anchors.bottomMargin: 50
             DialogButtonBox.buttonRole: DialogButtonBox.AcceptRole
-            onClicked: {                
-                themeManager.setTheme(themeSelector.model[themeSelector.currentIndex == -1 ? 0 : themeSelector.currentIndex]);
-                if (themeManager.currentStyle != styleSelector.model[styleSelector.currentIndex])
+            onClicked: {
+                themeManager.setTheme(themeSelector.model[themeSelector.currentIndex == -1 ? 0 : themeSelector.currentIndex]);                
+                themeManager.setFontSize(fontSizeSelector.value);
+                if (themeManager.currentStyle != styleSelector.model[styleSelector.currentIndex]) {
+                    themeManager.setStyle(styleSelector.model[styleSelector.currentIndex]);
                     validateDialog.open();
+                }
                 else
                     dialog.close();
             }
@@ -192,12 +195,12 @@ Dialog {
     MessageDialog {
         id: validateDialog
         text: qsTr("The style need to relaunch the application.")
-        informativeText: qsTr("Do you want to sapply your changes ?")
+        informativeText: qsTr("Do you want to restart now ?")
         buttons: MessageDialog.Ok | MessageDialog.Cancel
         onButtonClicked: function (button, role) {
             switch (button) {
             case MessageDialog.Ok:
-                themeManager.setStyle(styleSelector.model[styleSelector.currentIndex]);
+                themeManager.restartApplication();
                 break;
             }
             dialog.close();

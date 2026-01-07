@@ -211,7 +211,6 @@ Drawer {
             convers.color = themeManager.color("text")
             chatBtn.palette.buttonText = themeManager.color("buttonText")
             chatBtn.palette.button = themeManager.color("button")
-            chatListView.highlightItem = chatListView.currentItem
         }
     }
 }
