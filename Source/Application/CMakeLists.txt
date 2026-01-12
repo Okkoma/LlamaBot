@@ -15,7 +15,10 @@ set(PROJECT_SOURCES
     LLMService.h LLMService.cpp
     LlamaCppService.h LlamaCppService.cpp
     OllamaService.h OllamaService.cpp
-    OllamaModelStoreDialog.h OllamaModelStoreDialog.cpp
+    ModelSource.h ModelSource.cpp
+    ModelStoreDialog.h ModelStoreDialog.cpp
+    HuggingFaceModelSource.h HuggingFaceModelSource.cpp
+    OllamaModelSource.h OllamaModelSource.cpp
     Chat.h ChatImpl.h ChatImpl.cpp
     ChatController.h ChatController.cpp
     ThemeManager.h ThemeManager.cpp

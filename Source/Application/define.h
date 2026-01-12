@@ -17,3 +17,5 @@ template <typename EnumObj> QString enumValueToString(const char* enumName, int 
     const QMetaObject& metaObj = EnumObj::staticMetaObject;
     return QString(metaObj.enumerator(metaObj.indexOfEnumerator(enumName)).valueToKey(value));
 }
+
+static const QString NULL_QSTRING = QString();

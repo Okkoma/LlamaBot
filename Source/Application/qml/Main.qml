@@ -54,26 +54,30 @@ ApplicationWindow {
                     ToolTip.visible: hovered
                     ToolTip.text: "New Chat"
                 }
-                
+
+                Item { Layout.fillWidth: true }
+
                 Label {
+                    id: lbl_Api
                     text: "API:"
                     color: themeManager.color("text")
                 }
-                
+                                
                 APISelector {
-                    Layout.preferredWidth: 120
+                    Layout.preferredWidth: 130
                 }
-                
+                    
                 Label {
+                    id: lbl_Model
                     text: "Model:"
                     color: themeManager.color("text")
                 }
-                
-                ModelSelector {
-                    Layout.fillWidth: true
-                    Layout.maximumWidth: 250
+                    
+                ModelSelector {   
+                    Layout.preferredWidth: 300                 
+                    Layout.maximumWidth: 350
                 }
-                
+
                 Item { Layout.fillWidth: true }
                 
                 // RAG Status Indicator
@@ -109,7 +113,7 @@ ApplicationWindow {
                         id: menu
                         MenuItem { 
                             text: "Model Store"
-                            onTriggered: modelStoreDialog.open()
+                            onTriggered: modelStorePopup.open()
                         }
                         MenuSeparator {}
                         MenuItem {
@@ -136,25 +140,23 @@ ApplicationWindow {
 
     // Model Store Dialog
     Dialog {
-        id: modelStoreDialog
-        title: "Ollama Model Store"
-        width: 600
+        id: modelStorePopup
+        title: "Model Store"
+        width: 800
         height: 800
         modal: true
         anchors.centerIn: parent
+        padding: 0
         
         contentItem: Loader {
-            id: modelStoreLoader
-            anchors.fill: parent
-            source: "qrc:/ressources/OllamaModelStoreDialog.qml"
-            
+            id: dialogLoader
+            // anchors.fill: parent // Removed to avoid overlapping header
+            active: modelStorePopup.opened
+            source: "qrc:/ressources/ModelStoreDialog.qml"
             onLoaded: {
-                // Connect the closeRequested signal from the loaded QML
-                if (item) {
-                    item.closeRequested.connect(function() {
-                        modelStoreDialog.close()
-                    })
-                }
+                item.closeRequested.connect(function() {
+                    modelStorePopup.close()
+                })
             }
         }
     }
@@ -163,4 +165,13 @@ ApplicationWindow {
     SettingsDialog {
         id: settingsDialog
     }
+
+    // Add connection to themeManager to listen for theme changes
+    Connections {
+        target: themeManager
+        function onDarkModeChanged() {
+            lbl_Model.color = themeManager.color("text")
+            lbl_Api.color = themeManager.color("text")
+        }
+    }    
 }

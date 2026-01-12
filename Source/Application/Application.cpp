@@ -5,15 +5,17 @@
 #include <QQmlApplicationEngine>
 #include <QQmlContext>
 
-#include "Application.h"
 #include "ChatController.h"
 #include "Clipboard.h"
 #include "LLMServices.h"
-#include "OllamaModelStoreDialog.h"
+#include "ModelStoreDialog.h"
 #include "ThemeManager.h"
 
+#include "Application.h"
+
 Application::Application(int& argc, char** argv) :
-    QApplication(argc, argv), qmlEngine_(nullptr), chatController_(nullptr), modelStoreDialog_(nullptr), services_(this)
+    QApplication(argc, argv),
+    services_(this)
 {
     setApplicationName("ChatBot");
     setApplicationVersion("0.1.0");
@@ -41,17 +43,14 @@ Application::Application(int& argc, char** argv) :
     chatController_ = new ChatController(ApplicationServices::get<LLMServices>(), this);
 
     // Initialize Model Store Dialog
-    modelStoreDialog_ = new OllamaModelStoreDialog(this);
+    modelStoreDialog_ = new ModelStoreDialog(this);
 
     // Initialize QML
     qmlEngine_ = new QQmlApplicationEngine(this);
 
-    // Set QML engine for model store
-    modelStoreDialog_->setQmlEngine(qmlEngine_);
-
     // Register Controller and Types
     qmlEngine_->rootContext()->setContextProperty("chatController", chatController_);
-    qmlEngine_->rootContext()->setContextProperty("ollamaModelStoreDialog", modelStoreDialog_);
+    qmlEngine_->rootContext()->setContextProperty("modelStoreDialog", modelStoreDialog_);
     qmlEngine_->rootContext()->setContextProperty("application", this);
     qmlEngine_->rootContext()->setContextProperty("themeManager", themeManager_);
     qmlEngine_->rootContext()->setContextProperty("clipboard", clipboard_);

@@ -6,7 +6,7 @@
     <file alias="icon1.png">../../bin/data/images/llamabot.png</file>
   </qresource>
   <qresource prefix="ressources">
-    <file alias="OllamaModelStoreDialog.qml">qml/OllamaModelStoreDialog.qml</file>
+    <file alias="ModelStoreDialog.qml">qml/ModelStoreDialog.qml</file>
     <file alias="ChatView.qml">qml/ChatView.qml</file>
     <file alias="InputArea.qml">qml/InputArea.qml</file>
     <file alias="MessageDelegate.qml">qml/MessageDelegate.qml</file>

@@ -8,7 +8,7 @@
 class QQmlApplicationEngine;
 class ChatController;
 class Clipboard;
-class OllamaModelStoreDialog;
+class ModelStoreDialog;
 class ThemeManager;
 
 /**
@@ -48,7 +48,7 @@ public:
 private:
     QQmlApplicationEngine* qmlEngine_;    ///< Moteur QML pour le rendu de l'interface utilisateur
     ChatController* chatController_;      ///< Contrôleur pour la gestion des chats et conversations
-    OllamaModelStoreDialog* modelStoreDialog_; ///< Dialogue pour la gestion des modèles Ollama
+    ModelStoreDialog* modelStoreDialog_;  ///< Dialogue pour la gestion des modèles
     ApplicationServices services_;        ///< Services d'application pour les fonctionnalités transverses
     ThemeManager* themeManager_;          ///< Gestionnaire des thèmes de l'application
     Clipboard* clipboard_;                ///< Gestionnaire du presse-papiers système

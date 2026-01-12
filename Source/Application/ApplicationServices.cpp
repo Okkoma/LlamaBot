@@ -1,4 +1,3 @@
-
 #include <QDebug>
 
 #include "ApplicationServices.h"
@@ -7,6 +6,9 @@
 #include "LlamaCppService.h"
 #include "OllamaService.h"
 
+#include "ModelSource.h"
+#include "OllamaModelSource.h"
+#include "HuggingFaceModelSource.h"
 
 std::unordered_map<const char*, std::unique_ptr<QObject> > ApplicationServices::services_;
 
@@ -20,6 +22,10 @@ ApplicationServices::ApplicationServices(QObject* parent) :
     // add service
     services_.emplace(std::make_pair(LLMServices::staticMetaObject.className(), std::unique_ptr<LLMServices>(new LLMServices(this))));
     qDebug() << "ApplicationServices: add" << get<LLMServices>();
+
+    // register model source entries
+    ModelSource::registerSource<OllamaModelSource>("Ollama");
+    ModelSource::registerSource<HuggingFaceModelSource>("HuggingFace");
 }
 
 ApplicationServices::~ApplicationServices()
