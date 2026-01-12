@@ -95,8 +95,7 @@
   "buildPresets": [
     {
       "name": "base-build",
-      "hidden": true,
-      "jobs": 0
+      "hidden": true
     },
     {
       "name": "x64-linux-debug",

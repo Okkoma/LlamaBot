@@ -3,10 +3,12 @@ backup/*
 build*/*
 Docs/todo*
 Docs/doxygen*
+Docs/llama*
 compile_commands.json
 diagnose*.sh
 create_android_project.sh
 .vscode
 .cursorignore
+.qtcreator
 tmp*
 coverage*
