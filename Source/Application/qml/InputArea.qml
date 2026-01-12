@@ -121,7 +121,10 @@ Item {
             font.family: themeManager.currentFont
             font.pixelSize: 20
             text: "😌"
-            
+            palette {
+                buttonText: themeManager.color("buttonText")
+                button: themeManager.color("button")
+            }                  
             onClicked: emojiPopup.open()
         }
         
@@ -224,6 +227,10 @@ Item {
             inputField.color = themeManager.color("text")
             sendBtn.palette.buttonText = themeManager.color("buttonText")
             sendBtn.palette.button = themeManager.color("button")
+            emojiButton.palette.buttonText = themeManager.color("buttonText")
+            emojiButton.palette.button = themeManager.color("button")
+            emojiPopup.background.color = themeManager.color("windowDarker")
+            emojiPopup.background.border.color = themeManager.color("windowDarker2")
         }
         function onFontChanged() {
             inputField.font.family = themeManager.currentFont

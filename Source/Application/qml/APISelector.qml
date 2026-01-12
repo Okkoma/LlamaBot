@@ -3,7 +3,7 @@ import QtQuick.Controls
 
 ComboBox {
     id: apiSelector
-    
+
     model: chatController ? chatController.getAvailableAPIs() : []
     textRole: "name"
     
