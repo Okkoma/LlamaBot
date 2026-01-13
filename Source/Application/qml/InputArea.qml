@@ -95,7 +95,6 @@ Item {
 
     implicitHeight: Math.max(emojiButton.height * 1.2, rowLayout.height + 20) // s'adapte au contenu + marges
 
-
     FontMetrics {
         id: fontMetrics
         font.family: themeManager.currentFont
@@ -197,7 +196,41 @@ Item {
                     id: contextMenu
                     MenuItem { text: "Cut"; enabled: inputField.selectedText.length > 0; onTriggered: inputField.cut() }
                     MenuItem { text: "Copy"; enabled: inputField.selectedText.length > 0; onTriggered: inputField.copy() }
-                    MenuItem { text: "Paste"; enabled: inputField.canPaste; onTriggered: inputField.paste() }
+                    MenuItem { 
+                        text: "Paste"; 
+                        enabled: inputField.canPaste || clipboard.hasUrls() || clipboard.hasImage(); 
+                        onTriggered: {
+                            // Vérifier d'abord si le presse-papier contient des fichiers/images
+                            if (clipboard.hasUrls()) {
+                                var urls = clipboard.getUrls()
+                                if (urls.length > 0) {
+                                    // Vérifier si c'est une image
+                                    var filePath = urls[0]
+                                    var extension = filePath.split('.').pop().toLowerCase()
+                                    if (extension === "png" || extension === "jpg" || extension === "jpeg" || 
+                                        extension === "gif" || extension === "webp") {
+                                        chatController.addAsset(filePath)
+                                    } else {
+                                        // Pour les autres fichiers, on pourrait les traiter différemment
+                                        // ou simplement coller le chemin comme texte
+                                        inputField.paste()
+                                    }
+                                }
+                            } else if (clipboard.hasImage()) {
+                                // Image collée directement depuis le presse-papier
+                                var base64Image = clipboard.getImageAsBase64()
+                                if (base64Image) {
+                                    var base64Image = clipboard.getImageAsBase64()
+                                    if (base64Image) {
+                                        chatController.addAssetBase64(base64Image)
+                                    }
+                                }
+                            } else {
+                                // Coller du texte normalement
+                                inputField.paste()
+                            }
+                        }
+                    }
                     MenuSeparator {}
                     MenuItem { text: "Select All"; enabled: inputField.length > 0; onTriggered: inputField.selectAll() }
                 }
@@ -212,7 +245,8 @@ Item {
                 button: themeManager.color("button")
             }             
             text: "Send"
-            enabled: inputField.text.trim().length > 0
+            enabled: inputField.text.trim().length > 0 || 
+                     (chatController && chatController.pendingAssets.length > 0)
             onClicked: {
                 parent.parent.accepted(inputField.text)
                 inputField.clear()

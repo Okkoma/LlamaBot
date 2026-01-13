@@ -22,6 +22,7 @@ class ChatController : public QObject
     Q_PROPERTY(RAGService* ragService READ ragService CONSTANT)
     Q_PROPERTY(int defaultContextSize READ getDefaultContextSize WRITE setDefaultContextSize NOTIFY defaultContextSizeChanged)
     Q_PROPERTY(bool autoExpandContext READ getAutoExpandContext WRITE setAutoExpandContext NOTIFY autoExpandContextChanged)
+    Q_PROPERTY(QVariantList pendingAssets READ pendingAssets NOTIFY pendingAssetsChanged)
 
 public:
     /**
@@ -122,6 +123,25 @@ public:
      */
     Q_INVOKABLE void setAPI(const QString& apiName);
 
+    /**
+     * @brief Ajoute un asset au chat courant
+     * @param assetPath chemin de l'asset
+     */
+    Q_INVOKABLE void addAsset(const QString& assetPath);
+    
+    /**
+     * @brief Ajoute un asset au chat courant
+     * @param assetContent contenu de l'asset base64
+     */
+    Q_INVOKABLE void addAssetBase64(const QString& assetContent);
+
+    // Helper pour conversion
+    Q_INVOKABLE QString imageToBase64(const QString& imagePath) const;
+
+    Q_INVOKABLE void removeAsset(int index);
+    Q_INVOKABLE void clearAssets();
+    QVariantList pendingAssets() const { return pendingAssets_; }
+
 signals:
     /**
      * @brief Signal émis lorsque le contenu d'un chat est mis à jour
@@ -153,6 +173,8 @@ signals:
      * @brief Signal émis lorsque le chargement se termine
      */
     void loadingFinished();
+
+    void pendingAssetsChanged();
 
 private:
     /**
@@ -198,9 +220,10 @@ private:
     LLMServices* llmServices_;    ///< Service LLM pour les opérations de chat
     RAGService* ragService_;      ///< Service RAG pour la recherche augmentée
     QList<Chat*> chats_;          ///< Liste des chats gérés par le contrôleur
-    Chat* currentChat_;          ///< Chat actuellement sélectionné
+    Chat* currentChat_;           ///< Chat actuellement sélectionné
     int chatCounter_;             ///< Compteur pour générer des noms de chat uniques
-    bool ragEnabled_ = false;    ///< Indique si le RAG est activé
+    bool ragEnabled_ = false;     ///< Indique si le RAG est activé
+    QVariantList pendingAssets_;  ///< Liste temporaire des assets en attente
 
 public:
     /**

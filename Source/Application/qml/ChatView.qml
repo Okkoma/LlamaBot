@@ -47,7 +47,14 @@ Item {
             }
         }
     }
-    
+
+    AssetContent {
+        id: assetContent
+        anchors.bottom: inputArea.top
+        anchors.left: parent.left
+        anchors.right: parent.right
+    }
+
     InputArea {
         id: inputArea
         anchors.bottom: parent.bottom

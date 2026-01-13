@@ -22,7 +22,7 @@ set(PROJECT_SOURCES
     Chat.h ChatImpl.h ChatImpl.cpp
     ChatController.h ChatController.cpp
     ThemeManager.h ThemeManager.cpp
-    Clipboard.h
+    Clipboard.h Clipboard.cpp
     DocumentProcessor.h DocumentProcessor.cpp
     RAGService.h RAGService.cpp
     VectorStore.h VectorStore.cpp

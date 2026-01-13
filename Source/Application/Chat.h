@@ -12,8 +12,9 @@ class LLMServices;
  */
 struct ChatMessage
 {
-    QString role;      ///< Rôle du message (user, assistant, system)
-    QString content;   ///< Contenu du message
+    QString role;        ///< Rôle du message (user, assistant, system)
+    QString content;     ///< Contenu du message
+    QVariantList assets; ///< Contenu des assets
 };
 
 /**
@@ -117,6 +118,14 @@ public:
         }
     }
 
+    /**
+     * @brief définit les assets à ajouter au nouveau message en cours de préparation
+     * @param assets liste d'assets.
+     */
+    void setAssets(const QVariantList& assets) { currentAssets_ = assets; }
+
+    const QVariantList& getAssets() const { return currentAssets_; }
+    
     /**
      * @brief Met à jour le contenu du chat
      * @param content Nouveau contenu à ajouter
@@ -369,6 +378,8 @@ protected:
 
     QStringList messages_;   ///< Liste des messages sous forme de texte
     QString messagesRaw_;    ///< Messages bruts
+    
+    QVariantList currentAssets_;  ///< Liste des assets à ajouter au dernier message
 
     QList<ChatMessage> history_;  ///< Historique des messages structurés
     QJsonObject info_;            ///< Informations supplémentaires en JSON

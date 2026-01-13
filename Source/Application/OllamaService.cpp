@@ -246,17 +246,41 @@ void OllamaService::postInternal(Chat* chat, const QString& content, bool stream
     {
         // Construct messages array for /api/chat
         QJsonArray messagesArray;
-        for (const ChatMessage& msg : chat->getHistory())
+        QList<ChatMessage>& history = chat->getHistory();
+        if (chat->getHistory().size() > 1)        
         {
-            QJsonObject msgObj;
-            msgObj["role"] = msg.role;
-            msgObj["content"] = msg.content;
-            messagesArray.append(msgObj);
+            for (QList<ChatMessage>::iterator it = history.begin(); it != history.end()-1; ++it)
+            {
+                QJsonObject msgObj;
+                msgObj["role"] = it->role;
+                msgObj["content"] = it->content;
+                messagesArray.append(msgObj);
+            }
         }
-
-        // Add the current user prompt if not already in history (updateContent adds it, but let's be safe)
-        // Actually chat->updateContent() calls addContent() which adds to history.
-
+        // add the last message
+        ChatMessage& lastMsg = history.last();
+        QJsonObject msgObj;
+        msgObj["role"] = lastMsg.role;
+        msgObj["content"] = lastMsg.content;
+        // add the assets of the last message
+        const QVariantList& assets = chat->getAssets();
+        if (assets.size() > 0)
+        {
+            QJsonArray imagesArray;
+            for (auto& asset : assets)
+            {
+                QVariantMap map = asset.toMap();
+                if (map["type"].toString() == "image")
+                {
+                    QString image = map["base64"].toString();
+                    imagesArray.append(image.sliced(image.indexOf(";base64,",Qt::CaseInsensitive) + 8));
+                }
+            }
+            if (imagesArray.size() > 0)
+                msgObj["images"] = imagesArray;
+        }
+        messagesArray.append(msgObj);
+        
         payload["messages"] = messagesArray;
         payload.remove("prompt"); // Remove 'prompt' if present, as it conflicts with 'messages' in some versions
 
@@ -283,24 +307,6 @@ void OllamaService::postInternal(Chat* chat, const QString& content, bool stream
             [this, chat, reply, useChatApi]()
             {
                 // qDebug() << "OllamaService::postInternal streamed: received data";
-
-                // For /api/chat, the response format is different:
-                // "message": { "role": "assistant", "content": "..." } instead of "response": "..."
-                // We need to handle this in LLMServices::receive or handle it here.
-                // LLMServices::receive expects "response".
-
-                // Let's modify LLMServices::receive to handle both or intercept here.
-                // Since LLMServices::receive is generic, we should probably intercept or ensure LLMServices handles it.
-                // But wait, LLMServices::receive parses lines.
-                // If we use /api/chat, the stream chunks look like: { "model": "...", "created_at": "...", "message": {
-                // "role": "assistant", "content": "Hello" }, "done": false }
-
-                // LLMServices::receive checks for "response". We need it to check for "message.content" too.
-                // But LLMServices::receive is in LLMServices.cpp.
-
-                // Actually, let's keep it simple: pass the raw data to service_->receive,
-                // and update LLMServices::receive to handle "message" object.
-
                 llmservices_->receive(this, chat, reply->readAll());
             });
         llmservices_->connect(reply, &QNetworkReply::finished, llmservices_,

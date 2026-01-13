@@ -1,3 +1,8 @@
+#include <QFile>
+#include <QFileInfo>
+#include <QImage>
+#include <QBuffer>
+
 #include "LLMService.h"
 #include "ChatImpl.h"
 
@@ -175,6 +180,7 @@ void ChatController::sendMessage(const QString& text)
         emit loadingStarted();
 
         QString prompt = text;
+
         if (ragEnabled_ && ragService_)
         {
             QString context = ragService_->retrieveContext(text);
@@ -186,7 +192,12 @@ void ChatController::sendMessage(const QString& text)
             }
         }
 
+        // Add assets (images, audio)
+        currentChat_->setAssets(pendingAssets_);
+
         llmServices_->post(api, currentChat_, prompt, true);
+
+        clearAssets();
     }
 }
 
@@ -351,4 +362,89 @@ void ChatController::setAutoExpandContext(bool enabled)
 {
     if (llmServices_->getAutoExpandContext() != enabled)
         llmServices_->setAutoExpandContext(enabled);
+}
+
+QString ChatController::imageToBase64(const QString& imagePath) const
+{
+    QFile file(imagePath);
+    if (!file.exists() || !file.open(QIODevice::ReadOnly))
+        return QString();
+    
+    QByteArray fileData = file.readAll();
+    file.close();
+    
+    // Détecter le type MIME
+    QString mimeType = "image/png";
+    QString extension = QFileInfo(imagePath).suffix().toLower();
+    if (extension == "jpg" || extension == "jpeg")
+        mimeType = "image/jpeg";
+    else if (extension == "gif")
+        mimeType = "image/gif";
+    else if (extension == "webp")
+        mimeType = "image/webp";
+    
+    return QString("data:%1;base64,%2")
+        .arg(mimeType)
+        .arg(QString::fromLatin1(fileData.toBase64()));
+}
+
+void ChatController::addAsset(const QString& assetPath)
+{
+    if (assetPath.isEmpty())
+        return;
+    
+    qDebug() << "ChatController::addAsset:" << assetPath;
+
+    // Convertir l'image en base64
+    QString base64Image = imageToBase64(assetPath);
+    if (base64Image.isEmpty())
+    {
+        qWarning() << "Impossible de convertir l'image en base64:" << assetPath;
+        return;
+    }
+    
+    // Ajouter à la liste temporaire
+    QVariantMap asset;
+    asset["type"] = "image";
+    asset["base64"] = base64Image;
+    asset["path"] = assetPath;
+    asset["name"] = QFileInfo(assetPath).fileName();
+    pendingAssets_.append(asset);
+
+    emit pendingAssetsChanged();
+}
+
+void ChatController::addAssetBase64(const QString& assetContent)
+{
+    if (assetContent.isEmpty())
+        return;
+
+    qDebug() << "ChatController::assetContent:" << assetContent;
+    
+    QVariantMap asset;
+    asset["type"] = "image";
+    asset["base64"] = assetContent;
+    asset["path"] = "";
+    asset["name"] = "Image collée";
+    pendingAssets_.append(asset);
+
+    emit pendingAssetsChanged();
+}
+
+void ChatController::removeAsset(int index)
+{
+    if (index >= 0 && index < pendingAssets_.size())
+    {
+        pendingAssets_.removeAt(index);
+        emit pendingAssetsChanged();
+    }
+}
+
+void ChatController::clearAssets()
+{
+    if (!pendingAssets_.isEmpty())
+    {
+        pendingAssets_.clear();
+        emit pendingAssetsChanged();
+    }
 }

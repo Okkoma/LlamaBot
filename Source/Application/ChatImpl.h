@@ -111,18 +111,6 @@ private:
     void addContent(const QString& role, const QString& content);
     
     /**
-     * @brief Ajoute du contenu utilisateur
-     * @param text Texte du message utilisateur
-     */
-    void addUserContent(const QString& text);
-    
-    /**
-     * @brief Ajoute du contenu de l'IA
-     * @param text Texte du message de l'IA
-     */
-    void addAIContent(const QString& text);
-    
-    /**
      * @brief Met à jour l'objet du chat
      * 
      * Met à jour les propriétés et émet les signaux appropriés.

@@ -100,7 +100,7 @@ void ChatImpl::addContent(const QString& role, const QString& content)
 
     // Add to history
     if (!content.isEmpty())
-        history_.append({ role, content });
+        history_.append({ role, content, getAssets() });
 
     if (!content.isEmpty())
     {
@@ -249,16 +249,6 @@ void ChatImpl::updateObject()
     info_["prompt"] = messagesRaw_;
 }
 
-void ChatImpl::addUserContent(const QString& text)
-{
-    addContent("user", text);
-}
-
-void ChatImpl::addAIContent(const QString& text)
-{
-    addContent("assistant", text);
-}
-
 QVariantList ChatImpl::historyList() const
 {
     QVariantList list;
@@ -267,6 +257,7 @@ QVariantList ChatImpl::historyList() const
         QVariantMap map;
         map["role"] = msg.role;
         map["content"] = msg.content;
+        map["assets"] = msg.assets;
         list.append(map);
     }
     return list;
@@ -291,6 +282,13 @@ QJsonObject ChatImpl::toJson() const
         QJsonObject msgObj;
         msgObj["role"] = msg.role;
         msgObj["content"] = msg.content;
+        if (msg.assets.size())
+        {
+            QJsonArray assetsArray;
+            for (const auto& asset : msg.assets)
+                assetsArray.append(asset.toJsonObject());
+            msgObj["assets"] = assetsArray;
+        }
         historyArray.append(msgObj);
     }
     json["history"] = historyArray;
@@ -321,7 +319,8 @@ void ChatImpl::fromJson(const QJsonObject& json)
     for (const auto& val : historyArray)
     {
         QJsonObject msgObj = val.toObject();
-        history_.append({ msgObj["role"].toString(), msgObj["content"].toString() });
+        history_.append({ msgObj["role"].toString(), msgObj["content"].toString(), 
+                    msgObj["assets"].toVariant().toList() });
     }
 
     // Reconstruct messages for UI
