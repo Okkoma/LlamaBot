@@ -158,22 +158,27 @@ llama_context* LLamaInitializeContext(llama_model* model, const llama_context_pa
     return ctx;
 }
 
-std::vector<llama_token> LlamaTokenize(llama_context* ctx, llama_model* model, const QString& prompt)
+std::vector<llama_token> LlamaTokenize(llama_model* model, const QString& prompt, bool add_special = true)
 {
     const llama_vocab* vocab = llama_model_get_vocab(model);
-    const bool is_first = llama_memory_seq_pos_max(llama_get_memory(ctx), 0) == -1;
 
     // tokenize the prompt
     std::string text = prompt.toStdString();
-    const int n_prompt_tokens = -llama_tokenize(vocab, text.c_str(), text.size(), NULL, 0, is_first, true);
+    const int n_prompt_tokens = -llama_tokenize(vocab, text.c_str(), text.size(), NULL, 0, add_special, true);
     std::vector<llama_token> prompt_tokens(n_prompt_tokens);
-    if (llama_tokenize(vocab, text.c_str(), text.size(), prompt_tokens.data(), prompt_tokens.size(), is_first, true) < 0)
+    if (llama_tokenize(vocab, text.c_str(), text.size(), prompt_tokens.data(), prompt_tokens.size(), add_special, true) < 0)
     {
         qDebug() << "failed to tokenize the prompt";
         return {};
     }
 
     return prompt_tokens;
+}
+
+std::vector<llama_token> LlamaTokenize(llama_context* ctx, llama_model* model, const QString& prompt)
+{
+    const bool is_first = llama_memory_seq_pos_max(llama_get_memory(ctx), 0) == -1;
+    return LlamaTokenize(model, prompt, is_first);
 }
 
 std::vector<llama_token> LlamaTokenize(LlamaCppChatData& data, const QString& prompt)
@@ -198,8 +203,8 @@ int LlamaDecode(LlamaCppChatData& data)
         if (i + n_tokens < n_tokens_total)
         {
             data.batch_ = llama_batch_get_one(data.tokens_.data() + i, n_tokens);
-            if (llama_decode(data.ctx_, data.batch_) != 0)            
-                return -1;            
+            if (llama_decode(data.ctx_, data.batch_) != 0)
+                return -1;
         }
         else
             data.batch_ = llama_batch_get_one(data.tokens_.data() + i, n_tokens);
@@ -268,9 +273,15 @@ void LlamaCppChatData::initialize(LlamaModelData* model)
     model_ = model;
 
     // check n_ctx
-    int chatMessageSize = chat_ ? chat_->getMessagesRaw().size() : 0;
-    while (n_ctx_ < chatMessageSize)
-        n_ctx_ *= 2;
+    std::vector<llama_token> full_history;
+    QString formattedHistory = chat_->getFormattedHistory();
+    if (chat_ && !formattedHistory.isEmpty())
+        full_history = LlamaTokenize(model_->model_, formattedHistory);
+    if (n_ctx_ < full_history.size())
+    {
+        while (n_ctx_ < full_history.size())
+            n_ctx_ *= 2;
+    }
 
     // initialize the context
     llama_context_params ctx_params = llama_context_default_params();
@@ -327,14 +338,14 @@ void LlamaCppChatData::clear()
     response_.clear();
 }
 
-bool LlamaCppChatData::reset()
+void LlamaCppChatData::reset()
 {
     qDebug() << "LlamaCppChatData::reset";
     deinitialize();
     if (model_)
         initialize(model_);
     
-    return LlamaDecode(*this) == 0;
+    LlamaDecode(*this);
 }
 
 struct LlamaCppProcessAsync : public LlamaCppProcess
@@ -346,7 +357,8 @@ struct LlamaCppProcessAsync : public LlamaCppProcess
     {
         // Prepare tokens and batch for asynchronous generation
         data_->chat_ = chat;
-        data_->tokens_ = LlamaTokenize(*data_, chat->getMessagesRaw());
+        QString historyStr = chat->getFormattedHistory();
+        data_->tokens_ = LlamaTokenize(*data_, historyStr);
         data_->tokenId_ = 1; // initial value > 0 to enter the loop
         data_->response_.clear();
         data_->batch_ = llama_batch_get_one(data_->tokens_.data(), data_->tokens_.size());
@@ -402,15 +414,9 @@ struct LlamaCppProcessAsync : public LlamaCppProcess
             if (newSize <= n_ctx_train)
             {
                 qDebug() << "LlamaCppProcessAsync: Auto-expanding context to" << newSize;
-                if (!data_->chat_->setContextSize(newSize))
-                {
-                    qWarning() << "LlamaCppProcessAsync: Failed to re-initialize context after auto-expansion.";
-                    stopProcess();
-                    if (data_->chat_)
-                        data_->chat_->setProcessing(false);
-                    return;
-                }
-                data_->tokenId_ = LlamaGenerateStep(*data_, data_->tokens_, data_->response_);
+                data_->chat_->setContextSize(newSize);
+                // break to next step
+                return;
             }
         }
 
@@ -447,7 +453,8 @@ struct LlamaCppProcessThread : public LlamaCppProcess
         // Prepare data for threaded generation
         QMutexLocker locker(&mutex_);
         data_->chat_ = chat;
-        data_->tokens_ = LlamaTokenize(*data_, data_->chat_->getMessagesRaw());
+        QString historyStr = chat->getFormattedHistory();
+        data_->tokens_ = LlamaTokenize(*data_, historyStr);
         data_->tokenId_ = 1; // initial value > 0 to enter the loop
         data_->response_.clear();
         data_->batch_ = llama_batch_get_one(data_->tokens_.data(), data_->tokens_.size());
@@ -606,13 +613,9 @@ void LlamaCppWorker::processRequest()
             if (newSize <= n_ctx_train)
             {
                 qDebug() << "LlamaCppWorker: Auto-expanding context to" << newSize;
-                if (!data.chat_->setContextSize(newSize))
-                {
-                    qWarning() << "LlamaCppWorker: Failed to re-initialize context after auto-expansion.";
-                    emit errorOccurred("Failed to re-initialize context after auto-expansion");
-                    break;
-                }
-                data.tokenId_ = LlamaGenerateStep(data, data.tokens_, data.response_);
+                data.chat_->setContextSize(newSize);
+                // continue to next step
+                continue;
             }
         }
 
@@ -719,7 +722,7 @@ void LlamaCppService::initializeData(LlamaCppChatData* data, LlamaModelData* mod
 
 void LlamaCppService::clearData(LlamaCppChatData* data)
 {
-    qDebug() << "LlamaCppService::clearData: Cleaning up data";
+    qDebug() << "LlamaCppService::clearData: Cleaning up data:" << data;
     
     if (data->generateProcess_)
     {
@@ -904,65 +907,46 @@ void LlamaCppService::post(Chat* chat, const QString& content, bool streamed)
         });
 }
 
-QString LlamaCppService::formatMessage(Chat* chat, const QString& role, const QString& content)
+QString LlamaCppService::formatMessages(Chat* chat)
 {
     LlamaCppChatData* data = getData(chat);
-    if (!data)
+    if (!data || !data->ctx_)
+        return {};
+    const char * START_THINK = "<think>";
+    const char* END_THINK = "</think>";
+    QString entry;
+    QString thought;
+    std::vector<llama_chat_message> messages;
+    QList<ChatMessage> history = chat->getHistory();
+    for (const ChatMessage& message : history)
     {
-        qDebug() << "LlamaCppService::formatMessage: no data";
-        return content;
-    }
-    if (!data->ctx_)
-    {
-        qDebug() << "LlamaCppService::formatMessage: no data context - returning raw content";
-        return content;
-    }
-    if (!data->llamaCppChattemplate_)
-    {
-        qDebug() << "LlamaCppService::formatMessage: no chat template - returning raw content";
-        return content;
+        entry += message.role_ + ": " + message.content_;
+        qDebug() << "LlamaCppApi::formatMessages: role:" << message.role_ << " content:" << message.content_;
+        if (message.role_ == "thought")
+            thought = START_THINK + message.content_ + END_THINK;
+        else if (message.role_ == "user")
+            messages.push_back({ "user", strdup(message.content_.toUtf8().constData()) });
+        else if (message.role_ == "assistant")
+            messages.push_back({ "assistant", strdup((thought+message.content_).toUtf8().constData()) });
     }
 
-    try
-    {
-        std::vector<char> formatted(llama_n_ctx(data->ctx_));
+    std::vector<char> formatted(llama_n_ctx(data->ctx_) * LLM_MAX_TOKEN_LEN);
+    int new_len = llama_chat_apply_template(data->llamaCppChattemplate_, messages.data(),
+                                            messages.size(), true, formatted.data(), formatted.size());
+    
+    for (llama_chat_message& msg : messages)
+        free(const_cast<char*>(msg.content));
 
-        if (role == "user")
-        {
-            // add user message
-            data->llamaCppChatMessages_.push_back(
-                { "user", content.isEmpty() ? "" : strdup(content.toUtf8().constData()) });
-        }
-        else
-        {
-            // add assistant response
-            data->llamaCppChatMessages_.push_back(
-                { "assistant", content.isEmpty() ? "" : strdup(content.toUtf8().constData()) });
-        }
+    /// TEST in utf8
+    //QString result = QString::fromLocal8Bit(formatted.data(), new_len);
+    QString result = QString::fromUtf8(formatted.data(), new_len);
 
-        int new_len = llama_chat_apply_template(data->llamaCppChattemplate_, data->llamaCppChatMessages_.data(),
-            data->llamaCppChatMessages_.size(), true, formatted.data(), formatted.size());
-        if (new_len > (int)formatted.size())
-        {
-            formatted.resize(new_len);
-            new_len = llama_chat_apply_template(data->llamaCppChattemplate_, data->llamaCppChatMessages_.data(),
-                data->llamaCppChatMessages_.size(), true, formatted.data(), formatted.size());
-        }
-
-        QString result = QString::fromLocal8Bit(formatted.data(), new_len);
-        qDebug() << "LlamaCppApi::formatMessage: role:" << role << "content:" << content << "result:" << result;
-        return result;
-    }
-    catch (const std::exception& e)
-    {
-        qWarning() << "LlamaCppService::formatMessage: Exception:" << e.what();
-        return content;
-    }
-    catch (...)
-    {
-        qWarning() << "LlamaCppService::formatMessage: Unknown exception";
-        return content;
-    }
+    qDebug() << "LlamaCppApi::formatMessages:";
+    qDebug() << "ENTRY:" << entry;
+    qDebug() << "";
+    qDebug() << "RESULT:" << result;
+    qDebug() << "";
+    return result;
 }
 
 void LlamaCppService::stopStream(Chat* chat)

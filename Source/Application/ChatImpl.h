@@ -37,6 +37,12 @@ public:
     void setModel(const QString& model) override;
 
     /**
+     * @brief Retourne l'historique des messages formaté
+     * @return QString contenant l'historique des messages formaté
+     */
+    QString getFormattedHistory() override;
+
+    /**
      * @brief Retourne l'historique du chat sous forme de liste variante
      * @return Liste variante contenant l'historique des messages
      */
@@ -109,13 +115,6 @@ private:
      * @param content Contenu du message
      */
     void addContent(const QString& role, const QString& content);
-    
-    /**
-     * @brief Met à jour l'objet du chat
-     * 
-     * Met à jour les propriétés et émet les signaux appropriés.
-     */
-    void updateObject();
 
     int lastBotIndex_;       ///< Index du dernier message du bot
 

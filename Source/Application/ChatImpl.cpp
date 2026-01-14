@@ -19,8 +19,6 @@ ChatImpl::ChatImpl(LLMServices* llmservices, const QString& name, const QString&
 
     setObjectName(name);
     initialize();
-
-    messagesRaw_ = !initialContext_.isEmpty() ? initialContext_ : rawDefaultInitialPrompt;
 }
 
 void ChatImpl::initialize()
@@ -86,8 +84,6 @@ void ChatImpl::updateContent(const QString& content)
 
     emit messagesChanged();
     emit inputCleared();
-
-    updateObject();
 }
 
 void ChatImpl::addContent(const QString& role, const QString& content)
@@ -105,9 +101,6 @@ void ChatImpl::addContent(const QString& role, const QString& content)
     if (!content.isEmpty())
     {
         messages_.append(QString("%1 %2\n").arg(isUserContent ? userPrompt_ : aiPrompt_, content));
-
-        LLMService* api = llmservices_->get(currentApi_);
-        messagesRaw_ += api ? api->formatMessage(this, role, content) : content + "\n";
         
         // Si c'est un message assistant, mettre à jour lastBotIndex_ et currentAIStream_
         if (!isUserContent)
@@ -136,20 +129,8 @@ void ChatImpl::finalizeStream()
     {
         qDebug() << "Chat::finalizeStream: ";
 
-        LLMService* api = llmservices_->get(currentApi_);
-        // Map "thought" back to "assistant" for raw storage if needed, but wait.
-        // If we want the raw prompt to be correct, we should probably have kept the tags.
-        // Actually, LLM handles its own history in LlamaCppService. 
-        // This messagesRaw_ is for OTHER services or reloading.
-        
-        QString roleForRaw = (currentAIRole_ == "thought") ? "assistant" : currentAIRole_;
-        QString contentForRaw = currentAIStream_;
-        if (currentAIRole_ == "thought") contentForRaw = "<think>" + contentForRaw + "</think>";
-
-        messagesRaw_ += api ? api->formatMessage(this, roleForRaw, contentForRaw) : contentForRaw + "\n";
-
         // History is already updated during streaming in updateCurrentAIStream()
-        if (history_.isEmpty() || history_.last().role != currentAIRole_ || history_.last().content != currentAIStream_)
+        if (history_.isEmpty() || history_.last().role_ != currentAIRole_ || history_.last().content_ != currentAIStream_)
         {
             qWarning() << "Chat::finalizeStream: history was not updated during streaming, adding now";
             history_.append({ currentAIRole_, currentAIStream_ });
@@ -174,10 +155,8 @@ void ChatImpl::updateCurrentAIStream(const QString& text)
     {
         currentAIStream_.remove("<think>");
         currentAIRole_ = "thought";
-        if (!history_.isEmpty() && history_.last().role == "assistant")
-        {
-            history_.last().role = "thought";
-        }
+        if (!history_.isEmpty() && history_.last().role_ == "assistant")
+            history_.last().role_ = "thought";
     }
 
     // Detection of </think>
@@ -188,9 +167,9 @@ void ChatImpl::updateCurrentAIStream(const QString& text)
         QString after = currentAIStream_.mid(tagPos + 8); // 8 = length of </think>
 
         // Finalize "thought" part
-        if (!history_.isEmpty() && history_.last().role == "thought")
+        if (!history_.isEmpty() && history_.last().role_ == "thought")
         {
-            history_.last().content = before;
+            history_.last().content_ = before;
             messages_[lastBotIndex_] = QString("%1 %2\n").arg(aiPrompt_, before);
         }
 
@@ -229,14 +208,10 @@ void ChatImpl::updateCurrentAIStream(const QString& text)
     messages_[lastBotIndex_] = QString("%1 %2\n").arg(aiPrompt_, currentAIStream_);
 
     // Update history in real-time for QML display
-    if (!history_.isEmpty() && history_.last().role == currentAIRole_)
-    {
-        history_.last().content = currentAIStream_;
-    }
+    if (!history_.isEmpty() && history_.last().role_ == currentAIRole_)
+        history_.last().content_ = currentAIStream_;
     else
-    {
         history_.append({ currentAIRole_, currentAIStream_ });
-    }
 
     emit streamUpdated(text);
     emit messagesChanged();
@@ -244,9 +219,10 @@ void ChatImpl::updateCurrentAIStream(const QString& text)
     emit contextSizeUsedChanged();
 }
 
-void ChatImpl::updateObject()
+QString ChatImpl::getFormattedHistory()
 {
-    info_["prompt"] = messagesRaw_;
+    LLMService* api = llmservices_->get(currentApi_);
+    return api ? api->formatMessages(this) : QString();
 }
 
 QVariantList ChatImpl::historyList() const
@@ -255,9 +231,9 @@ QVariantList ChatImpl::historyList() const
     for (const auto& msg : history_)
     {
         QVariantMap map;
-        map["role"] = msg.role;
-        map["content"] = msg.content;
-        map["assets"] = msg.assets;
+        map["role"] = msg.role_;
+        map["content"] = msg.content_;
+        map["assets"] = msg.assets_;
         list.append(map);
     }
     return list;
@@ -280,12 +256,12 @@ QJsonObject ChatImpl::toJson() const
     for (const auto& msg : history_)
     {
         QJsonObject msgObj;
-        msgObj["role"] = msg.role;
-        msgObj["content"] = msg.content;
-        if (msg.assets.size())
+        msgObj["role"] = msg.role_;
+        msgObj["content"] = msg.content_;
+        if (msg.assets_.size())
         {
             QJsonArray assetsArray;
-            for (const auto& asset : msg.assets)
+            for (const auto& asset : msg.assets_)
                 assetsArray.append(asset.toJsonObject());
             msgObj["assets"] = assetsArray;
         }
@@ -325,22 +301,8 @@ void ChatImpl::fromJson(const QJsonObject& json)
 
     // Reconstruct messages for UI
     messages_.clear();
-    if (!initialContext_.isEmpty())
-        messagesRaw_ = initialContext_;
-    else
-        messagesRaw_ = rawDefaultInitialPrompt;
-
     for (const auto& msg : history_)
-    {
-        bool isUser = (msg.role == "user");
-        messages_.append(QString("%1 %2\n").arg(isUser ? userPrompt_ : aiPrompt_, msg.content));
-
-        if (llmservices_)
-        {
-            LLMService* apiEntry = llmservices_->get(currentApi_);
-            messagesRaw_ += apiEntry ? apiEntry->formatMessage(this, msg.role, msg.content) : msg.content + "\n";
-        }
-    }
+        messages_.append(QString("%1 %2\n").arg((msg.role_ == "user") ? userPrompt_ : aiPrompt_, msg.content_));
 
     qDebug() << "ChatImpl::fromJson" << this;
 
@@ -355,8 +317,8 @@ QString ChatImpl::getFullConversation() const
     QString result;
     for (const auto& msg : history_)
     {
-        QString roleName = (msg.role == "user") ? "USER" : "AI";
-        result += QString("[%1]:\n%2\n\n").arg(roleName, msg.content);
+        QString roleName = (msg.role_ == "user") ? "USER" : "AI";
+        result += QString("[%1]:\n%2\n\n").arg(roleName, msg.content_);
     }
     return result.trimmed();
 }
@@ -366,8 +328,8 @@ QString ChatImpl::getUserPrompts() const
     QString result;
     for (const auto& msg : history_)
     {
-        if (msg.role == "user")
-            result += msg.content + "\n\n";
+        if (msg.role_ == "user")
+            result += msg.content_ + "\n\n";
     }
     return result.trimmed();
 }
@@ -377,8 +339,8 @@ QString ChatImpl::getBotResponses() const
     QString result;
     for (const auto& msg : history_)
     {
-        if (msg.role == "assistant")
-            result += msg.content + "\n\n";
+        if (msg.role_ == "assistant")
+            result += msg.content_ + "\n\n";
     }
     return result.trimmed();
 }

@@ -247,21 +247,23 @@ void OllamaService::postInternal(Chat* chat, const QString& content, bool stream
         // Construct messages array for /api/chat
         QJsonArray messagesArray;
         QList<ChatMessage>& history = chat->getHistory();
-        if (chat->getHistory().size() > 1)        
+        if (chat->getHistory().size() > 1)
         {
             for (QList<ChatMessage>::iterator it = history.begin(); it != history.end()-1; ++it)
             {
                 QJsonObject msgObj;
-                msgObj["role"] = it->role;
-                msgObj["content"] = it->content;
+                msgObj["role"] = it->role_;
+                msgObj["content"] = it->content_;
                 messagesArray.append(msgObj);
             }
         }
+
         // add the last message
         ChatMessage& lastMsg = history.last();
         QJsonObject msgObj;
-        msgObj["role"] = lastMsg.role;
-        msgObj["content"] = lastMsg.content;
+        msgObj["role"] = lastMsg.role_;
+        msgObj["content"] = lastMsg.content_;
+
         // add the assets of the last message
         const QVariantList& assets = chat->getAssets();
         if (assets.size() > 0)
@@ -280,9 +282,15 @@ void OllamaService::postInternal(Chat* chat, const QString& content, bool stream
                 msgObj["images"] = imagesArray;
         }
         messagesArray.append(msgObj);
-        
+
         payload["messages"] = messagesArray;
-        payload.remove("prompt"); // Remove 'prompt' if present, as it conflicts with 'messages' in some versions
+
+        if (payload.contains("prompt"))
+        {
+            // Remove 'prompt' if present, as it conflicts with 'messages' in some versions
+            qWarning() << "old version : prompt removed from payload";
+            payload.remove("prompt");
+        }
 
         // Add options including num_ctx
         QJsonObject options;

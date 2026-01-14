@@ -4,6 +4,7 @@
 
 const int LLM_DEFAULT_CONTEXT_SIZE = 2048;
 const int LLM_BATCH_SIZE = 2048;
+const int LLM_MAX_TOKEN_LEN = 20;
 
 class LLMEnum : public QObject
 {

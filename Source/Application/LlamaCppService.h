@@ -110,9 +110,8 @@ struct LlamaCppChatData : public ChatData
      * @brief Réinitialise les données du chat
      * 
      * Réinitialise l'état sans libérer les ressources.
-     * @return true si succès, false si échec
      */
-    bool reset() override;
+    void reset() override;
 
     /**
      * @brief Vide les données du chat
@@ -260,13 +259,11 @@ public:
     void post(Chat* chat, const QString& content, bool streamed = true) override;
     
     /**
-     * @brief Formate un message pour Llama.cpp
+     * @brief Formate les messages pour Llama.cpp
      * @param chat Chat associé
-     * @param role Rôle du message
-     * @param content Contenu du message
-     * @return Message formaté
+     * @return Messages formatés
      */
-    QString formatMessage(Chat* chat, const QString& role, const QString& content) override;
+    QString formatMessages(Chat* chat) override;
     
     /**
      * @brief Arrête le streaming pour un chat

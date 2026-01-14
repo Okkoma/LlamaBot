@@ -12,9 +12,9 @@ class LLMServices;
  */
 struct ChatMessage
 {
-    QString role;        ///< Rôle du message (user, assistant, system)
-    QString content;     ///< Contenu du message
-    QVariantList assets; ///< Contenu des assets
+    QString role_;        ///< Rôle du message (user, assistant, system)
+    QString content_;     ///< Contenu du message
+    QVariantList assets_; ///< Contenu des assets
 };
 
 /**
@@ -27,7 +27,7 @@ struct ChatData
 {
     int n_ctx_{LLM_DEFAULT_CONTEXT_SIZE}; ///< Taille totale du contexte en tokens
     int n_ctx_used_{0};      ///< Nombre de tokens utilisés dans le contexte
-    virtual bool reset() { return true; };
+    virtual void reset() { };
 };
 
 /**
@@ -163,11 +163,23 @@ public:
     bool getStreamed() const { return streamed_; }
 
     /**
+     * @brief Retourne l'historique des messages
+     * @return Référence vers la liste des messages structurés
+     */
+    QList<ChatMessage>& getHistory() { return history_; }
+
+    /**
+     * @brief Retourne l'historique des messages formaté
+     * @return QString contenant l'historique des messages formaté
+     */
+    virtual QString getFormattedHistory() = 0;
+
+    /**
      * @brief Retourne l'historique du chat sous forme de liste variante
      * @return Liste variante contenant l'historique
      */
     virtual QVariantList historyList() const = 0;
-    
+
     /**
      * @brief Retourne l'API LLM courante
      * @return Nom de l'API courante
@@ -185,19 +197,7 @@ public:
      * @return Liste des messages sous forme de QStringList
      */
     const QStringList& getMessages() const { return messages_; }
-    
-    /**
-     * @brief Retourne les messages bruts
-     * @return Messages bruts sous forme de QString
-     */
-    const QString& getMessagesRaw() const { return messagesRaw_; }
-    
-    /**
-     * @brief Retourne l'historique des messages
-     * @return Référence vers la liste des messages structurés
-     */
-    QList<ChatMessage>& getHistory() { return history_; }
-    
+
     /**
      * @brief Retourne les informations supplémentaires
      * @return Référence vers l'objet JSON contenant les informations
@@ -243,19 +243,16 @@ public:
     /**
      * @brief Définit la taille du contexte
      * @param size Nouvelle taille du contexte
-     * @return true si le changement de taille est réalisé
      */
-    bool setContextSize(int size)
+    void setContextSize(int size)
     { 
         if (getData()->n_ctx_ != size)
         {
             qDebug() << "Chat::setContextSize" << size;
             getData()->n_ctx_ = size;
-            bool ok = getData()->reset();
+            getData()->reset();
             emit contextSizeChanged();
-            return ok;
         }
-        return false;
     }
 
     // Serialization
@@ -367,22 +364,20 @@ protected:
     // Data members
     ChatData data_;                 ///< Données de contexte du chat
     ChatData* dataPtr_{nullptr};    ///< Pointeur vers les données de contexte du chat
-
+ 
     bool streamed_{false};          ///< Indique si le streaming est activé
     bool processing_{false};        ///< Indique si le chat est en cours de traitement
 
-    QString name_;           ///< Nom du chat
-    QString currentApi_;     ///< API LLM courante
-    QString currentModel_;   ///< Modèle LLM courant
-    QString initialContext_; ///< Contexte initial du chat
+    QString name_;                  ///< Nom du chat
+    QString currentApi_;            ///< API LLM courante
+    QString currentModel_;          ///< Modèle LLM courant
+    QString initialContext_;        ///< Contexte initial du chat
 
-    QStringList messages_;   ///< Liste des messages sous forme de texte
-    QString messagesRaw_;    ///< Messages bruts
-    
-    QVariantList currentAssets_;  ///< Liste des assets à ajouter au dernier message
+    QStringList messages_;          ///< Liste des messages sous forme de texte
+    QList<ChatMessage> history_;    ///< Historique des messages structurés
+    QJsonObject info_;              ///< Informations supplémentaires en JSON
 
-    QList<ChatMessage> history_;  ///< Historique des messages structurés
-    QJsonObject info_;            ///< Informations supplémentaires en JSON
+    QVariantList currentAssets_;    ///< Liste des assets à ajouter au dernier message
 
     LLMServices* llmservices_{nullptr};   ///< Services LLM utilisés par ce chat
 };
