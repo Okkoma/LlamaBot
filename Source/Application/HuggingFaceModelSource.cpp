@@ -192,7 +192,7 @@ void HuggingFaceModelSource::fetchModelDetails(const QString& modelId,
 void HuggingFaceModelSource::downloadFile(const QString& modelId, const QString& digest, 
                                           const QString& fileName, const QString& savePath)
 {
-    QUrl url(QString("https://huggingface.co/%1/resolve/main/%2").arg(modelId, fileName));
+    QUrl url(QString("https://huggingface.co/%1/resolve/main/%2").arg(modelId).arg(fileName));
 
     // Sanitize filename
     QString sanitizedFileName = fileName;

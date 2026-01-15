@@ -78,9 +78,9 @@ void OllamaModelSource::fetchModels(SortOrder sort, SizeFilter sizeFilter, const
                 m.name = modelObj["name"].toString();
                 m.date = modelObj["modified_at"].toString().left(10);
                 m.tags = modelObj["digest"].toString();
-                m.desc = QString("%1 (%2) %3").arg(m.name, 
-                                                       modelObj["modified_at"].toString().left(10), 
-                                                       m.tags);
+                m.desc = QString("%1 (%2) %3").arg(m.name)
+                                                 .arg(modelObj["modified_at"].toString().left(10))
+                                                 .arg(m.tags);
                 models.append(m);
             }
 
@@ -102,7 +102,7 @@ void OllamaModelSource::fetchModelDetails(const QString& modelId,
     QString tag;
     QString cleanName = parseModelName(modelId, tag);
 
-    QUrl url(QString("https://registry.ollama.com/v2/%1/manifests/%2").arg(cleanName, tag));
+    QUrl url(QString("https://registry.ollama.com/v2/%1/manifests/%2").arg(cleanName).arg(tag));
     QNetworkRequest request(url);
     request.setAttribute(QNetworkRequest::RedirectPolicyAttribute, QNetworkRequest::NoLessSafeRedirectPolicy);
     request.setRawHeader("Accept", "application/vnd.docker.distribution.manifest.v2+json, "
@@ -190,7 +190,7 @@ void OllamaModelSource::downloadFile(const QString& modelId, const QString& dige
 {
     QString tag;
     QString cleanName = parseModelName(modelId, tag);
-    QUrl url(QString("https://registry.ollama.com/v2/%1/blobs/%2").arg(cleanName, digest));
+    QUrl url(QString("https://registry.ollama.com/v2/%1/blobs/%2").arg(cleanName).arg(digest));
 
     // Sanitize filename
     QString sanitizedFileName = fileName;

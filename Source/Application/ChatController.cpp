@@ -188,7 +188,7 @@ void ChatController::sendMessage(const QString& text)
             {
                 // Augment prompt
                 prompt = QString("Uses the following context to answer the user question:\n%1\n\nUser Question: %2")
-                             .arg(context, text);
+                             .arg(context).arg(text);
             }
         }
 

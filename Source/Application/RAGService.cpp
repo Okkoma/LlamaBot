@@ -119,7 +119,7 @@ QString RAGService::retrieveContext(const QString& query, int topK)
     QString context;
     for (const auto& res : results)
     {
-        context += QString("[Source: %1]\n%2\n\n").arg(res.source, res.text);
+        context += QString("[Source: %1]\n%2\n\n").arg(res.source).arg(res.text);
     }
     return context;
 }
