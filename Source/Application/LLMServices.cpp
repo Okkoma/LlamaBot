@@ -39,7 +39,10 @@ void LLMServices::allowSharedModels(bool enable)
 void LLMServices::addAPI(LLMService* api)
 {
     if (api)
-        apiEntries_.push_back(api);        
+    {
+        qDebug() << "addAPI:" << api->name_;
+        apiEntries_.push_back(api);
+    }
 }
 
 void LLMServices::post(LLMService* api, Chat* chat, const QString& content, bool streamed)
@@ -172,6 +175,8 @@ bool LLMServices::loadServiceJsonFile()
         return false;
     }
 
+    qDebug() << "loadServiceJsonFile ... " << file.fileName();
+
     QByteArray data = file.readAll();
     QJsonDocument doc = QJsonDocument::fromJson(data);
     if (!doc.isArray())
@@ -184,10 +189,11 @@ bool LLMServices::loadServiceJsonFile()
     if (!array.empty())
     {
         for (const QJsonValue& value : array)
+        {
+            qDebug() << "loadServiceJsonFile ..." << value.toObject();
             addAPI(LLMService::fromJson(this, value.toObject()));
+        }
     }
-
-    qDebug() << "loadServiceJsonFile ... " << file.fileName();
 
     return true;
 }
