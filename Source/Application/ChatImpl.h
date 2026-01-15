@@ -116,6 +116,8 @@ private:
      */
     void addContent(const QString& role, const QString& content);
 
+    void sanitizeStream(QString& text);
+
     int lastBotIndex_;       ///< Index du dernier message du bot
 
     QString userPrompt_;     ///< Prompt utilisateur courant

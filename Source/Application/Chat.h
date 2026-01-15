@@ -12,6 +12,10 @@ class LLMServices;
  */
 struct ChatMessage
 {
+    ChatMessage(const QString& role, const QString& content, const QVariantList& assets = QVariantList()) :
+        role_(role),
+        content_(content),
+        assets_(assets) {}
     QString role_;        ///< Rôle du message (user, assistant, system)
     QString content_;     ///< Contenu du message
     QVariantList assets_; ///< Contenu des assets

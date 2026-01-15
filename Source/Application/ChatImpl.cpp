@@ -94,27 +94,14 @@ void ChatImpl::addContent(const QString& role, const QString& content)
     if (isUserContent)
         finalizeStream();
 
-    // Add to history
-    if (!content.isEmpty())
-        history_.append({ role, content, getAssets() });
+    history_.append({ role, content, isUserContent ? getAssets() : QVariantList() });
+    messages_.append(QString("%1 %2\n").arg(isUserContent ? userPrompt_ : aiPrompt_).arg(content));
 
-    if (!content.isEmpty())
+    // Si c'est un message assistant, mettre à jour lastBotIndex_ et currentAIStream_
+    if (!isUserContent)
     {
-        messages_.append(QString("%1 %2\n").arg(isUserContent ? userPrompt_ : aiPrompt_, content));
-        
-        // Si c'est un message assistant, mettre à jour lastBotIndex_ et currentAIStream_
-        if (!isUserContent)
-        {
-            lastBotIndex_ = messages_.size() - 1;
-            currentAIStream_ = content;
-            currentAIRole_ = role;
-        }
-    }
-    else
-    {
-        messages_.append("");
         lastBotIndex_ = messages_.size() - 1;
-        currentAIStream_.clear();
+        currentAIStream_ = content;
         currentAIRole_ = role;
     }
 
@@ -143,79 +130,115 @@ void ChatImpl::finalizeStream()
     }
 }
 
+void ChatImpl::sanitizeStream(QString& text)
+{
+    if (text.startsWith("|"))
+        text.removeFirst();
+
+    if (text.startsWith(">"))
+    {
+        text.removeFirst();
+        if (text.startsWith("\n"))
+            text.removeFirst();
+    }
+}
+
 void ChatImpl::updateCurrentAIStream(const QString& text)
 {
     if (text.isEmpty())
         return;
 
-    currentAIStream_ += text;
+    bool finalized = text.endsWith("<end>");
+    if (finalized)
+        currentAIStream_ = text.chopped(5);
+    else 
+        currentAIStream_ += text;
 
-    // Detection of <think>
-    if (currentAIStream_.contains("<think>"))
+    qDebug() << "Chat::updateCurrentAIStream:" << text;
+    
+    sanitizeStream(currentAIStream_);
+
+    //qDebug() << "Chat::updateCurrentAIStream:" << currentAIStream_;
+
+    // find all "thought" or default assistant messages in the stream
+    struct MessageStringView
     {
-        currentAIStream_.remove("<think>");
-        currentAIRole_ = "thought";
-        if (!history_.isEmpty() && history_.last().role_ == "assistant")
-            history_.last().role_ = "thought";
-    }
-
-    // Detection of </think>
-    if (currentAIStream_.contains("</think>"))
+        MessageStringView(const QString& role, const QStringView& content) : role_(role), content_(content) { }
+        QString role_;
+        QStringView content_;
+    };
+    QVector<MessageStringView> messages;
+    long long currentIndex = 0L;
+    QStringView currentContent = currentAIStream_;
+    while (currentIndex < currentContent.length())
     {
-        int tagPos = currentAIStream_.indexOf("</think>");
-        QString before = currentAIStream_.left(tagPos);
-        QString after = currentAIStream_.mid(tagPos + 8); // 8 = length of </think>
+        currentContent.slice(currentIndex);
+        if (currentContent.isEmpty())
+            break;
 
-        // Finalize "thought" part
-        if (!history_.isEmpty() && history_.last().role_ == "thought")
+        qsizetype iThinkBegin = currentContent.indexOf(QLatin1StringView("<think>"));
+        qsizetype iThinkEnd = currentContent.indexOf(QLatin1StringView("</think>"), iThinkBegin == -1 ? 0 : iThinkBegin + 7);
+        currentIndex = iThinkEnd != -1 ? iThinkEnd + 8 : currentContent.length();
+
+        // add default message before this thought
+        if (iThinkBegin > 0)
+            messages.emplace_back("assistant", currentContent.first(iThinkBegin));
+
+        // "think" END tag found !
+        if (iThinkEnd != -1)
         {
-            history_.last().content_ = before;
-            messages_[lastBotIndex_] = QString("%1 %2\n").arg(aiPrompt_, before);
+            // "think" BEGIN tag found !
+            if (iThinkBegin != -1)            
+                messages.emplace_back("thought", currentContent.mid(iThinkBegin + 7, iThinkEnd - iThinkBegin - 7));
+            // here, no "think" BEGIN tag so the thought message should begin at index 0
+            else
+                messages.emplace_back("thought", currentContent.left(iThinkEnd));
+
+            // switch to default assistant role
+            currentIndex = iThinkEnd + 8;
+            currentAIRole_ = "assistant";
         }
-
-        // Start "assistant" part
-        currentAIStream_ = after;
-        currentAIRole_ = "assistant";
-
-        // Add new assistant entry in history
-        history_.append({ "assistant", currentAIStream_ });
-        
-        // Add new entry in messages_
-        messages_.append(QString("%1 %2\n").arg(aiPrompt_, currentAIStream_));
-        lastBotIndex_ = messages_.size() - 1;
-
-        emit messagesChanged();
-        emit historyChanged();
-        emit streamUpdated(text);
-        emit contextSizeUsedChanged();
-        return;
-    }
-
-    // some sanitization (only if at start)
-    if (currentAIStream_.length() < 5)
-    {
-        if (currentAIStream_.startsWith("|"))
-            currentAIStream_.removeFirst();
-
-        if (currentAIStream_.startsWith(">"))
+        // NO "think" END tag and "think" BEGIN tag found !
+        else if (iThinkBegin != -1)
         {
-            currentAIStream_.removeFirst();
-            if (currentAIStream_.startsWith("\n"))
-                currentAIStream_.removeFirst();
+            // switch to "thought" role
+            currentAIRole_ = "thought";
+            messages.emplace_back(currentAIRole_, currentContent.sliced(iThinkBegin + 7));
+        }
+        // NO 'think" tags
+        else
+        {
+            // no think tags, keep on the current role (should be "thought" or default)
+            messages.emplace_back(currentAIRole_, currentContent);
+            // end of the loop
+            currentIndex = currentContent.length();
         }
     }
 
-    messages_[lastBotIndex_] = QString("%1 %2\n").arg(aiPrompt_, currentAIStream_);
+    // where to write the messages found ?
+    // at the begin of the ai response, a new message is appended in messages_
+    int msgindex = lastBotIndex_;
+    for (MessageStringView& msg : messages)
+    {
+        if (msgindex < messages_.size())
+        {
+            history_[msgindex] = { msg.role_, msg.content_.toString() };
+            messages_[msgindex] = QString("%1 %2\n").arg(aiPrompt_).arg(msg.content_.toString());
+        }
+        else
+        {
+            history_.emplace_back(msg.role_, msg.content_.toString());
+            messages_.emplace_back(QString("%1 %2\n").arg(aiPrompt_).arg(msg.content_.toString()));
+        }
+        msgindex++;
+    }
 
-    // Update history in real-time for QML display
-    if (!history_.isEmpty() && history_.last().role_ == currentAIRole_)
-        history_.last().content_ = currentAIStream_;
-    else
-        history_.append({ currentAIRole_, currentAIStream_ });
+    if (finalized)
+        currentAIStream_.clear();
 
-    emit streamUpdated(text);
     emit messagesChanged();
     emit historyChanged();
+    emit streamUpdated(text);
     emit contextSizeUsedChanged();
 }
 
@@ -302,7 +325,7 @@ void ChatImpl::fromJson(const QJsonObject& json)
     // Reconstruct messages for UI
     messages_.clear();
     for (const auto& msg : history_)
-        messages_.append(QString("%1 %2\n").arg((msg.role_ == "user") ? userPrompt_ : aiPrompt_, msg.content_));
+        messages_.append(QString("%1 %2\n").arg(msg.role_ == "user" ? userPrompt_ : aiPrompt_).arg(msg.content_));
 
     qDebug() << "ChatImpl::fromJson" << this;
 
@@ -318,7 +341,7 @@ QString ChatImpl::getFullConversation() const
     for (const auto& msg : history_)
     {
         QString roleName = (msg.role_ == "user") ? "USER" : "AI";
-        result += QString("[%1]:\n%2\n\n").arg(roleName, msg.content_);
+        result += QString("[%1]:\n%2\n\n").arg(roleName).arg(msg.content_);
     }
     return result.trimmed();
 }
