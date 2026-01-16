@@ -186,34 +186,6 @@ std::vector<llama_token> LlamaTokenize(LlamaCppChatData& data, const QString& pr
     return LlamaTokenize(data.ctx_, data.model_->model_, prompt);
 }
 
-int LlamaDecode(LlamaCppChatData& data)
-{
-    if (!data.ctx_)
-    {
-        qWarning() << "LlamaDecode: context is null, skipping decode";
-        return 0; // Not an error if we just haven't initialized yet
-    }
-
-    int n_batch = llama_n_batch(data.ctx_);
-    int n_tokens_total = static_cast<int>(data.prompt_tokens_.size());
-    qDebug() << "LLamaDecode n_batch:" << n_batch << "n_tokens_total:" << n_tokens_total; 
-    for (int i = 0; i < n_tokens_total; i += n_batch)
-    {
-        int n_tokens = std::min(n_batch, n_tokens_total - i);
-        if (i + n_tokens < n_tokens_total)
-        {
-            data.batch_ = llama_batch_get_one(data.prompt_tokens_.data() + i, n_tokens);
-            if (llama_decode(data.ctx_, data.batch_) != 0)
-                return -1;
-        }
-        else
-            data.batch_ = llama_batch_get_one(data.prompt_tokens_.data() + i, n_tokens);
-    }
-
-    data.n_ctx_used_ = llama_memory_seq_pos_max(llama_get_memory(data.ctx_), 0);
-    return 0;
-}
-
 void LLamaDetokenize(LlamaCppChatData& data, QString& response, bool skipLastToken)
 {
     // param skipLastToken : generally to remove the "end of sentence" token
@@ -292,18 +264,26 @@ void LlamaCppChatData::initialize(LlamaModelData* model)
 {
     model_ = model;
 
-    prompt_tokens_.clear();
-    response_tokens_.clear();
-
     // check n_ctx
-    std::vector<llama_token> full_history;
-    QString formattedHistory = chat_->getFormattedHistory();
-    if (chat_ && !formattedHistory.isEmpty())
-        full_history = LlamaTokenize(model_->model_, formattedHistory);
-    if (n_ctx_ < full_history.size())
+    int n_prompt_tokens = prompt_tokens_.size();
+    if (!n_prompt_tokens)
     {
-        while (n_ctx_ < full_history.size())
-            n_ctx_ *= 2;
+        std::vector<llama_token> full_history;
+        QString formattedHistory = chat_->getFormattedHistory();
+        if (chat_ && !formattedHistory.isEmpty())
+            full_history = LlamaTokenize(model_->model_, formattedHistory);
+        n_prompt_tokens = full_history.size();
+        qDebug() << "llama_initialize: retokenized full history size:" << n_prompt_tokens;
+    }
+    
+    // enlarge context size if needed
+    int new_ctx = n_ctx_;
+    while (new_ctx < n_prompt_tokens)
+        new_ctx *= 2;
+    if (new_ctx != n_ctx_)
+    {
+        n_ctx_ = new_ctx;
+        qDebug() << "llama_initialize: enlarge the context size to:" << new_ctx;
     }
 
     // initialize the context
@@ -333,6 +313,7 @@ void LlamaCppChatData::initialize(LlamaModelData* model)
 
     qDebug() << "llama_initialize: Model loaded successfully";
 }
+
 void LlamaCppChatData::deinitialize()
 {
     if (smpl_)
@@ -365,6 +346,8 @@ void LlamaCppChatData::clear()
     response_.clear();
 }
 
+bool prepareStartGeneration(LlamaCppChatData& data, Chat* chat, bool resetted=false);
+
 void LlamaCppChatData::reset()
 {
     qDebug() << "LlamaCppChatData::reset";
@@ -372,10 +355,13 @@ void LlamaCppChatData::reset()
     if (model_)
         initialize(model_);
     
-    LlamaDecode(*this);
+    if (response_tokens_.size())
+        prompt_tokens_.insert(prompt_tokens_.end(), response_tokens_.begin(), response_tokens_.end());
+
+    prepareStartGeneration(*this, chat_, true);
 }
 
-bool prepareStartGeneration(LlamaCppChatData& data, Chat* chat)
+bool prepareStartGeneration(LlamaCppChatData& data, Chat* chat, bool resetted)
 {
     data.chat_ = chat;
 
@@ -387,7 +373,7 @@ bool prepareStartGeneration(LlamaCppChatData& data, Chat* chat)
         qDebug() << "prepareStartGeneration: tokenize all history";
     }
     // otherwise add only the new user prompt
-    else
+    else if (!resetted)
     {
         QString formatedEntry = chat->getFormattedMessage("user", -1);
         std::vector<llama_token> newTokens = LlamaTokenize(data, formatedEntry);
@@ -688,7 +674,10 @@ void LlamaCppWorker::processRequest()
     }
 
     if (data.response_tokens_.size())
+    {
         data.prompt_tokens_.insert(data.prompt_tokens_.end(), data.response_tokens_.begin(), data.response_tokens_.end());
+        data.response_tokens_.clear();
+    }
 
     QString finalResponse;
     LLamaDetokenize(data, finalResponse, true);
