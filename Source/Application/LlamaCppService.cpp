@@ -311,6 +311,14 @@ void LlamaCppChatData::initialize(LlamaModelData* model)
     ctx_params.n_ctx = n_ctx_;
     //ctx_params.n_batch = n_ctx_ > LLM_BATCH_SIZE ? LLM_BATCH_SIZE : n_ctx_; // Limit batch size to reasonable value
     ctx_params.n_batch = n_ctx_;
+    // TODO: 
+    // Add method to detect quantification capabilities for the model
+    // Use it to set the quantification type, with Q8_0 as default
+    // If large context, use Q4_0
+    // KV cache quantification
+    ctx_params.type_k = GGML_TYPE_Q8_0;  // Keys Quantification 
+    ctx_params.type_v = GGML_TYPE_Q8_0;  // Values Quantification
+    ctx_params.flash_attn_type = LLAMA_FLASH_ATTN_TYPE_ENABLED;
 
     ctx_ = LLamaInitializeContext(model_->model_, ctx_params);
 
@@ -325,7 +333,6 @@ void LlamaCppChatData::initialize(LlamaModelData* model)
 
     qDebug() << "llama_initialize: Model loaded successfully";
 }
-
 void LlamaCppChatData::deinitialize()
 {
     if (smpl_)
