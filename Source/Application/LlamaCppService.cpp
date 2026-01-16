@@ -186,20 +186,20 @@ std::vector<llama_token> LlamaTokenize(LlamaCppChatData& data, const QString& pr
     return LlamaTokenize(data.ctx_, data.model_->model_, prompt);
 }
 
-void LLamaDetokenize(LlamaCppChatData& data, QString& response, bool skipLastToken)
+QString LLamaDetokenize(LlamaCppChatData& data, const std::vector<llama_token>& tokens, bool skipLastToken)
 {
     // param skipLastToken : generally to remove the "end of sentence" token
 
     const llama_vocab* vocab = llama_model_get_vocab(data.model_->model_);
-    const int size = data.response_tokens_.size() * LLM_MAX_TOKEN_LEN;
+    const int size = tokens.size() * LLM_MAX_TOKEN_LEN;
     if (size > 65535)
     {
         qCritical() << "LLamaDetokenize : size > 65535 ..." << size;
-        return;
+        return {};
     }
     char text1[65535] = {0};
-    int n = llama_detokenize(vocab, data.response_tokens_.data(), data.response_tokens_.size() + (skipLastToken ? -1 : 0), text1, sizeof(text1) - 1, true, true);
-    response = QString(text1);
+    int n = llama_detokenize(vocab, tokens.data(), tokens.size() + (skipLastToken ? -1 : 0), text1, sizeof(text1) - 1, true, true);
+    return QString(text1);
 }
 
 int LlamaGenerateStep(LlamaCppChatData& data)
@@ -674,17 +674,19 @@ void LlamaCppWorker::processRequest()
         setBatchForNextToken(data);
     }
 
+    QString finalResponse = LLamaDetokenize(data, data.response_tokens_, true);
+    qDebug() << "finalResponse:" << finalResponse;
+
     if (data.response_tokens_.size())
     {
         data.prompt_tokens_.insert(data.prompt_tokens_.end(), data.response_tokens_.begin(), data.response_tokens_.end());
         data.response_tokens_.clear();
     }
 
-    QString finalResponse;
-    LLamaDetokenize(data, finalResponse, true);
-    qDebug() << "finalResponse:" << finalResponse;
+    //QString allcontext = LLamaDetokenize(data, data.prompt_tokens_, false);
+    //qDebug() << "allcontext:" << allcontext;
+    
     emit tokenGenerated(finalResponse + "<end>");
-
     process->isProcessing_ = false;
     emit generationFinished();
 }
