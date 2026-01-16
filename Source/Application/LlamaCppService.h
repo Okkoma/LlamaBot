@@ -120,20 +120,24 @@ struct LlamaCppChatData : public ChatData
      */
     void clear();
 
-    Chat* chat_{nullptr};                     ///< Pointeur vers le chat associé
+    Chat* chat_{nullptr};                       ///< Pointeur vers le chat associé
 
-    QString response_;                         ///< Réponse courante
+    QString response_;                          ///< Réponse courante
 
-    LlamaModelData* model_{nullptr};          ///< Modèle utilisé
-    llama_context* ctx_{nullptr};             ///< Contexte llama.cpp
-    llama_sampler* smpl_{nullptr};            ///< Échantillonneur llama.cpp
+    LlamaModelData* model_{nullptr};            ///< Modèle utilisé
+    llama_context* ctx_{nullptr};               ///< Contexte llama.cpp
+    llama_sampler* smpl_{nullptr};              ///< Échantillonneur llama.cpp
     const char* llamaCppChattemplate_{nullptr}; ///< Template de chat
 
-    llama_batch batch_;                       ///< Batch de traitement
-    llama_token tokenId_;                     ///< ID du token courant
+    llama_batch batch_{                         ///< Batch de traitement
+        /*n_tokens*/ 0,
+        /*tokens*/ nullptr,
+        /*embd*/ nullptr
+    }; 
+    llama_token currentToken_{-1};              ///< ID du token courant
 
-    std::vector<llama_token> tokens_;         ///< Tokens générés
-    std::vector<llama_chat_message> llamaCppChatMessages_; ///< Messages de chat
+    std::vector<llama_token> prompt_tokens_;    ///< prompt tokenisé 
+    std::vector<llama_token> response_tokens_;  ///< tokens générés pour la reponse
 
     LlamaCppProcess* generateProcess_{nullptr}; ///< Processus de génération
 };
