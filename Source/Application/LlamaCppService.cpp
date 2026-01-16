@@ -257,7 +257,6 @@ int LlamaGenerateStep(LlamaCppChatData& data)
 LlamaCppChatData::~LlamaCppChatData()
 {
     deinitialize();
-    clear();
 }
 
 void LlamaCppChatData::initialize(LlamaModelData* model)
@@ -339,7 +338,8 @@ void LlamaCppChatData::deinitialize()
 
 void LlamaCppChatData::clear()
 {
-    qDebug() << "LlamaCppChatData::clear";
+    if (prompt_tokens_.size())
+        qWarning() << "LlamaCppChatData::clear";
 
     prompt_tokens_.clear();
     response_tokens_.clear();
@@ -378,6 +378,7 @@ bool prepareStartGeneration(LlamaCppChatData& data, Chat* chat, bool resetted)
         QString formatedEntry = chat->getFormattedMessage("user", -1);
         std::vector<llama_token> newTokens = LlamaTokenize(data, formatedEntry);
         data.prompt_tokens_.insert(data.prompt_tokens_.end(), newTokens.begin(), newTokens.end());
+        qDebug() << "prepareStartGeneration: insert new user message in prompt";
     }
 
     data.batch_ = llama_batch_get_one(data.prompt_tokens_.data(), data.prompt_tokens_.size());
@@ -750,6 +751,7 @@ LlamaCppChatData* LlamaCppService::createData(Chat* chat)
     LlamaCppChatData& data = datas_[chat];
     data.chat_ = chat;
     chat->setData(&data);
+
     return &data;
 }
 
@@ -865,6 +867,7 @@ LlamaModelData* LlamaCppService::loadModel(const QString& modelName, int numGpuL
 
 void LlamaCppService::setModelInternal(LlamaCppChatData* data, const QString& modelName)
 {
+    qDebug() << "LlamaCppService::setModelInternal ...";
     emit modelLoadingStarted(modelName);
     if (data->model_ && modelName != data->model_->modelName_)
     {

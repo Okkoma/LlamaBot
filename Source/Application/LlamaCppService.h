@@ -136,7 +136,7 @@ struct LlamaCppChatData : public ChatData
     }; 
     llama_token currentToken_{-1};              ///< ID du token courant
 
-    std::vector<llama_token> prompt_tokens_;    ///< prompt tokenisé 
+    //std::vector<llama_token> prompt_tokens_;    ///< prompt tokenisé 
     std::vector<llama_token> response_tokens_;  ///< tokens générés pour la reponse
 
     LlamaCppProcess* generateProcess_{nullptr}; ///< Processus de génération

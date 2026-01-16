@@ -294,10 +294,12 @@ QVariantList ChatImpl::historyList() const
 
 QJsonObject ChatImpl::toJson() const
 {
+    const ChatData* data = getData();
     QJsonObject json;
-    json["n_ctx"] = getData()->n_ctx_;
-    json["n_ctx_used"] = getData()->n_ctx_used_;
+    json["n_ctx"] = data->n_ctx_;
+    json["n_ctx_used"] = data->n_ctx_used_;
     json["name"] = name_;
+    // TODO : fix api and model with the last api/model used by this chat
     json["api"] = currentApi_;
     json["model"] = currentModel_;
     json["stream"] = streamed_;
@@ -321,13 +323,24 @@ QJsonObject ChatImpl::toJson() const
         historyArray.append(msgObj);
     }
     json["history"] = historyArray;
+
+    if (data->prompt_tokens_.size())
+    {
+        QJsonArray jsonArray;
+        for (int token : data->prompt_tokens_) 
+            jsonArray.append(token);            
+        json["tokenized_content"] = jsonArray;
+        qDebug() << "ChatImpl::toJson : set tokenized_content: size:" << data->prompt_tokens_.size();
+    }
+
     return json;
 }
 
 void ChatImpl::fromJson(const QJsonObject& json)
 {
-    getData()->n_ctx_ = json["n_ctx"].toInt();
-    getData()->n_ctx_used_ = json["n_ctx_used"].toInt();
+    ChatData* data = getData();
+    data->n_ctx_ = json["n_ctx"].toInt();
+    data->n_ctx_used_ = json["n_ctx_used"].toInt();
 
     name_ = json["name"].toString();
     QString api = json["api"].toString();
@@ -350,6 +363,17 @@ void ChatImpl::fromJson(const QJsonObject& json)
         QJsonObject msgObj = val.toObject();
         history_.append({ msgObj["role"].toString(), msgObj["content"].toString(), 
                     msgObj["assets"].toVariant().toList() });
+    }
+
+    if (json.contains("tokenized_content") && json["tokenized_content"].isArray())
+    {
+        QJsonArray jsonArray = json["tokenized_content"].toArray();
+        for (const QJsonValue& token : jsonArray)
+        {
+            if (token.isDouble())
+                data->prompt_tokens_.push_back(token.toInt());
+        }
+        qDebug() << "ChatImpl::fromJson : get tokenized_content size:" << data->prompt_tokens_.size();
     }
 
     // Reconstruct messages for UI

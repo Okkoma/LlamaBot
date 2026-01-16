@@ -31,6 +31,8 @@ struct ChatData
 {
     int n_ctx_{LLM_DEFAULT_CONTEXT_SIZE}; ///< Taille totale du contexte en tokens
     int n_ctx_used_{0};      ///< Nombre de tokens utilisés dans le contexte
+    std::vector<int> prompt_tokens_;
+    
     virtual void reset() { };
 };
 
@@ -253,6 +255,7 @@ public:
     {
         data->n_ctx_ = data_.n_ctx_;
         data->n_ctx_used_ = data_.n_ctx_used_;
+        data->prompt_tokens_ = data_.prompt_tokens_;
         dataPtr_ = data; 
     }
 
