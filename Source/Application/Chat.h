@@ -171,12 +171,24 @@ public:
      * @return Référence vers la liste des messages structurés
      */
     QList<ChatMessage>& getHistory() { return history_; }
+    const QList<ChatMessage>& getHistory() const { return history_; }
 
     /**
      * @brief Retourne l'historique des messages formaté
      * @return QString contenant l'historique des messages formaté
      */
-    virtual QString getFormattedHistory() = 0;
+    virtual QString getFormattedHistory() const { return {}; }
+
+    /**
+     * @brief Retourne le premier message formaté correspondant au role à partir de l'index.
+     * @param role Rôle du message à rechercher (user, assistant, system, thought, etc.)
+     * @param index Index de départ pour la recherche :
+     *              - Index positif (>= 0) : recherche depuis le début de l'historique (0 = premier message, 1 = deuxième, etc.)
+     *              - Index négatif (< 0) : recherche depuis la fin de l'historique (-1 = dernier message, -2 = avant-dernier, etc.)
+     *              L'index est automatiquement limité aux bornes valides de l'historique.
+     * @return QString contenant le message formaté, ou QString vide si aucun message correspondant n'est trouvé
+     */
+    virtual QString getFormattedMessage(const QString& role, qsizetype index) const { return {}; }
 
     /**
      * @brief Retourne l'historique du chat sous forme de liste variante

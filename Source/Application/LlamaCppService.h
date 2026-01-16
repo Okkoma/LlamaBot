@@ -267,8 +267,10 @@ public:
      * @param chat Chat associé
      * @return Messages formatés
      */
-    QString formatMessages(Chat* chat) override;
+    QString formatMessages(const Chat* chat) const override;
     
+    QString formatMessage(const Chat* chat, int historyIndex) const override;
+
     /**
      * @brief Arrête le streaming pour un chat
      * @param chat Chat à arrêter

@@ -40,7 +40,14 @@ public:
      * @brief Retourne l'historique des messages formaté
      * @return QString contenant l'historique des messages formaté
      */
-    QString getFormattedHistory() override;
+    QString getFormattedHistory() const override;
+
+    /**
+     * @brief Retourne le premier message formaté correspondant au role à partir de l'index.
+     * @return QString contenant le message formaté, ou QString vide si aucun message correspondant n'est trouvé
+     * @see Chat.h     
+     */
+    QString getFormattedMessage(const QString& role, qsizetype index) const override;
 
     /**
      * @brief Retourne l'historique du chat sous forme de liste variante

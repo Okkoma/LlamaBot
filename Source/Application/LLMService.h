@@ -47,8 +47,12 @@ public:
     virtual bool isReady() const { return true; }
 
     virtual void post(Chat* chat, const QString& content, bool streamed = true) {}
-    virtual QString formatMessages(Chat* chat) { return ""; }
+
     virtual void stopStream(Chat* chat) { Q_UNUSED(chat); }
+
+    virtual QString formatMessages(const Chat* chat) const { return {}; }
+    
+    virtual QString formatMessage(const Chat* chat, int historyIndex) const { return {}; }
 
     virtual bool handleMessageError(Chat* chat, const QString& message) { return false; }
 

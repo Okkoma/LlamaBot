@@ -242,10 +242,40 @@ void ChatImpl::updateCurrentAIStream(const QString& text)
     emit contextSizeUsedChanged();
 }
 
-QString ChatImpl::getFormattedHistory()
+QString ChatImpl::getFormattedHistory() const
 {
     LLMService* api = llmservices_->get(currentApi_);
     return api ? api->formatMessages(this) : QString();
+}
+
+QString ChatImpl::getFormattedMessage(const QString& role, qsizetype position) const
+{
+    LLMService* api = llmservices_->get(currentApi_);
+    if (api)
+    {
+        qsizetype index, limit;
+        int direction;
+        if (position < 0)
+        {
+            direction = -1; 
+            limit = -1;
+            index = std::clamp(history_.size() + position, 0LL, history_.size()-1);
+        }
+        else
+        {
+            direction = 1; 
+            limit = history_.size(); 
+            index = std::clamp(position, 0LL, history_.size()-1);
+        }
+      
+        for (; index != limit; index += direction)
+        {
+            const ChatMessage& message = history_.at(index);
+            if (message.role_ == role)
+                return api->formatMessage(this, index);
+        }
+    }
+    return {};
 }
 
 QVariantList ChatImpl::historyList() const

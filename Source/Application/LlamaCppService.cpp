@@ -372,9 +372,20 @@ bool prepareStartGeneration(LlamaCppChatData& data, Chat* chat)
 {
     data.chat_ = chat;
 
-    QString formatedEntry = chat->getFormattedHistory();
-    data.prompt_tokens_ = LlamaTokenize(data, formatedEntry);
-    qDebug() << "prepareStartGeneration: tokenize all history";
+    // if a history exists and the tokens are not already got, do it with the full history
+    if (chat->getHistory().size() > 2 && !data.prompt_tokens_.size())
+    {
+        QString formatedEntry = chat->getFormattedHistory();
+        data.prompt_tokens_ = LlamaTokenize(data, formatedEntry);
+        qDebug() << "prepareStartGeneration: tokenize all history";
+    }
+    // otherwise add only the new user prompt
+    else
+    {
+        QString formatedEntry = chat->getFormattedMessage("user", -1);
+        std::vector<llama_token> newTokens = LlamaTokenize(data, formatedEntry);
+        data.prompt_tokens_.insert(data.prompt_tokens_.end(), newTokens.begin(), newTokens.end());
+    }
 
     data.batch_ = llama_batch_get_one(data.prompt_tokens_.data(), data.prompt_tokens_.size());
 
@@ -951,9 +962,9 @@ void LlamaCppService::post(Chat* chat, const QString& content, bool streamed)
         });
 }
 
-QString LlamaCppService::formatMessages(Chat* chat)
+QString LlamaCppService::formatMessages(const Chat* chat) const
 {
-    LlamaCppChatData* data = getData(chat);
+    const LlamaCppChatData* data = getData(chat);
     if (!data || !data->ctx_)
         return {};
 
@@ -962,7 +973,7 @@ QString LlamaCppService::formatMessages(Chat* chat)
 
     QString entry, thought;
     std::vector<llama_chat_message> messages;
-    QList<ChatMessage>& history = chat->getHistory();
+    const QList<ChatMessage>& history = chat->getHistory();
     for (const ChatMessage& message : history)
     {
         entry += message.role_ + ": " + message.content_;
@@ -983,6 +994,27 @@ QString LlamaCppService::formatMessages(Chat* chat)
         free(const_cast<char*>(msg.content));
 
     return QString::fromUtf8(formatted.data(), new_len);
+}
+
+QString LlamaCppService::formatMessage(const Chat* chat, int historyIndex) const
+{
+    const LlamaCppChatData* data = getData(chat);
+    const ChatMessage& message = chat->getHistory()[historyIndex];
+    std::vector<llama_chat_message> messages;
+    messages.push_back({ strdup(message.role_.toUtf8().constData()), strdup(message.content_.toUtf8().constData()) });
+    std::vector<char> formatted(llama_n_ctx(data->ctx_) * LLM_MAX_TOKEN_LEN);
+    int new_len = llama_chat_apply_template(
+        data->llamaCppChattemplate_, messages.data(), messages.size(), true, formatted.data(), formatted.size());
+    for (llama_chat_message& msg : messages)
+    {
+        free(const_cast<char*>(msg.role));
+        free(const_cast<char*>(msg.content));
+    }
+
+    QString formattedStr = QString::fromUtf8(formatted.data(), new_len);
+    qDebug() << "formatLastUserMessage: str:" << message.content_;
+    qDebug() << "formatLastUserMessage: fmt:" << formattedStr;
+    return formattedStr;
 }
 
 void LlamaCppService::stopStream(Chat* chat)
