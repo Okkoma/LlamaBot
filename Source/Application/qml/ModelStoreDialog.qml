@@ -329,34 +329,40 @@ Rectangle {
                     }
 
                     Button {
-                        text: root.isDownloading ? "Cancel" : "Download File"
-                        enabled: !root.isDownloading || true
+                        text: "Download File"
+                        visible: !root.isDownloading
                         palette {
                             buttonText: themeManager.color("buttonText")
                             button: themeManager.color("button")
                         }
                         onClicked: {
-                            if (root.isDownloading)
-                                modelStoreDialog.cancelDownload()
-                            else 
-                                modelStoreDialog.downloadFile(detailsPanel.details.name, detailsPanel.details.files[filesCombo.currentIndex]);
+                            modelStoreDialog.downloadFile(detailsPanel.details.name, detailsPanel.details.files[filesCombo.currentIndex]);
                         }
                     }
 
                     Button {
-                        text: root.isDownloading ? "Cancel" : "Download All Files"
-                        enabled: !root.isDownloading || true
+                        text: "Download All Files"
+                        visible: !root.isDownloading
                         palette {
                             buttonText: themeManager.color("buttonText")
                             button: themeManager.color("button")
                         }
                         onClicked: {
-                            if (root.isDownloading)
-                                modelStoreDialog.cancelDownload()
-                            else 
-                                modelStoreDialog.downloadAllFiles(detailsPanel.details.name, detailsPanel.details.files);                            
+                            modelStoreDialog.downloadAllFiles(detailsPanel.details.name, detailsPanel.details.files);                            
                         }
                     }
+
+                    Button {
+                        text: "Cancel"
+                        visible: root.isDownloading
+                        palette {
+                            buttonText: themeManager.color("buttonText")
+                            button: themeManager.color("button")
+                        }
+                        onClicked: {
+                            modelStoreDialog.cancelDownload()
+                        }
+                    }                    
                 }
             }
         }
