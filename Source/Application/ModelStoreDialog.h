@@ -67,6 +67,7 @@ signals:
     void authTokenChanged();
     void searchNameChanged();
     void errorOccurred(QString error);
+    void downloadFinished(bool success);
 
 private:
     void initializeSources();

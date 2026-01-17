@@ -268,6 +268,12 @@ void ChatController::setAPI(const QString& apiName)
     }
 }
 
+void ChatController::refreshModels()
+{
+    qDebug() << "ChatController::refreshModels - Refreshing available models list";
+    emit availableModelsChanged();
+}
+
 QString ChatController::getChatsFilePath() const
 {
     QString dataLocation = QStandardPaths::writableLocation(QStandardPaths::AppDataLocation);

@@ -122,6 +122,14 @@ public:
      * @param apiName Nom de l'API à utiliser
      */
     Q_INVOKABLE void setAPI(const QString& apiName);
+    
+    /**
+     * @brief Rafraîchit la liste des modèles disponibles
+     * 
+     * Émet le signal availableModelsChanged() pour notifier que la liste des modèles
+     * doit être mise à jour (par exemple après un téléchargement).
+     */
+    Q_INVOKABLE void refreshModels();
 
     /**
      * @brief Ajoute un asset au chat courant

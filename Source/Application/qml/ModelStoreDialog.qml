@@ -419,6 +419,13 @@ Rectangle {
             // Can show a popup or just status
             console.error(error)
         }
+        
+        function onDownloadFinished(success) {
+            if (success && chatController) {
+                // Rafraîchir la liste des modèles disponibles après un téléchargement réussi
+                chatController.refreshModels()
+            }
+        }
     }
     
     // Initial fetch

@@ -59,11 +59,13 @@ void ModelStoreDialog::initializeSources()
                 if (success)
                 {
                     setStatus("Saved to " + message);
+                    emit downloadFinished(true);
                 }
                 else
                 {
                     setStatus("Download failed: " + message);
                     emit errorOccurred(message);
+                    emit downloadFinished(false);
                 }
             });
     }
