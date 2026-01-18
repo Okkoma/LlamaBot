@@ -142,6 +142,8 @@ void ChatController::deleteChat(int index)
         // Update current chat if needed
         if (currentChat_ == chatToRemove)
         {
+            stopGeneration();
+
             if (index < chats_.size())
                 currentChat_ = chats_[index];
             else if (!chats_.isEmpty())
@@ -152,8 +154,10 @@ void ChatController::deleteChat(int index)
             emit currentChatChanged();
         }
 
+        checkChatsProcessingFinished();
+
         chatToRemove->deleteLater();
-        saveChats();
+
         emit chatListChanged();
     }
 }
