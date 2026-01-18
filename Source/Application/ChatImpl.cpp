@@ -324,13 +324,13 @@ QJsonObject ChatImpl::toJson() const
     }
     json["history"] = historyArray;
 
-    if (data->prompt_tokens_.size())
+    if (data->context_tokens_.size())
     {
         QJsonArray jsonArray;
-        for (int token : data->prompt_tokens_) 
+        for (int token : data->context_tokens_) 
             jsonArray.append(token);            
         json["tokenized_content"] = jsonArray;
-        qDebug() << "ChatImpl::toJson : set tokenized_content: size:" << data->prompt_tokens_.size();
+        qDebug() << "ChatImpl::toJson : set tokenized_content: size:" << data->context_tokens_.size();
     }
 
     return json;
@@ -371,9 +371,9 @@ void ChatImpl::fromJson(const QJsonObject& json)
         for (const QJsonValue& token : jsonArray)
         {
             if (token.isDouble())
-                data->prompt_tokens_.push_back(token.toInt());
+                data->context_tokens_.push_back(token.toInt());
         }
-        qDebug() << "ChatImpl::fromJson : get tokenized_content size:" << data->prompt_tokens_.size();
+        qDebug() << "ChatImpl::fromJson : get tokenized_content size:" << data->context_tokens_.size();
     }
 
     // Reconstruct messages for UI
