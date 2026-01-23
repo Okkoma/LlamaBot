@@ -57,6 +57,10 @@ else()
     if(GGML_BLAS)
         message(STATUS "BLAS acceleration enabled")
     endif()
+
+    option(BUILD_APPLICATION "Build the application" ON)
+    option(BUILD_TEST "Build the tests" ON)
+    option(BUILD_DOCS "Build the documentation" ON)
 endif()
 
 # Recherche de Qt6 globale pour tout le projet (y compris les dépendances)
@@ -79,34 +83,37 @@ find_package(Qt6 REQUIRED COMPONENTS
     Gui
 )
 
+include_directories (Source/Application Source/ThirdParty/llama.cpp/src Source/ThirdParty/poppler/qt6/src)
+
 add_subdirectory (Source/ThirdParty/llama.cpp)
 add_subdirectory (Source/ThirdParty/poppler)
-add_subdirectory (Source/Application)
 
-if (NOT ANDROID)
+if (BUILD_TEST AND NOT ANDROID)
     enable_testing()
     add_subdirectory (Tests)
 endif()
 
-include_directories (Source/Application Source/ThirdParty/llama.cpp/src Source/ThirdParty/poppler/qt6/src)
-
-# ajout des headers vulkan directement dans llama.cpp/ggml/ggml-vulkan
+if (BUILD_APPLICATION)
+    add_subdirectory (Source/Application)
+endif()
 
 # Configuration Doxygen pour la génération de documentation
-find_package(Doxygen)
-if(DOXYGEN_FOUND)
-    message(STATUS "Doxygen trouvé - configuration de la génération de documentation")
-    
-    # Configuration de la cible de documentation
-    add_custom_target(doc
-        COMMAND ${DOXYGEN_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/Doxyfile
-        WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
-        COMMENT "Génération de la documentation avec Doxygen"
-        VERBATIM
-    )
-    
-    # Ajout d'une dépendance pour s'assurer que le répertoire de sortie existe
-    file(MAKE_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/Docs/doxygen)
-else()
-    message(WARNING "Doxygen non trouvé - la cible de documentation ne sera pas disponible")
+if (BUILD_DOCS)
+    find_package(Doxygen)
+    if(DOXYGEN_FOUND)
+        message(STATUS "Doxygen trouvé - configuration de la génération de documentation")
+        
+        # Configuration de la cible de documentation
+        add_custom_target(doc
+            COMMAND ${DOXYGEN_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/Doxyfile
+            WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
+            COMMENT "Génération de la documentation avec Doxygen"
+            VERBATIM
+        )
+        
+        # Ajout d'une dépendance pour s'assurer que le répertoire de sortie existe
+        file(MAKE_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/Docs/doxygen)
+    else()
+        message(WARNING "Doxygen non trouvé - la cible de documentation ne sera pas disponible")
+    endif()
 endif()
