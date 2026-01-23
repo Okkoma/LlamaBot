@@ -2,6 +2,8 @@
 
 #include "LLMServiceDefs.h"
 
+#include <QUuid>
+
 class LLMServices;
 
 /**
@@ -64,11 +66,12 @@ public:
      * @param parent Objet parent Qt (optionnel)
      */
     Chat(LLMServices* llmservices, const QString& name = "new_chat", const QString& initialContext = "",
-        bool streamed = true, QObject* parent = nullptr) :
+            bool streamed = true, QObject* parent = nullptr) :
         QObject(parent),
         llmservices_(llmservices),
         streamed_(streamed),
         processing_(false),
+        id_(QUuid::createUuid().toString(QUuid::WithoutBraces)),
         name_(name),
         currentApi_("none"),
         currentModel_("none"),
@@ -78,6 +81,20 @@ public:
      * @brief Destructeur virtuel
      */
     virtual ~Chat() {}
+
+    /**
+     * @brief Retourne l'identifiant stable du chat (persisté)
+     */
+    const QString& getId() const { return id_; }
+
+    /**
+     * @brief Définit l'identifiant stable du chat (utile lors d'un chargement depuis stockage)
+     */
+    void setId(const QString& id)
+    {
+        if (!id.isEmpty())
+            id_ = id;
+    }
     
     /**
      * @brief Définit l'API LLM à utiliser
@@ -387,6 +404,7 @@ protected:
     bool streamed_{false};          ///< Indique si le streaming est activé
     bool processing_{false};        ///< Indique si le chat est en cours de traitement
 
+    QString id_;                    ///< Identifiant stable du chat (UUID)
     QString name_;                  ///< Nom du chat
     QString currentApi_;            ///< API LLM courante
     QString currentModel_;          ///< Modèle LLM courant

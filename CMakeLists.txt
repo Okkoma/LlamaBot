@@ -81,6 +81,7 @@ find_package(Qt6 REQUIRED COMPONENTS
     QuickControls2
     Test
     Gui
+    Sql
 )
 
 include_directories (Source/Application Source/ThirdParty/llama.cpp/src Source/ThirdParty/poppler/qt6/src)

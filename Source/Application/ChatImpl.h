@@ -14,6 +14,14 @@ class ChatImpl : public Chat
 {
 public:
     /**
+     * @brief Factory de ChatImpl
+     */
+    static Chat* Create(LLMServices* service, const QString& name = "new_chat", const QString& initialContext = "",
+                            bool streamed = true, QObject* parent = nullptr)
+    {
+        return new ChatImpl(service, name, initialContext, streamed, parent);
+    }
+    /**
      * @brief Constructeur de ChatImpl
      * @param service Services LLM à utiliser
      * @param name Nom du chat (par défaut: "new_chat")

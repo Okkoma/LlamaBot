@@ -21,6 +21,8 @@ set(PROJECT_SOURCES
     OllamaModelSource.h OllamaModelSource.cpp
     Chat.h ChatImpl.h ChatImpl.cpp
     ChatController.h ChatController.cpp
+    ChatStorage.h
+    ChatStorageLocal.h ChatStorageLocal.cpp
     ThemeManager.h ThemeManager.cpp
     Clipboard.h Clipboard.cpp
     DocumentProcessor.h DocumentProcessor.cpp
@@ -36,7 +38,7 @@ qt_add_executable(LlamaBot MANUAL_FINALIZATION ${PROJECT_SOURCES})
 #                 ${CMAKE_CURRENT_SOURCE_DIR}/android)
 # For more information, see https://doc.qt.io/qt-6/qt-add-executable.html#target-creation
 
-target_link_libraries(LlamaBot PRIVATE Qt6::Core Qt6::Widgets Qt6::Network Qt6::Qml Qt6::Quick Qt6::QuickWidgets Qt6::QuickControls2 llama)
+target_link_libraries(LlamaBot PRIVATE Qt6::Core Qt6::Widgets Qt6::Network Qt6::Qml Qt6::Quick Qt6::QuickWidgets Qt6::QuickControls2 Qt6::Sql llama)
 target_link_libraries(LlamaBot PRIVATE poppler-qt6)
 target_link_libraries(LlamaBot PRIVATE LlamaBotCommon)
 

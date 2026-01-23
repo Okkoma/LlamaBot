@@ -1,12 +1,13 @@
 #include <QFile>
-#include <QFileInfo>
 #include <QImage>
 #include <QBuffer>
 
 #include "LLMService.h"
 #include "ChatImpl.h"
+#include "ChatStorageLocal.h"
 
 #include "ChatController.h"
+
 
 ChatController::ChatController(LLMServices* llmservices, QObject* parent) :
     QObject(parent),
@@ -20,6 +21,7 @@ ChatController::ChatController(LLMServices* llmservices, QObject* parent) :
     connect(llmServices_, &LLMServices::autoExpandContextChanged, this, &ChatController::autoExpandContextChanged);
 
     // Try to load existing chats
+    localStore_ = new ChatStorageLocal(llmservices);
     loadChats();
 
     // specific case for first run
@@ -122,7 +124,6 @@ void ChatController::switchToChat(int index)
         if (currentChat_ != chats_[index])
         {
             currentChat_ = chats_[index];
-
             emit currentChatChanged();
         }
     }
@@ -290,72 +291,23 @@ QString ChatController::getChatsFilePath() const
 
 void ChatController::saveChats()
 {
-    QFile file(getChatsFilePath());
-    if (!file.open(QIODevice::WriteOnly))
-    {
-        qWarning() << "Could not open chats file for writing:" << file.fileName();
-        return;
-    }
-
-    QJsonArray array;
-    for (Chat* chat : chats_)
-    {
-        array.append(chat->toJson());
-    }
-
-    QJsonDocument doc(array);
-    file.write(doc.toJson());
-    file.close();
-    qDebug() << "Chats saved to" << file.fileName();
+    bool ok = localStore_ && localStore_->save(chats_);
+    if (!ok)
+        qWarning() << "ChatLocalStore save failed !";
 }
 
 void ChatController::loadChats()
 {
-    qDebug() << "ChatController::loadChats()";
-    
     chats_.clear();
 
-    QFile file(getChatsFilePath());
-    if (!file.exists() || !file.open(QIODevice::ReadOnly))
+    if (localStore_ && localStore_->load(chats_) && !chats_.isEmpty())
     {
-        return; // existing file not found or couldn't be read
-    }
-
-    QByteArray data = file.readAll();
-    QJsonDocument doc = QJsonDocument::fromJson(data);
-    if (!doc.isArray())
-    {
-        qWarning() << "Invalid chats file format";
-        return;
-    }
-
-    QJsonArray array = doc.array();
-    for (const auto& val : array)
-    {
-        if (val.isObject())
-        {
-            chatCounter_++;
-            // Create chat but don't append to list immediately to avoid signals issues or just do standard creation
-            // then overwrite Actually standard creation connects signals which is good. But standard creation appends
-            // to list. Let's create chat manually here to control initialization from JSON.
-
-            Chat* chat = new ChatImpl(llmServices_, "", "", true, this);
-            chat->fromJson(val.toObject());
-
-            // Ensure unique name handling if needed, but for now trust JSON or just let it be.
-            // If chat name is empty (legacy?), give it a name.
-            if (chat->getName().isEmpty())
-                chat->setName(QString("Chat %1").arg(chatCounter_));
-
-            chats_.append(chat);
-
-            // Connect signals
+        // Connect signals
+        for (Chat* chat : chats_)
             QObject::connect(chat, &Chat::processingFinished, this, &ChatController::notifyUpdatedChat);
-        }
-    }
 
-    if (!chats_.isEmpty())
-    {
+        chatCounter_ = chats_.size();
+
         currentChat_ = chats_.last();
         emit currentChatChanged();
         emit chatListChanged();

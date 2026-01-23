@@ -2,6 +2,8 @@
 
 #include "LLMServices.h"
 #include "RAGService.h"
+#include "ChatStorage.h"
+
 
 /**
  * @class ChatController
@@ -227,6 +229,7 @@ private:
 
     LLMServices* llmServices_;    ///< Service LLM pour les opérations de chat
     RAGService* ragService_;      ///< Service RAG pour la recherche augmentée
+    ChatStorage* localStore_;     ///< Stockage local (SQLite)    
     QList<Chat*> chats_;          ///< Liste des chats gérés par le contrôleur
     Chat* currentChat_;           ///< Chat actuellement sélectionné
     int chatCounter_;             ///< Compteur pour générer des noms de chat uniques

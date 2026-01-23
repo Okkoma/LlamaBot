@@ -2,6 +2,8 @@
 
 #include "ChatImpl.h"
 
+#include <QUuid>
+
 // const char* rawHumanPrompt = "human:";
 // const char* rawAiPrompt = "ai:";
 
@@ -296,6 +298,7 @@ QJsonObject ChatImpl::toJson() const
 {
     const ChatData* data = getData();
     QJsonObject json;
+    json["id"] = getId();
     json["n_ctx"] = data->n_ctx_;
     json["n_ctx_used"] = data->n_ctx_used_;
     json["name"] = name_;
@@ -339,6 +342,7 @@ QJsonObject ChatImpl::toJson() const
 void ChatImpl::fromJson(const QJsonObject& json)
 {
     ChatData* data = getData();
+    setId(json["id"].toString());
     data->n_ctx_ = json["n_ctx"].toInt();
     data->n_ctx_used_ = json["n_ctx_used"].toInt();
 
