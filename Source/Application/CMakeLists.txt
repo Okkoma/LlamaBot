@@ -38,6 +38,7 @@ qt_add_executable(LlamaBot MANUAL_FINALIZATION ${PROJECT_SOURCES})
 
 target_link_libraries(LlamaBot PRIVATE Qt6::Core Qt6::Widgets Qt6::Network Qt6::Qml Qt6::Quick Qt6::QuickWidgets Qt6::QuickControls2 llama)
 target_link_libraries(LlamaBot PRIVATE poppler-qt6)
+target_link_libraries(LlamaBot PRIVATE LlamaBotCommon)
 
 # Qt for iOS sets MACOSX_BUNDLE_GUI_IDENTIFIER automatically since Qt 6.1.
 # If you are developing for iOS or macOS you should consider setting an

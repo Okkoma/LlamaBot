@@ -3,8 +3,8 @@
 #include <QJsonObject>
 #include <QJsonArray>
 
-#include "../Source/Application/LLMServices.h"
-#include "../Source/Application/ChatImpl.h"
+#include "../../Source/Application/LLMServices.h"
+#include "../../Source/Application/ChatImpl.h"
 
 // Mock amélioré pour tester les interactions avec les services LLM
 class MockLLMService : public LLMService {

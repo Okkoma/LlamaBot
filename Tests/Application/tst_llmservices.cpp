@@ -6,8 +6,8 @@
 #include <QJsonObject>
 #include <QStandardPaths>
 
-#include "../Source/Application/LLMServices.h"
-#include "../Source/Application/ChatImpl.h"
+#include "../../Source/Application/LLMServices.h"
+#include "../../Source/Application/ChatImpl.h"
 
 // Mock compatible avec la factory LLMService::createService
 class MockService : public LLMService {
