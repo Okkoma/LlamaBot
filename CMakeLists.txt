@@ -85,6 +85,7 @@ find_package(Qt6 REQUIRED COMPONENTS
 
 include_directories (Source/Application Source/ThirdParty/llama.cpp/src Source/ThirdParty/poppler/qt6/src)
 
+add_subdirectory (Source/Common)
 add_subdirectory (Source/ThirdParty/llama.cpp)
 add_subdirectory (Source/ThirdParty/poppler)
 

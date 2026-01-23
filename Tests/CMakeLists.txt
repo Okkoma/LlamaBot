@@ -2,6 +2,8 @@ set(CMAKE_AUTOMOC ON)
 set(CMAKE_AUTOUIC ON)
 set(CMAKE_AUTORCC ON)
 
+add_subdirectory(Common)
+
 find_package(Qt6 REQUIRED COMPONENTS Core Widgets Network Qml Quick QuickWidgets Test)
 
 # Tests unitaires de Chat avec mock LLMService
