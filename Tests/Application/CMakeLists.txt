@@ -1,51 +1,92 @@
-set(CMAKE_AUTOMOC ON)
-set(CMAKE_AUTOUIC ON)
-set(CMAKE_AUTORCC ON)
-
-find_package(Qt6 REQUIRED COMPONENTS Core Widgets Network Qml Quick QuickWidgets Test)
-
 # Tests unitaires de Chat avec mock LLMService
 qt_add_executable(Test_Chat
-    ${CMAKE_SOURCE_DIR}/Source/Application/LLMServiceDefs.h
-    ${CMAKE_SOURCE_DIR}/Source/Application/Chat.h
-    ${CMAKE_SOURCE_DIR}/Source/Application/ChatImpl.h
-    ${CMAKE_SOURCE_DIR}/Source/Application/ChatImpl.cpp
-    ${CMAKE_SOURCE_DIR}/Source/Application/LLMService.h
-    ${CMAKE_SOURCE_DIR}/Source/Application/LLMService.cpp
-    ${CMAKE_SOURCE_DIR}/Source/Application/LLMServices.h
-    ${CMAKE_SOURCE_DIR}/Source/Application/LLMServices.cpp
+    mock_services.h
+    ../../Source/Application/LLMServiceDefs.h
+    ../../Source/Application/Chat.h
+    ../../Source/Application/ChatImpl.h
+    ../../Source/Application/ChatImpl.cpp
+    ../../Source/Application/LLMService.h
+    ../../Source/Application/LLMService.cpp
+    ../../Source/Application/LLMServices.h
+    ../../Source/Application/LLMServices.cpp
+    mock_services.cpp
     tst_chat.cpp
 )
 
-target_include_directories(Test_Chat PRIVATE ${CMAKE_SOURCE_DIR}/Source/Application)
 target_link_libraries(Test_Chat PRIVATE Qt6::Core Qt6::Widgets Qt6::Network Qt6::Test)
+add_test(NAME Test_Chat COMMAND Test_Chat)
 
 # Tests unitaires LLMService avec mock Chat
 qt_add_executable(Test_LLMServices
-    ${CMAKE_SOURCE_DIR}/Source/Application/LLMServiceDefs.h
-    ${CMAKE_SOURCE_DIR}/Source/Application/Chat.h
-    ${CMAKE_SOURCE_DIR}/Source/Application/ChatImpl.h
-    ${CMAKE_SOURCE_DIR}/Source/Application/ChatImpl.cpp
-    ${CMAKE_SOURCE_DIR}/Source/Application/LLMService.h
-    ${CMAKE_SOURCE_DIR}/Source/Application/LLMService.cpp
-    ${CMAKE_SOURCE_DIR}/Source/Application/LLMServices.h
-    ${CMAKE_SOURCE_DIR}/Source/Application/LLMServices.cpp
-    tst_llmservices.cpp
+    mock_services.h
+    ../../Source/Application/ChatImpl.h
+    ../../Source/Application/ChatImpl.cpp
+    ../../Source/Application/LLMService.h
+    ../../Source/Application/LLMService.cpp
+    ../../Source/Application/LLMServiceDefs.h
+    ../../Source/Application/LLMServices.h
+    ../../Source/Application/LLMServices.cpp
+    ../../Source/Application/Chat.h
+    mock_services.cpp
+    tst_llmservices.cpp 
 )
-
-target_include_directories(Test_LLMServices PRIVATE ${CMAKE_SOURCE_DIR}/Source/Application)
 target_link_libraries(Test_LLMServices PRIVATE Qt6::Core Qt6::Widgets Qt6::Network Qt6::Test)
-
 add_test(NAME Test_LLMServices COMMAND Test_LLMServices)
-add_test(NAME Test_Chat COMMAND Test_Chat)
 
+qt_add_executable(Test_RAG
+    ../../Source/Application/VectorStore.h
+    ../../Source/Application/VectorStore.cpp
+    ../../Source/Application/DocumentProcessor.h
+    ../../Source/Application/DocumentProcessor.cpp
+    tst_rag.cpp
+)
+target_link_libraries(Test_RAG PRIVATE Qt6::Core Qt6::Test poppler-qt6)
+add_test(NAME Test_RAG COMMAND Test_RAG)
+
+qt_add_executable(Test_Ollama
+    mock_services.h
+    ../../Source/Application/LLMServiceDefs.h
+    ../../Source/Application/LLMServices.h
+    ../../Source/Application/LLMServices.cpp
+    ../../Source/Application/LLMService.h
+    ../../Source/Application/LLMService.cpp
+    ../../Source/Application/Chat.h
+    ../../Source/Application/ChatImpl.h
+    ../../Source/Application/ChatImpl.cpp
+    ../../Source/Application/OllamaService.h
+    ../../Source/Application/OllamaService.cpp
+    mock_services.cpp
+    tst_ollama.cpp
+)
+target_link_libraries(Test_Ollama PRIVATE Qt6::Core Qt6::Widgets Qt6::Network Qt6::Test)
+add_test(NAME Test_Ollama COMMAND Test_Ollama)
+
+qt_add_executable(Test_LlamaCpp
+    mock_services.h
+    ../../Source/Application/LLMServiceDefs.h
+    ../../Source/Application/LLMServices.h
+    ../../Source/Application/LLMServices.cpp
+    ../../Source/Application/LLMService.h
+    ../../Source/Application/LLMService.cpp
+    ../../Source/Application/Chat.h
+    ../../Source/Application/ChatImpl.h
+    ../../Source/Application/ChatImpl.cpp
+    ../../Source/Application/LlamaCppService.h
+    ../../Source/Application/LlamaCppService.cpp
+    mock_services.cpp
+    tst_llamacpp.cpp
+)
+# Note: LlamaCpp needs llama.cpp headers/libs if real generation is tested, 
+# but for basic service logic we might get away with it if mocks/stubs are used or if focused on config.
+target_link_libraries(Test_LlamaCpp PRIVATE Qt6::Core Qt6::Widgets Qt6::Network Qt6::Test llama)
+add_test(NAME Test_LlamaCpp COMMAND Test_LlamaCpp)
 
 # Tests QML avec Qt Quick Test via qmltestrunner
 find_program(QMLTESTRUNNER_EXECUTABLE qmltestrunner)
 if (QMLTESTRUNNER_EXECUTABLE)
     add_test(NAME QmlTests COMMAND ${QMLTESTRUNNER_EXECUTABLE} 
-            -input ${CMAKE_CURRENT_SOURCE_DIR}/qml
-            -import ${CMAKE_SOURCE_DIR}/Source/Application/qml)
+            -input ../qml
+            -import ../Source/Application/qml)
 else()
     message(WARNING "qmltestrunner introuvable : les tests QML ne seront pas exécutés.")
 endif()

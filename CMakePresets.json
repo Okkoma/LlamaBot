@@ -1,121 +1,335 @@
 {
-  "version": 4,
-  "configurePresets": [
-    {
-        "name":  "base",
-        "hidden": true,
-        "generator": "Ninja",
-        "binaryDir": "${sourceDir}/build-${presetName}",
-        "cacheVariables": {
-            "CMAKE_EXPORT_COMPILE_COMMANDS": "ON",
-            "GGML_CUDA":"ON",
-            "GGML_OPENCL":"ON",
-            "GGML_BLAS":"ON"
+    "version": 4,
+    "configurePresets": [
+        {
+            "name": "base",
+            "hidden": true,
+            "generator": "Ninja",
+            "binaryDir": "${sourceDir}/build-${presetName}",
+            "cacheVariables": {
+                "CMAKE_EXPORT_COMPILE_COMMANDS": "ON",
+                "GGML_CUDA": "ON",
+                "GGML_OPENCL": "ON",
+                "GGML_BLAS": "ON"
+            }
+        },
+        {
+            "name": "debug",
+            "hidden": true,
+            "cacheVariables": {
+                "CMAKE_BUILD_TYPE": "Debug"
+            }
+        },
+        {
+            "name": "release",
+            "hidden": true,
+            "cacheVariables": {
+                "CMAKE_BUILD_TYPE": "Release"
+            }
+        },
+        {
+            "name": "reldbg",
+            "hidden": true,
+            "cacheVariables": {
+                "CMAKE_BUILD_TYPE": "RelWithDebInfo"
+            }
+        },
+        {
+            "name": "static",
+            "hidden": true,
+            "cacheVariables": {
+                "GGML_STATIC": "ON"
+            }
+        },
+        {
+            "name": "vulkan",
+            "hidden": true,
+            "cacheVariables": {
+                "GGML_VULKAN": "ON"
+            }
+        },
+        {
+            "name": "test",
+            "hidden": true,
+            "cacheVariables": {
+                "BUILD_APPLICATION": "OFF",
+                "BUILD_DOCS": "OFF",
+                "BUILD_TEST": "ON"
+            }
+        },
+        {
+            "name": "x64-windows-llvm",
+            "hidden": true,
+            "cacheVariables": {
+                "CMAKE_SYSTEM_NAME": "Windows",
+                "CMAKE_SYSTEM_PROCESSOR": "x86_64",
+                "CMAKE_C_COMPILER": "clang",
+                "CMAKE_CXX_COMPILER": "clang++"
+            }
+        },
+        {
+            "name": "arm64-windows-llvm",
+            "hidden": true,
+            "architecture": {
+                "value": "arm64",
+                "strategy": "external"
+            },
+            "toolset": {
+                "value": "host=x64",
+                "strategy": "external"
+            },
+            "cacheVariables": {
+                "CMAKE_SYSTEM_NAME": "Windows",
+                "CMAKE_SYSTEM_PROCESSOR": "arm64",
+                "CMAKE_C_COMPILER": "clang",
+                "CMAKE_CXX_COMPILER": "clang++",
+                "CMAKE_C_COMPILER_TARGET": "arm64-pc-windows-msvc",
+                "CMAKE_CXX_COMPILER_TARGET": "arm64-pc-windows-msvc",
+                "CMAKE_C_FLAGS_INIT": "-march=armv8.7-a -fvectorize -ffp-model=fast -fno-finite-math-only -Wno-format -Wno-unused-variable -Wno-unused-function -Wno-gnu-zero-variadic-macro-arguments",
+                "CMAKE_CXX_FLAGS_INIT": "-march=armv8.7-a -fvectorize -ffp-model=fast -fno-finite-math-only -Wno-format -Wno-unused-variable -Wno-unused-function -Wno-gnu-zero-variadic-macro-arguments"
+            }
+        },
+        {
+            "name": "arm64-apple-clang",
+            "hidden": true,
+            "architecture": {
+                "value": "arm64",
+                "strategy": "external"
+            },
+            "toolset": {
+                "value": "host=x64",
+                "strategy": "external"
+            },
+            "cacheVariables": {
+                "CMAKE_SYSTEM_NAME": "Darwin",
+                "CMAKE_SYSTEM_PROCESSOR": "arm64",
+                "CMAKE_C_COMPILER": "clang",
+                "CMAKE_CXX_COMPILER": "clang++",
+                "CMAKE_C_COMPILER_TARGET": "arm64-apple-darwin-macho",
+                "CMAKE_CXX_COMPILER_TARGET": "arm64-apple-darwin-macho",
+                "CMAKE_C_FLAGS_INIT": "-march=armv8.4-a -fvectorize -ffp-model=fast -fno-finite-math-only -Wno-format -Wno-unused-variable -Wno-unused-function",
+                "CMAKE_CXX_FLAGS_INIT": "-march=armv8.4-a -fvectorize -ffp-model=fast -fno-finite-math-only -Wno-format -Wno-unused-variable -Wno-unused-function"
+            }
+        },
+        {
+            "name": "x64-linux-gcc",
+            "hidden": true,
+            "cacheVariables": {
+                "CMAKE_C_COMPILER": "gcc",
+                "CMAKE_CXX_COMPILER": "g++",
+                "CMAKE_BUILD_PARALLEL_LEVEL": "8"
+            }
+        },
+        {
+            "name": "x64-linux-gcc-debug",
+            "inherits": [
+                "base",
+                "x64-linux-gcc",
+                "debug"
+            ]
+        },
+        {
+            "name": "x64-linux-gcc-release",
+            "inherits": [
+                "base",
+                "x64-linux-gcc",
+                "release"
+            ]
+        },
+        {
+            "name": "x64-linux-gcc-reldbg",
+            "inherits": [
+                "base",
+                "x64-linux-gcc",
+                "reldbg"
+            ]
+        },
+        {
+            "name": "x64-linux-gcc+static-release",
+            "inherits": [
+                "base",
+                "x64-linux-gcc",
+                "release",
+                "static"
+            ]
+        },
+        {
+            "name": "x64-linux-gcc-debug-test",
+            "inherits": [
+                "base",
+                "x64-linux-gcc",
+                "debug",
+                "test"
+            ]
+        },
+        {
+            "name": "x64-linux-gcc-rel-test",
+            "inherits": [
+                "base",                
+                "x64-linux-gcc",
+                "release",
+                "test"
+            ]
+        },
+        {
+            "name": "arm64-windows-llvm-debug",
+            "inherits": [
+                "base",
+                "arm64-windows-llvm",
+                "debug"
+            ]
+        },
+        {
+            "name": "arm64-windows-llvm-release",
+            "inherits": [
+                "base",
+                "arm64-windows-llvm",
+                "reldbg"
+            ]
+        },
+        {
+            "name": "arm64-windows-llvm+static-release",
+            "inherits": [
+                "base",
+                "arm64-windows-llvm",
+                "reldbg",
+                "static"
+            ]
+        },
+        {
+            "name": "arm64-apple-clang-debug",
+            "inherits": [
+                "base",
+                "arm64-apple-clang",
+                "debug"
+            ]
+        },
+        {
+            "name": "arm64-apple-clang-release",
+            "inherits": [
+                "base",
+                "arm64-apple-clang",
+                "reldbg"
+            ]
+        },
+        {
+            "name": "arm64-apple-clang+static-release",
+            "inherits": [
+                "base",
+                "arm64-apple-clang",
+                "reldbg",
+                "static"
+            ]
+        },
+        {
+            "name": "x64-windows-llvm-debug",
+            "inherits": [
+                "base",
+                "x64-windows-llvm",
+                "debug"
+            ]
+        },
+        {
+            "name": "x64-windows-llvm-release",
+            "inherits": [
+                "base",
+                "x64-windows-llvm",
+                "release"
+            ]
+        },
+        {
+            "name": "x64-windows-llvm-reldbg",
+            "inherits": [
+                "base",
+                "x64-windows-llvm",
+                "reldbg"
+            ]
+        },
+        {
+            "name": "x64-windows-llvm+static-release",
+            "inherits": [
+                "base",
+                "x64-windows-llvm",
+                "reldbg",
+                "static"
+            ]
+        },
+        {
+            "name": "x64-windows-msvc-debug",
+            "inherits": [
+                "base",
+                "debug"
+            ]
+        },
+        {
+            "name": "x64-windows-msvc-release",
+            "inherits": [
+                "base",
+                "reldbg"
+            ]
+        },
+        {
+            "name": "x64-windows-msvc+static-release",
+            "inherits": [
+                "base",
+                "reldbg",
+                "static"
+            ]
+        },
+        {
+            "name": "x64-windows-vulkan-debug",
+            "inherits": [
+                "base",
+                "vulkan",
+                "debug"
+            ]
+        },
+        {
+            "name": "x64-windows-vulkan-release",
+            "inherits": [
+                "base",
+                "vulkan",
+                "release"
+            ]
         }
-    },
-
-    { "name": "debug",    "hidden": true, "cacheVariables": { "CMAKE_BUILD_TYPE": "Debug" } },
-    { "name": "release",  "hidden": true, "cacheVariables": { "CMAKE_BUILD_TYPE": "Release" } },
-    { "name": "reldbg",   "hidden": true, "cacheVariables": { "CMAKE_BUILD_TYPE": "RelWithDebInfo" } },
-    { "name": "static",   "hidden": true, "cacheVariables": { "GGML_STATIC":      "ON" } },
-    { "name": "vulkan",   "hidden": true, "cacheVariables": { "GGML_VULKAN":      "ON" } },
-
-    {
-        "name": "x64-windows-llvm", "hidden": true,
-        "cacheVariables": {
-            "CMAKE_SYSTEM_NAME":"Windows",
-            "CMAKE_SYSTEM_PROCESSOR":"x86_64",
-            "CMAKE_C_COMPILER":"clang",
-            "CMAKE_CXX_COMPILER":"clang++"
+    ],
+    "buildPresets": [
+        {
+            "name": "base-build",
+            "hidden": true
+        },
+        {
+            "name": "x64-linux-debug",
+            "inherits": "base-build",
+            "configurePreset": "x64-linux-gcc-debug"
+        },
+        {
+            "name": "x64-linux-debug-test",
+            "inherits": "base-build",
+            "configurePreset": "x64-linux-gcc-debug-test"
+        },
+        {
+            "name": "x64-linux-release",
+            "inherits": "base-build",
+            "configurePreset": "x64-linux-gcc-release"
+        },
+        {
+            "name": "x64-windows-debug",
+            "inherits": "base-build",
+            "configurePreset": "x64-windows-llvm-debug"
+        },
+        {
+            "name": "x64-windows-release",
+            "inherits": "base-build",
+            "configurePreset": "x64-windows-llvm-release"
         }
-    },
-    {
-        "name": "arm64-windows-llvm", "hidden": true,
-        "architecture": { "value": "arm64",    "strategy": "external" },
-        "toolset":      { "value": "host=x64", "strategy": "external" },
-        "cacheVariables": {
-            "CMAKE_SYSTEM_NAME":"Windows",
-            "CMAKE_SYSTEM_PROCESSOR":"arm64",
-            "CMAKE_C_COMPILER":"clang",
-            "CMAKE_CXX_COMPILER":"clang++",
-            "CMAKE_C_COMPILER_TARGET":"arm64-pc-windows-msvc",
-            "CMAKE_CXX_COMPILER_TARGET":"arm64-pc-windows-msvc",
-            "CMAKE_C_FLAGS_INIT":"-march=armv8.7-a -fvectorize -ffp-model=fast -fno-finite-math-only -Wno-format -Wno-unused-variable -Wno-unused-function -Wno-gnu-zero-variadic-macro-arguments",
-            "CMAKE_CXX_FLAGS_INIT":"-march=armv8.7-a -fvectorize -ffp-model=fast -fno-finite-math-only -Wno-format -Wno-unused-variable -Wno-unused-function -Wno-gnu-zero-variadic-macro-arguments"
+    ],
+    "testPresets": [
+        {
+            "name": "tests",
+            "description": "",
+            "displayName": "",
+            "configurePreset": "x64-linux-gcc-debug-test"
         }
-    },
-    {
-        "name": "arm64-apple-clang", "hidden": true,
-        "architecture": { "value": "arm64",    "strategy": "external" },
-        "toolset":      { "value": "host=x64", "strategy": "external" },
-        "cacheVariables": {
-            "CMAKE_SYSTEM_NAME":"Darwin",
-            "CMAKE_SYSTEM_PROCESSOR":"arm64",
-            "CMAKE_C_COMPILER":"clang",
-            "CMAKE_CXX_COMPILER":"clang++",
-            "CMAKE_C_COMPILER_TARGET":"arm64-apple-darwin-macho",
-            "CMAKE_CXX_COMPILER_TARGET":"arm64-apple-darwin-macho",
-            "CMAKE_C_FLAGS_INIT":"-march=armv8.4-a -fvectorize -ffp-model=fast -fno-finite-math-only -Wno-format -Wno-unused-variable -Wno-unused-function",
-            "CMAKE_CXX_FLAGS_INIT":"-march=armv8.4-a -fvectorize -ffp-model=fast -fno-finite-math-only -Wno-format -Wno-unused-variable -Wno-unused-function"            
-        }
-    },
-    {
-        "name": "x64-linux-gcc", "hidden": true,
-        "cacheVariables": {
-            "CMAKE_C_COMPILER": "gcc",
-            "CMAKE_CXX_COMPILER": "g++"
-        }
-    },
-
-    { "name": "x64-linux-gcc-debug", "inherits": [ "base", "x64-linux-gcc", "debug" ] },
-    { "name": "x64-linux-gcc-release", "inherits": [ "base", "x64-linux-gcc", "release" ] },
-    { "name": "x64-linux-gcc-reldbg", "inherits": [ "base", "x64-linux-gcc", "reldbg" ] },
-    { "name": "x64-linux-gcc+static-release", "inherits": [ "base", "x64-linux-gcc", "release", "static" ] },
-
-    { "name": "arm64-windows-llvm-debug", "inherits": [ "base", "arm64-windows-llvm", "debug" ] },
-    { "name": "arm64-windows-llvm-release", "inherits": [ "base", "arm64-windows-llvm", "reldbg" ] },
-    { "name": "arm64-windows-llvm+static-release", "inherits": [ "base", "arm64-windows-llvm", "reldbg", "static" ] },
-
-    { "name": "arm64-apple-clang-debug", "inherits": [ "base", "arm64-apple-clang", "debug" ] },
-    { "name": "arm64-apple-clang-release", "inherits": [ "base", "arm64-apple-clang", "reldbg" ] },
-    { "name": "arm64-apple-clang+static-release", "inherits": [ "base", "arm64-apple-clang",  "reldbg", "static" ] },
-
-    { "name": "x64-windows-llvm-debug", "inherits": [ "base", "x64-windows-llvm", "debug" ] },
-    { "name": "x64-windows-llvm-release", "inherits": [ "base", "x64-windows-llvm", "release" ] },
-    { "name": "x64-windows-llvm-reldbg", "inherits": [ "base", "x64-windows-llvm", "reldbg" ] },
-    { "name": "x64-windows-llvm+static-release", "inherits": [ "base", "x64-windows-llvm", "reldbg", "static" ] },
-
-    { "name": "x64-windows-msvc-debug", "inherits": [ "base", "debug" ] },
-    { "name": "x64-windows-msvc-release", "inherits": [ "base", "reldbg" ] },
-    { "name": "x64-windows-msvc+static-release", "inherits": [ "base", "reldbg", "static" ] },
-
-    { "name": "x64-windows-vulkan-debug", "inherits": [ "base", "vulkan", "debug" ] },
-    { "name": "x64-windows-vulkan-release", "inherits": [ "base", "vulkan", "release" ] }
-  ],
-  "buildPresets": [
-    {
-      "name": "base-build",
-      "hidden": true
-    },
-    {
-      "name": "x64-linux-debug",
-      "inherits": "base-build",
-      "configurePreset": "x64-linux-gcc-debug"
-    },
-    {
-      "name": "x64-linux-release",
-      "inherits": "base-build",
-      "configurePreset": "x64-linux-gcc-release"
-    },
-    {
-      "name": "x64-windows-debug",
-      "inherits": "base-build",
-      "configurePreset": "x64-windows-llvm-debug"
-    },
-    {
-      "name": "x64-windows-release",
-      "inherits": "base-build",
-      "configurePreset": "x64-windows-llvm-release"
-    }
-  ]
+    ]
 }
