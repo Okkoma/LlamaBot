@@ -125,7 +125,7 @@ bool convertJsonToChatList(const QJsonArray& jsonArray, QList<Chat*>& chats, LLM
         chat->fromJson(val.toObject());
         chats.append(chat);
     }     
-    return false;
+    return true;
 }
 
 QJsonArray convertChatListToJson(const QList<Chat*>& chats)

@@ -300,11 +300,16 @@ void ChatController::loadChats()
 {
     chats_.clear();
 
-    if (localStore_ && localStore_->load(chats_) && !chats_.isEmpty())
+    if (localStore_)
+        bool loaded = localStore_->load(chats_);
+    
+    qDebug() << "ChatController loadChats:" << chats_.size();
+
+    if (!chats_.isEmpty())
     {
         // Connect signals
         for (Chat* chat : chats_)
-            QObject::connect(chat, &Chat::processingFinished, this, &ChatController::notifyUpdatedChat);
+            QObject::connect(chat, &Chat::processingFinished, this, &ChatController::notifyUpdatedChat);        
 
         chatCounter_ = chats_.size();
 
