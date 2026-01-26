@@ -50,6 +50,5 @@ private:
     ChatController* chatController_;      ///< Contrôleur pour la gestion des chats et conversations
     ModelStoreDialog* modelStoreDialog_;  ///< Dialogue pour la gestion des modèles
     ApplicationServices services_;        ///< Services d'application pour les fonctionnalités transverses
-    ThemeManager* themeManager_;          ///< Gestionnaire des thèmes de l'application
     Clipboard* clipboard_;                ///< Gestionnaire du presse-papiers système
 };

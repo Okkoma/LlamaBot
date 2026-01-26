@@ -1,7 +1,5 @@
 #include <QDebug>
 
-#include "ApplicationServices.h"
-
 #include "LLMServices.h"
 #include "LlamaCppService.h"
 #include "OllamaService.h"
@@ -10,26 +8,40 @@
 #include "OllamaModelSource.h"
 #include "HuggingFaceModelSource.h"
 
+#include "ThemeManager.h"
+
+#include "ApplicationServices.h"
+
+
 std::unordered_map<const char*, std::unique_ptr<QObject> > ApplicationServices::services_;
 
 ApplicationServices::ApplicationServices(QObject* parent) :
     QObject(parent)
-{
-    // register llm api entries
-    LLMService::registerService<LlamaCppService>(LLMEnum::LLMType::LlamaCpp);    
-    LLMService::registerService<OllamaService>(LLMEnum::LLMType::Ollama);
-
-    // add service
-    services_.emplace(std::make_pair(LLMServices::staticMetaObject.className(), std::unique_ptr<LLMServices>(new LLMServices(this))));
-    qDebug() << "ApplicationServices: add" << get<LLMServices>();
-
-    // register model source entries
-    ModelSource::registerSource<OllamaModelSource>("Ollama");
-    ModelSource::registerSource<HuggingFaceModelSource>("HuggingFace");
+{ 
+    qDebug() << "ApplicationServices";
 }
 
 ApplicationServices::~ApplicationServices()
 {
     services_.clear();
     qDebug() << "~ApplicationServices";
+}
+
+void ApplicationServices::initialize()
+{
+    // add theme manager as service
+    add<ThemeManager>(this);
+    qDebug() << "ApplicationServices: add ThemeManager:" << get<ThemeManager>();
+
+    // register llm api entries
+    LLMService::registerService<LlamaCppService>(LLMEnum::LLMType::LlamaCpp);    
+    LLMService::registerService<OllamaService>(LLMEnum::LLMType::Ollama);
+
+    // register model source entries
+    ModelSource::registerSource<OllamaModelSource>("Ollama");
+    ModelSource::registerSource<HuggingFaceModelSource>("HuggingFace");
+
+    // add llm services
+    add<LLMServices>(this);
+    qDebug() << "ApplicationServices: add LLMServices:" << get<LLMServices>();
 }

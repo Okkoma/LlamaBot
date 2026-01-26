@@ -33,8 +33,7 @@ Application::Application(int& argc, char** argv) :
     parser.addVersionOption();
     parser.process(*this);
 
-    // Initialize ThemeManager
-    themeManager_ = new ThemeManager(this);
+    services_.initialize();
 
     // Initialize Clipboard
     clipboard_ = new Clipboard(this);
@@ -52,7 +51,7 @@ Application::Application(int& argc, char** argv) :
     qmlEngine_->rootContext()->setContextProperty("chatController", chatController_);
     qmlEngine_->rootContext()->setContextProperty("modelStoreDialog", modelStoreDialog_);
     qmlEngine_->rootContext()->setContextProperty("application", this);
-    qmlEngine_->rootContext()->setContextProperty("themeManager", themeManager_);
+    qmlEngine_->rootContext()->setContextProperty("themeManager", ApplicationServices::get<ThemeManager>());
     qmlEngine_->rootContext()->setContextProperty("clipboard", clipboard_);
 
     // Load Main.qml
