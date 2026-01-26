@@ -2,7 +2,6 @@
 
 #include "ChatImpl.h"
 
-#include <QUuid>
 
 // const char* rawHumanPrompt = "human:";
 // const char* rawAiPrompt = "ai:";
@@ -42,7 +41,8 @@ void ChatImpl::initialize()
     info_["stream"] = streamed_;
 
     history_.clear();
-    emit historyChanged();
+    messages_.clear();
+    emit messagesChanged();
 }
 
 void ChatImpl::setApi(const QString& api)
@@ -96,7 +96,7 @@ void ChatImpl::addContent(const QString& role, const QString& content)
     if (isUserContent)
         finalizeStream();
 
-    history_.append({ role, content, isUserContent ? getAssets() : QVariantList() });
+    addMessage(role, content, isUserContent ? getAssets() : QVariantList());
     messages_.append(QString("%1 %2\n").arg(isUserContent ? userPrompt_ : aiPrompt_).arg(content));
 
     // Si c'est un message assistant, mettre à jour lastBotIndex_ et currentAIStream_
@@ -108,7 +108,7 @@ void ChatImpl::addContent(const QString& role, const QString& content)
     }
 
     emit messageAdded(role, content);
-    emit historyChanged();
+    emit messagesChanged();
 }
 
 void ChatImpl::finalizeStream()
@@ -122,8 +122,8 @@ void ChatImpl::finalizeStream()
         if (history_.isEmpty() || history_.last().role_ != currentAIRole_ || history_.last().content_ != currentAIStream_)
         {
             qWarning() << "Chat::finalizeStream: history was not updated during streaming, adding now";
-            history_.append({ currentAIRole_, currentAIStream_ });
-            emit historyChanged();
+            addMessage(currentAIRole_, currentAIStream_);
+            emit messagesChanged();
         }
 
         currentAIStream_.clear();
@@ -156,7 +156,7 @@ void ChatImpl::updateCurrentAIStream(const QString& text)
     else 
         currentAIStream_ += text;
 
-    qDebug() << "Chat::updateCurrentAIStream:" << text;
+    //qDebug() << "Chat::updateCurrentAIStream:" << text;
     
     sanitizeStream(currentAIStream_);
 
@@ -224,12 +224,12 @@ void ChatImpl::updateCurrentAIStream(const QString& text)
     {
         if (msgindex < messages_.size())
         {
-            history_[msgindex] = { msg.role_, msg.content_.toString() };
+            modifyMessage(msgindex, msg.role_, msg.content_.toString());
             messages_[msgindex] = QString("%1 %2\n").arg(aiPrompt_).arg(msg.content_.toString());
         }
         else
         {
-            history_.emplace_back(msg.role_, msg.content_.toString());
+            addMessage(msg.role_, msg.content_.toString());
             messages_.emplace_back(QString("%1 %2\n").arg(aiPrompt_).arg(msg.content_.toString()));
         }
         msgindex++;
@@ -239,7 +239,6 @@ void ChatImpl::updateCurrentAIStream(const QString& text)
         currentAIStream_.clear();
 
     emit messagesChanged();
-    emit historyChanged();
     emit streamUpdated(text);
     emit contextSizeUsedChanged();
 }
@@ -278,20 +277,6 @@ QString ChatImpl::getFormattedMessage(const QString& role, qsizetype position) c
         }
     }
     return {};
-}
-
-QVariantList ChatImpl::historyList() const
-{
-    QVariantList list;
-    for (const auto& msg : history_)
-    {
-        QVariantMap map;
-        map["role"] = msg.role_;
-        map["content"] = msg.content_;
-        map["assets"] = msg.assets_;
-        list.append(map);
-    }
-    return list;
 }
 
 QJsonObject ChatImpl::toJson() const
@@ -387,7 +372,6 @@ void ChatImpl::fromJson(const QJsonObject& json)
 
     qDebug() << "ChatImpl::fromJson" << this;
 
-    emit historyChanged();
     emit messagesChanged();
     emit currentApiChanged();
     emit currentModelChanged();

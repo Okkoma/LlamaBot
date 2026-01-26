@@ -14,35 +14,39 @@ Item {
         spacing: 10
         
         // Ensure we handle null currentChat
-        model: (chatController && chatController.currentChat) ? chatController.currentChat.history : []
+        model: (chatController && chatController.currentChat) ? chatController.currentChat : []
         
         delegate: MessageDelegate {
-            messageData: modelData
+            messageData: model
         }
-        
         // Visible scrollbar
         ScrollBar.vertical: ScrollBar {
             policy: ScrollBar.AsNeeded
         }
-        
+
+        // Propriété interne pour savoir si on doit auto-scroller
+        property bool autoScroll: true
+
+        onMovementEnded: {
+            // Si l'utilisateur arrête de scroller et qu'il est en bas, on réactive l'auto-scroll
+            // Sinon (s'il est remonté), on le désactive.
+            autoScroll = atYEnd
+            smartScroll()
+        }
+
         // Helper function to conditionally scroll only if user is at the bottom
         function smartScroll() {
-            // Only auto-scroll if the user is already viewing the end
-            // atYEnd is true when the view is scrolled to the bottom
-            if (messageList.atYEnd) {
-                positionViewAtEnd()
+            if (autoScroll) {
+                // On utilise Qt.callLater pour s'assurer que la ListView a fini 
+                // de calculer la hauteur du nouvel élément avant de scroller.                
+                Qt.callLater(messageList.positionViewAtEnd)
             }
         }
-        
-        // Auto-scroll when new messages are added (always scroll for new messages)
-        onCountChanged: {
-            positionViewAtEnd()
-        }
-        
-        // Smart auto-scroll during streaming updates (only if user is at bottom)
+
         Connections {
             target: chatController && chatController.currentChat ? chatController.currentChat : null
-            function onHistoryChanged() {
+            function onMessagesChanged() {
+                // Smart auto-scroll during streaming updates
                 messageList.smartScroll()
             }
         }

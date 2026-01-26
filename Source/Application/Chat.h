@@ -1,8 +1,9 @@
 #pragma once
 
-#include "LLMServiceDefs.h"
-
+#include <QAbstractListModel>
 #include <QUuid>
+
+#include "LLMServiceDefs.h"
 
 class LLMServices;
 
@@ -46,13 +47,12 @@ struct ChatData
  * Elle gère l'historique des messages, le contexte, et fournit des méthodes
  * pour interagir avec les services LLM.
  */
-class Chat : public QObject
+class Chat : public QAbstractListModel
 {
     Q_OBJECT
     Q_PROPERTY(const QString& currentApi READ getCurrentApi WRITE setApi NOTIFY currentApiChanged)
     Q_PROPERTY(const QString& currentModel READ getCurrentModel WRITE setModel NOTIFY currentModelChanged)
     Q_PROPERTY(const QStringList& messages READ getMessages NOTIFY messagesChanged)
-    Q_PROPERTY(QVariantList history READ historyList NOTIFY historyChanged)
     Q_PROPERTY(int contextSizeUsed READ getContextSizeUsed NOTIFY contextSizeUsedChanged)
     Q_PROPERTY(int contextSize READ getContextSize WRITE setContextSize NOTIFY contextSizeChanged)
 
@@ -67,7 +67,7 @@ public:
      */
     Chat(LLMServices* llmservices, const QString& name = "new_chat", const QString& initialContext = "",
             bool streamed = true, QObject* parent = nullptr) :
-        QObject(parent),
+        QAbstractListModel(parent),
         llmservices_(llmservices),
         streamed_(streamed),
         processing_(false),
@@ -77,6 +77,56 @@ public:
         currentModel_("none"),
         initialContext_(initialContext) {}
     
+    enum MessageRole { Role = Qt::UserRole + 1, Content, Assets };
+
+    int rowCount(const QModelIndex &parent = QModelIndex()) const override
+    { 
+        return history_.size();
+    }
+    
+    QVariant data(const QModelIndex &index, int role) const override 
+    {
+        if (!index.isValid() || index.row() >= history_.size()) 
+            return {};
+        
+        const ChatMessage& msg = history_[index.row()];
+        if (role == Role) return msg.role_;
+        if (role == Content) return msg.content_;
+        if (role == Assets) return msg.assets_;
+        return {};
+    }
+
+    QVariant data(int index, int role) const 
+    {
+        if (index < 0 || index >= history_.size()) 
+            return {};
+        
+        const ChatMessage& msg = history_[index];
+        if (role == Role) return msg.role_;
+        if (role == Content) return msg.content_;
+        if (role == Assets) return msg.assets_;
+        return {};
+    }
+
+    QHash<int, QByteArray> roleNames() const override
+    {
+        return { {Role, "role"}, {Content, "content"}, {Assets, "assets"} };
+    }
+    
+    Q_INVOKABLE void addMessage(const QString &role, const QString &content, const QVariantList &assets = {}) 
+    {
+        beginInsertRows(QModelIndex(), history_.size(), history_.size());
+        history_.append({role, content, assets});
+        endInsertRows();
+    }
+
+    Q_INVOKABLE void modifyMessage(int row, const QString &role, const QString &content, const QVariantList &assets = {}) 
+    {        
+        history_[row] = {role, content, assets};
+        QModelIndex idx = index(row);
+        // On prévient la vue que seule cette ligne a changé
+        emit dataChanged(idx, idx, {Role, Content, Assets});        
+    }
     /**
      * @brief Destructeur virtuel
      */
@@ -135,9 +185,9 @@ public:
         }
         else
         {
+            emit processingFinished(this);
             if (streamed_)
                 finalizeStream();
-            emit processingFinished(this);
         }
     }
 
@@ -163,7 +213,6 @@ public:
     {
         emit contextSizeUsedChanged();
         emit messagesChanged();
-        emit historyChanged();        
         emit streamUpdated(text);
     };
 
@@ -208,12 +257,6 @@ public:
      * @return QString contenant le message formaté, ou QString vide si aucun message correspondant n'est trouvé
      */
     virtual QString getFormattedMessage(const QString& role, qsizetype index) const { return {}; }
-
-    /**
-     * @brief Retourne l'historique du chat sous forme de liste variante
-     * @return Liste variante contenant l'historique
-     */
-    virtual QVariantList historyList() const = 0;
 
     /**
      * @brief Retourne l'API LLM courante
@@ -373,11 +416,6 @@ signals:
      * @brief Signal émis lorsque le flux se termine
      */
     void streamFinishedSignal();
-    
-    /**
-     * @brief Signal émis lorsque l'historique change
-     */
-    void historyChanged();
 
     /**
      * @brief Signal émis lorsque la taille du contexte change

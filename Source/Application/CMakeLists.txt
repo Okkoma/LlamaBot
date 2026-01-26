@@ -6,10 +6,8 @@ set(CMAKE_AUTORCC ON)
 
 set(PROJECT_SOURCES
     main.cpp
-    Application.cpp
-    Application.h
-    ApplicationServices.cpp
-    ApplicationServices.h
+    Application.cpp Application.h
+    ApplicationServices.cpp ApplicationServices.h
     LLMServiceDefs.h
     LLMServices.h LLMServices.cpp
     LLMService.h LLMService.cpp

@@ -4,10 +4,7 @@
 #include <QJsonObject>
 #include <QMap>
 #include <QList>
-#include <QFont>
-#include <qcolor.h>
-#include <qobject.h>
-#include <qtmetamacros.h>
+#include <QColor>
 
 /**
  * @class ThemeManager

@@ -58,12 +58,6 @@ public:
     QString getFormattedMessage(const QString& role, qsizetype index) const override;
 
     /**
-     * @brief Retourne l'historique du chat sous forme de liste variante
-     * @return Liste variante contenant l'historique des messages
-     */
-    QVariantList historyList() const override;
-
-    /**
      * @brief Met à jour le contenu du chat
      * @param content Nouveau contenu à ajouter au chat
      */

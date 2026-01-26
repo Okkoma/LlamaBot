@@ -11,16 +11,16 @@ Item {
         return root.width * 0.85;
     }
 
-    property var messageData: modelData // {role, content}
+    property var messageData: model
     property bool isUser: messageData ? messageData.role === "user" : false
     property bool isThought: messageData ? messageData.role === "thought" : false
 
     RowLayout {
         id: contentLayout
-        anchors.top: parent.top
+        anchors.top: root.top
         anchors.topMargin: 10
-        width: parent.width - 20
-        anchors.horizontalCenter: parent.horizontalCenter
+        width: root.width - 20
+        anchors.horizontalCenter: root.horizontalCenter
         layoutDirection: isUser ? Qt.RightToLeft : Qt.LeftToRight
         spacing: 10
         
@@ -31,7 +31,7 @@ Item {
             opacity: isThought ? 0.6 : 1.0
             Layout.alignment: Qt.AlignTop
             Label {
-                anchors.centerIn: parent
+                anchors.centerIn: userframe
                 text: isUser ? "🧑" : (isThought ? "💭" : "🤖")
                 font.pixelSize: 20
                 opacity: isThought ? 0.7 : 1.0
@@ -49,13 +49,14 @@ Item {
             radius: 10
             
             Item {
-                anchors.fill: parent
+                anchors.fill: bubble
                 anchors.margins: 10
                 TextEdit {
                     id: msgText
                     anchors.left: parent.left
                     anchors.right: parent.right
-                    anchors.verticalCenter: parent.verticalCenter
+                    anchors.top: parent.top
+                    anchors.bottom: parent.bottom
                     text: messageData ? messageData.content : ""
                     color: isThought ? themeManager.color("buttonText") : themeManager.color("text")
                     font.family: themeManager.currentFont
@@ -85,5 +86,4 @@ Item {
             msgText.font.pixelSize = isThought ? themeManager.currentFontSize * 0.8 : themeManager.currentFontSize
         }
     }
-    
 }

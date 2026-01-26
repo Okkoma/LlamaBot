@@ -157,7 +157,7 @@ Drawer {
                         title: "Copy Chat to Clipboard"
                         MenuItem {
                             text: "Full Conversation"
-                            enabled: chatController && chatController.currentChat && chatController.currentChat.history.length > 0
+                            enabled: chatController && chatController.currentChat && chatController.currentChat.rowCount > 0
                             onTriggered: {
                                 if (chatController && chatController.currentChat) {
                                     var text = chatController.currentChat.getFullConversation()
@@ -167,7 +167,7 @@ Drawer {
                         }
                         MenuItem {
                             text: "User Prompts Only"
-                            enabled: chatController && chatController.currentChat && chatController.currentChat.history.length > 0
+                            enabled: chatController && chatController.currentChat && chatController.currentChat.rowCount > 0
                             onTriggered: {
                                 if (chatController && chatController.currentChat) {
                                     var text = chatController.currentChat.getUserPrompts()
@@ -177,7 +177,7 @@ Drawer {
                         }
                         MenuItem {
                             text: "Bot Responses Only"
-                            enabled: chatController && chatController.currentChat && chatController.currentChat.history.length > 0
+                            enabled: chatController && chatController.currentChat && chatController.currentChat.rowCount > 0
                             onTriggered: {
                                 if (chatController && chatController.currentChat) {
                                     var text = chatController.currentChat.getBotResponses()
