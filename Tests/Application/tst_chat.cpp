@@ -34,6 +34,10 @@ void ChatTest::initTestCase()
 {
     qDebug() << "LLMServicesTest::initTestCase()";
     ApplicationServices mockservice(this);
+
+    // Supprimer le fichier de config au cas où pour démarrer propre
+    if (QFile::exists("LLMService.json"))
+        QFile::remove("LLMService.json");    
 }
 
 void ChatTest::test_construction()
@@ -56,12 +60,13 @@ void ChatTest::test_initialization_with_apis()
     mock->addModel("model1");
     llmservices.addAPI(mock);
 
-    // L'initialisation se fait dans le constructeur de ChatImpl
     ChatImpl chat(&llmservices);
-    
+    chat.setApi("MockAPI");
+    chat.setModel("model1:7B");
+
     // Devrait avoir sélectionné la première API et son premier modèle
     QCOMPARE(chat.getCurrentApi(), QString("MockAPI"));
-    QCOMPARE(chat.getCurrentModel(), QString("model1:")); // toString() format
+    QCOMPARE(chat.getCurrentModel(), QString("model1:7B")); // toString() format
 }
 
 void ChatTest::test_set_api_and_model_signals()
@@ -77,9 +82,9 @@ void ChatTest::test_set_api_and_model_signals()
     // Au démarrage, "m1:" est déjà sélectionné.
     QSignalSpy modelSpy(&chat, &Chat::currentModelChanged);
 
-    chat.setModel("m2:");
+    chat.setModel("m2:7B");
     QCOMPARE(modelSpy.count(), 1);
-    QCOMPARE(chat.getCurrentModel(), QString("m2:"));
+    QCOMPARE(chat.getCurrentModel(), QString("m2:7B"));
 }
 
 void ChatTest::test_auto_switch_ollama_to_llamacpp()
@@ -92,17 +97,17 @@ void ChatTest::test_auto_switch_ollama_to_llamacpp()
     llmservices.addAPI(ollama);
 
     MockLLMService* llamacpp = new MockLLMService(LLMEnum::LLMType::LlamaCpp, &llmservices, "LlamaCpp");
-    llamacpp->addModel("local-model", "test.gguf");
+    llamacpp->addModel("local-model", "7B", "/path/to/test.gguf");
     llmservices.addAPI(llamacpp);
 
     ChatImpl chat(&llmservices);
     chat.setApi("Ollama");
     
     // On sélectionne le modèle local. getModel le trouvera dans LlamaCpp avec son chemin .gguf
-    chat.setModel("local-model:");
+    chat.setModel("local-model:7B");
     
     QCOMPARE(chat.getCurrentApi(), QString("LlamaCpp"));
-    QCOMPARE(chat.getCurrentModel(), QString("local-model:"));
+    QCOMPARE(chat.getCurrentModel(), QString("local-model:7B"));
 }
 
 void ChatTest::test_update_content_and_history()

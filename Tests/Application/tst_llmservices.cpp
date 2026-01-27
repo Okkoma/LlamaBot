@@ -73,7 +73,7 @@ void LLMServicesTest::test_api_management()
     qDebug() << "LLMServicesTest::test_api_management()";
     LLMServices services(nullptr);
     
-    // 1. Test de récupération par nom unique (pour éviter le conflit avec Ollama/LlamaCpp par défaut)
+    // 1. Test de récupération avec nom unique CustomAPI (pour éviter le conflit avec Ollama/LlamaCpp par défaut)
     MockLLMService* m1 = new MockLLMService(LLMEnum::LLMType::LlamaCpp, &services, "CustomAPI");
     services.addAPI(m1);
     QCOMPARE(services.get("CustomAPI"), (LLMService*)m1);
@@ -92,11 +92,13 @@ void LLMServicesTest::test_model_aggregation()
     qDebug() << "LLMServicesTest::test_model_aggregation()";
     LLMServices services(nullptr);
     MockLLMService* m1 = new MockLLMService(LLMEnum::LLMType::LlamaCpp, &services, "M1");
-    m1->addModel("model-a", "7B");
+    m1->addModel("model-a");
     services.addAPI(m1);
 
-    LLMModel model = services.getModel("model-a:7B");
+    LLMModel model = services.getModel(model.toString());
     QCOMPARE(model.name_, QString("model-a"));
+    QCOMPARE(model.num_params_, QString("7B"));
+    QCOMPARE(model.toString(), QString("model-a:7B"));
 }
 
 void LLMServicesTest::test_is_service_available()
@@ -106,11 +108,12 @@ void LLMServicesTest::test_is_service_available()
     QString openAIName = enumValueToString<LLMEnum>("LLMType", LLMEnum::LLMType::OpenAI);
     MockLLMService* m1 = new MockLLMService(LLMEnum::LLMType::OpenAI, &services, openAIName);
     services.addAPI(m1);
-    
-    QVERIFY(services.isServiceAvailable(LLMEnum::LLMType::OpenAI));
-    
-    m1->setReady(false);
+
     QVERIFY(!services.isServiceAvailable(LLMEnum::LLMType::OpenAI));
+    m1->setReady(true);
+    QVERIFY(services.isServiceAvailable(LLMEnum::LLMType::OpenAI));
+    m1->setReady(false);
+    QVERIFY(!services.isServiceAvailable(LLMEnum::LLMType::OpenAI));    
 }
 
 void LLMServicesTest::test_receive_parsing()

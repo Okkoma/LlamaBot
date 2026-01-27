@@ -81,6 +81,38 @@ qt_add_executable(Test_LlamaCpp
 target_link_libraries(Test_LlamaCpp PRIVATE Qt6::Core Qt6::Widgets Qt6::Network Qt6::Test llama)
 add_test(NAME Test_LlamaCpp COMMAND Test_LlamaCpp)
 
+qt_add_executable(Test_StorageLocal
+    mock_services.h
+    mock_llmservices.h
+    ../../Source/Application/LLMServiceDefs.h
+    ../../Source/Application/LLMServices.h
+    ../../Source/Application/LLMServices.cpp
+    ../../Source/Application/LLMService.h
+    ../../Source/Application/LLMService.cpp
+    ../../Source/Application/Chat.h
+    ../../Source/Application/ChatImpl.h
+    ../../Source/Application/ChatImpl.cpp
+    ../../Source/Application/ChatStorage.h
+    ../../Source/Application/ChatStorageLocal.h
+    ../../Source/Application/ChatStorageLocal.cpp
+    ../../Source/Application/ChatConverter.cpp
+    ../../Source/Common/ErrorSystem.h
+    ../../Source/Common/ErrorSystem.cpp
+    mock_services.cpp
+    tst_storagelocal.cpp
+)
+target_include_directories(Test_StorageLocal PRIVATE ../../Source/Common)
+target_link_libraries(Test_StorageLocal PRIVATE Qt6::Core Qt6::Widgets Qt6::Network Qt6::Sql Qt6::Test)
+add_test(NAME Test_StorageLocal COMMAND Test_StorageLocal)
+
+qt_add_executable(Test_Encryption
+    ../../Source/Application/Encryption.h
+    ../../Source/Application/Encryption.cpp
+    tst_encryption.cpp
+)
+target_link_libraries(Test_Encryption PRIVATE Qt6::Core Qt6::Test OpenSSL::SSL OpenSSL::Crypto)
+add_test(NAME Test_Encryption COMMAND Test_Encryption)
+
 # Tests QML avec Qt Quick Test via qmltestrunner
 find_program(QMLTESTRUNNER_EXECUTABLE qmltestrunner)
 if (QMLTESTRUNNER_EXECUTABLE)

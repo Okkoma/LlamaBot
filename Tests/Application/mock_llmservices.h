@@ -17,17 +17,18 @@ public:
         return models_;
     }
 
-    void addModel(const QString& name, const QString& filePath = "") 
+    void addModel(const QString& name, const QString& num_params="7B", const QString& filePath="") 
     {
         LLMModel model;
         model.name_ = name;
+        model.num_params_ = num_params;
         model.filePath_ = filePath;
         models_.push_back(model);
     }
 
     bool isReady() const override { return ready_; }
-    void setReady(bool r) { ready_ = r; }
+    void setReady(bool ready) { ready_ = ready; }
 
     std::vector<LLMModel> models_;
-    bool ready_;
+    bool ready_{false};
 };
