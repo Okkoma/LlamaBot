@@ -17,7 +17,7 @@ set(PROJECT_SOURCES
     ModelStoreDialog.h ModelStoreDialog.cpp
     HuggingFaceModelSource.h HuggingFaceModelSource.cpp
     OllamaModelSource.h OllamaModelSource.cpp
-    Chat.h ChatImpl.h ChatImpl.cpp
+    Chat.h ChatImpl.h ChatImpl.cpp ChatConverter.cpp
     ChatController.h ChatController.cpp
     ChatStorage.h
     ChatStorageLocal.h ChatStorageLocal.cpp

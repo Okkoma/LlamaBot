@@ -456,3 +456,8 @@ protected:
 
     LLMServices* llmservices_{nullptr};   ///< Services LLM utilisés par ce chat
 };
+
+
+extern bool convertJsonToChatList(const QJsonArray& jsonArray, QList<Chat*>& chats, LLMServices* llmservices);
+
+extern QJsonArray convertChatListToJson(const QList<Chat*>& chats);
