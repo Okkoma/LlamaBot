@@ -17,6 +17,7 @@
 class ChatController : public QObject
 {
     Q_OBJECT
+
     Q_PROPERTY(Chat* currentChat READ currentChat NOTIFY currentChatChanged)
     Q_PROPERTY(QVariantList chatList READ chatList NOTIFY chatListChanged)
     Q_PROPERTY(int currentChatIndex READ currentChatIndex NOTIFY currentChatChanged)
@@ -25,6 +26,8 @@ class ChatController : public QObject
     Q_PROPERTY(int defaultContextSize READ getDefaultContextSize WRITE setDefaultContextSize NOTIFY defaultContextSizeChanged)
     Q_PROPERTY(bool autoExpandContext READ getAutoExpandContext WRITE setAutoExpandContext NOTIFY autoExpandContextChanged)
     Q_PROPERTY(QVariantList pendingAssets READ pendingAssets NOTIFY pendingAssetsChanged)
+
+    QML_UNCREATABLE("ChatController is a singleton provided by the application")
 
 public:
     /**

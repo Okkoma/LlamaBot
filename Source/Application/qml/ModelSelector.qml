@@ -1,5 +1,9 @@
+pragma ComponentBehavior: Bound
+
 import QtQuick
 import QtQuick.Controls
+
+import Application.QmlApplication 1.0
 
 ComboBox {
     id: modelSelector
@@ -18,7 +22,11 @@ ComboBox {
     }
     
     delegate: ItemDelegate {
+        required property var modelData
+        required property int index
+
         width: modelSelector.width
+
         contentItem: Column {
             Label {
                 text: modelData.name

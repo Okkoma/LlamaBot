@@ -13,7 +13,7 @@ qt_add_executable(Test_Chat
     tst_chat.cpp
 )
 
-target_link_libraries(Test_Chat PRIVATE Qt6::Core Qt6::Widgets Qt6::Network Qt6::Test)
+target_link_libraries(Test_Chat PRIVATE Qt6::Core Qt6::Qml Qt6::Widgets Qt6::Network Qt6::Test)
 add_test(NAME Test_Chat COMMAND Test_Chat)
 
 # Tests unitaires LLMService avec mock Chat
@@ -30,7 +30,7 @@ qt_add_executable(Test_LLMServices
     mock_services.cpp
     tst_llmservices.cpp 
 )
-target_link_libraries(Test_LLMServices PRIVATE Qt6::Core Qt6::Widgets Qt6::Network Qt6::Test)
+target_link_libraries(Test_LLMServices PRIVATE Qt6::Core Qt6::Qml Qt6::Widgets Qt6::Network Qt6::Test)
 add_test(NAME Test_LLMServices COMMAND Test_LLMServices)
 
 qt_add_executable(Test_RAG
@@ -58,7 +58,7 @@ qt_add_executable(Test_Ollama
     mock_services.cpp
     tst_ollama.cpp
 )
-target_link_libraries(Test_Ollama PRIVATE Qt6::Core Qt6::Widgets Qt6::Network Qt6::Test)
+target_link_libraries(Test_Ollama PRIVATE Qt6::Core Qt6::Qml Qt6::Widgets Qt6::Network Qt6::Test)
 add_test(NAME Test_Ollama COMMAND Test_Ollama)
 
 qt_add_executable(Test_LlamaCpp
@@ -78,7 +78,7 @@ qt_add_executable(Test_LlamaCpp
 )
 # Note: LlamaCpp needs llama.cpp headers/libs if real generation is tested, 
 # but for basic service logic we might get away with it if mocks/stubs are used or if focused on config.
-target_link_libraries(Test_LlamaCpp PRIVATE Qt6::Core Qt6::Widgets Qt6::Network Qt6::Test llama)
+target_link_libraries(Test_LlamaCpp PRIVATE Qt6::Core Qt6::Qml Qt6::Widgets Qt6::Network Qt6::Test llama)
 add_test(NAME Test_LlamaCpp COMMAND Test_LlamaCpp)
 
 qt_add_executable(Test_StorageLocal
@@ -102,7 +102,7 @@ qt_add_executable(Test_StorageLocal
     tst_storagelocal.cpp
 )
 target_include_directories(Test_StorageLocal PRIVATE ../../Source/Common)
-target_link_libraries(Test_StorageLocal PRIVATE Qt6::Core Qt6::Widgets Qt6::Network Qt6::Sql Qt6::Test)
+target_link_libraries(Test_StorageLocal PRIVATE Qt6::Core Qt6::Qml Qt6::Widgets Qt6::Network Qt6::Sql Qt6::Test)
 add_test(NAME Test_StorageLocal COMMAND Test_StorageLocal)
 
 qt_add_executable(Test_Encryption

@@ -1,5 +1,6 @@
 #pragma once
 
+#include <QQmlEngine>
 #include <QClipboard>
 #include <QGuiApplication>
 #include <QObject>
@@ -7,6 +8,9 @@
 class Clipboard : public QObject
 {
     Q_OBJECT
+
+    QML_UNCREATABLE("Clipboard is a singleton provided by the application")
+
 public:
     explicit Clipboard(QObject* parent = nullptr) : QObject(parent) {}
 

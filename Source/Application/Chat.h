@@ -1,5 +1,6 @@
 #pragma once
 
+#include <QQmlEngine>
 #include <QAbstractListModel>
 #include <QUuid>
 
@@ -50,11 +51,14 @@ struct ChatData
 class Chat : public QAbstractListModel
 {
     Q_OBJECT
+
     Q_PROPERTY(const QString& currentApi READ getCurrentApi WRITE setApi NOTIFY currentApiChanged)
     Q_PROPERTY(const QString& currentModel READ getCurrentModel WRITE setModel NOTIFY currentModelChanged)
     Q_PROPERTY(const QStringList& messages READ getMessages NOTIFY messagesChanged)
     Q_PROPERTY(int contextSizeUsed READ getContextSizeUsed NOTIFY contextSizeUsedChanged)
     Q_PROPERTY(int contextSize READ getContextSize WRITE setContextSize NOTIFY contextSizeChanged)
+
+    QML_UNCREATABLE("Chat is an abstract class")
 
 public:
     /**

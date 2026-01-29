@@ -1,6 +1,10 @@
+pragma ComponentBehavior: Bound
+
 import QtQuick
 import QtQuick.Controls
 import QtQuick.Layouts
+
+import Application.QmlApplication 1.0
 
 Drawer {
     id: drawer
@@ -52,10 +56,12 @@ Drawer {
                 width: ListView.view.width
                 height: 60
 
-                property var chatData: modelData
-                property bool isCurrent: chatController && chatController.currentChatIndex === chatData.index
+                required property var modelData
+                required property int index
+
+                property bool isCurrent: (typeof chatController !== "undefined" && chatController) ? (chatController.currentChatIndex === modelData.index) : false
                 // Get the actual Chat object directly from model data
-                property var chatObject: chatData.chatObject
+                property var chatObject: modelData.chatObject
 
                 background: Rectangle {
                     color: isCurrent ? themeManager.color("windowDarker") : (parent.hovered ? themeManager.color("windowDarker2") : "transparent")
@@ -71,7 +77,7 @@ Drawer {
 
                         Label {
                             id: chatNameLabel
-                            text: chatData.name
+                            text: modelData.name
                             color: themeManager.color("buttonText")
                             font.bold: isCurrent
                             Layout.fillWidth: true
@@ -84,7 +90,7 @@ Drawer {
 
                             Label {
                                 id: chatModelLabel
-                                text: chatData.model
+                                text: modelData.model
                                 color: themeManager.color("buttonText")
                                 font.pixelSize: 10
                                 Layout.fillWidth: true
@@ -127,7 +133,7 @@ Drawer {
 
                 onClicked: {
                     if (chatController)
-                        chatController.switchToChat(chatData.index)
+                        chatController.switchToChat(modelData.index)
                     drawer.close()
                 }
 
@@ -138,10 +144,10 @@ Drawer {
                     id: contextMenu
                     MenuItem {
                         text: "Delete"
-                        enabled: chatController && chatController.chatList.length > 1
+                        enabled: (typeof chatController !== "undefined" && chatController) ? (chatController.chatList.length > 1) : false
                         onTriggered: {
                             if (chatController)
-                                chatController.deleteChat(chatData.index)
+                                chatController.deleteChat(modelData.index)
                         }
                     }
                     Menu {
@@ -157,7 +163,7 @@ Drawer {
                         title: "Copy Chat to Clipboard"
                         MenuItem {
                             text: "Full Conversation"
-                            enabled: chatController && chatController.currentChat && chatController.currentChat.rowCount > 0
+                            enabled: (typeof chatController !== "undefined" && chatController && chatController.currentChat) ? (chatController.currentChat.rowCount > 0) : false
                             onTriggered: {
                                 if (chatController && chatController.currentChat) {
                                     var text = chatController.currentChat.getFullConversation()
@@ -167,7 +173,7 @@ Drawer {
                         }
                         MenuItem {
                             text: "User Prompts Only"
-                            enabled: chatController && chatController.currentChat && chatController.currentChat.rowCount > 0
+                            enabled: (typeof chatController !== "undefined" && chatController && chatController.currentChat) ? (chatController.currentChat.rowCount > 0) : false
                             onTriggered: {
                                 if (chatController && chatController.currentChat) {
                                     var text = chatController.currentChat.getUserPrompts()
@@ -177,7 +183,7 @@ Drawer {
                         }
                         MenuItem {
                             text: "Bot Responses Only"
-                            enabled: chatController && chatController.currentChat && chatController.currentChat.rowCount > 0
+                            enabled: (typeof chatController !== "undefined" && chatController && chatController.currentChat) ? (chatController.currentChat.rowCount > 0) : false
                             onTriggered: {
                                 if (chatController && chatController.currentChat) {
                                     var text = chatController.currentChat.getBotResponses()

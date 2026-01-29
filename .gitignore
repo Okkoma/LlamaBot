@@ -12,3 +12,4 @@ create_android_project.sh
 .qtcreator
 tmp*
 coverage*
+**/.qmlls.ini

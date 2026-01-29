@@ -5,9 +5,10 @@
 #include <QQmlApplicationEngine>
 #include <QQmlContext>
 
+#include "LLMServices.h"
+
 #include "ChatController.h"
 #include "Clipboard.h"
-#include "LLMServices.h"
 #include "ModelStoreDialog.h"
 #include "ThemeManager.h"
 
@@ -48,27 +49,28 @@ Application::Application(int& argc, char** argv) :
     qmlEngine_ = new QQmlApplicationEngine(this);
 
     // Register Controller and Types
-    qmlEngine_->rootContext()->setContextProperty("chatController", chatController_);
-    qmlEngine_->rootContext()->setContextProperty("modelStoreDialog", modelStoreDialog_);
     qmlEngine_->rootContext()->setContextProperty("application", this);
     qmlEngine_->rootContext()->setContextProperty("themeManager", ApplicationServices::get<ThemeManager>());
     qmlEngine_->rootContext()->setContextProperty("clipboard", clipboard_);
+    qmlEngine_->rootContext()->setContextProperty("chatController", chatController_);
+    qmlEngine_->rootContext()->setContextProperty("modelStoreDialog", modelStoreDialog_);
 
-    // Load Main.qml
-    const QUrl url(QStringLiteral("qrc:/ressources/Main.qml"));
+    // Load Main.qml from QML module
     connect(
         qmlEngine_, &QQmlApplicationEngine::objectCreated, this,
-        [url](QObject* obj, const QUrl& objUrl)
+        [](QObject* obj, const QUrl& objUrl)
         {
-            if (!obj && url == objUrl)
+            Q_UNUSED(objUrl);
+            if (!obj)
             {
-                qCritical() << "Failed to load Main.qml";
+                qCritical() << "Failed to load Main.qml from QmlApplication module";
                 QCoreApplication::exit(-1);
             }
         },
         Qt::QueuedConnection);
 
-    qmlEngine_->load(url);
+    // Charge le point d'entrée du module
+    qmlEngine_->loadFromModule("Application.QmlApplication", "Main");
 }
 
 Application::~Application()

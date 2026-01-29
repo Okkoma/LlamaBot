@@ -1,9 +1,13 @@
+pragma ComponentBehavior: Bound
+
 import QtQuick
 import QtQuick.Controls
 import QtQuick.Layouts
 
 import QtQuick.Controls.Material
 import QtQuick.Controls.Universal
+
+import Application.QmlApplication 1.0
 
 ApplicationWindow {
     Material.theme: themeManager.darkMode ? Material.Dark : Material.Light
@@ -152,7 +156,7 @@ ApplicationWindow {
             id: dialogLoader
             // anchors.fill: parent // Removed to avoid overlapping header
             active: modelStorePopup.opened
-            source: "qrc:/ressources/ModelStoreDialog.qml"
+            source: "ModelStoreDialog.qml"
             onLoaded: {
                 item.closeRequested.connect(function() {
                     modelStorePopup.close()

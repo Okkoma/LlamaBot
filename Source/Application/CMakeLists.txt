@@ -1,8 +1,7 @@
+# Qt automoc, autouic, autorcc
 set(CMAKE_AUTOUIC ON)
 set(CMAKE_AUTOMOC ON)
 set(CMAKE_AUTORCC ON)
-
-# Qt6 est déjà trouvé au niveau racine
 
 set(PROJECT_SOURCES
     main.cpp
@@ -13,20 +12,56 @@ set(PROJECT_SOURCES
     LLMService.h LLMService.cpp
     LlamaCppService.h LlamaCppService.cpp
     OllamaService.h OllamaService.cpp
+    Encryption.h Encryption.cpp
     ModelSource.h ModelSource.cpp
     ModelStoreDialog.h ModelStoreDialog.cpp
     HuggingFaceModelSource.h HuggingFaceModelSource.cpp
     OllamaModelSource.h OllamaModelSource.cpp
-    Chat.h ChatImpl.h ChatImpl.cpp ChatConverter.cpp
-    ChatController.h ChatController.cpp
+    Chat.h ChatImpl.h ChatConverter.cpp
+    ChatController.h
     ChatStorage.h
     ChatStorageLocal.h ChatStorageLocal.cpp
-    ThemeManager.h ThemeManager.cpp
-    Clipboard.h Clipboard.cpp
+    ChatStorageDistant.h ChatStorageDistant.cpp
+    ThemeManager.h
+    Clipboard.h
     DocumentProcessor.h DocumentProcessor.cpp
     RAGService.h RAGService.cpp
     VectorStore.h VectorStore.cpp
 )
+
+qt_policy(SET QTP0001 NEW)
+qt_policy(SET QTP0004 NEW)
+
+qt_add_qml_module(QmlApplication
+    URI Application.QmlApplication
+    VERSION 1.0
+
+    QML_FILES
+        qml/APISelector.qml    
+        qml/AssetContent.qml
+        qml/ChatDrawer.qml  
+        qml/ChatView.qml
+        qml/InputArea.qml
+        qml/LoadingSpinner.qml
+        qml/Main.qml        
+        qml/MessageDelegate.qml      
+        qml/ModelSelector.qml
+        qml/ModelStoreDialog.qml
+        qml/SettingsDialog.qml
+        
+    SOURCES
+        ChatController.h
+        ChatController.cpp
+        Chat.h
+        ChatImpl.h
+        ChatImpl.cpp
+        ThemeManager.h
+        ThemeManager.cpp
+        Clipboard.h
+        Clipboard.cpp
+)  
+
+target_link_libraries(QmlApplication PRIVATE Qt6::Core Qt6::Widgets Qt6::Network Qt6::Qml Qt6::Quick Qt6::QuickWidgets Qt6::QuickControls2 Qt6::Sql)
 
 qt_add_resources(PROJECT_SOURCES ressources.qrc)
 
@@ -36,9 +71,11 @@ qt_add_executable(LlamaBot MANUAL_FINALIZATION ${PROJECT_SOURCES})
 #                 ${CMAKE_CURRENT_SOURCE_DIR}/android)
 # For more information, see https://doc.qt.io/qt-6/qt-add-executable.html#target-creation
 
-target_link_libraries(LlamaBot PRIVATE Qt6::Core Qt6::Widgets Qt6::Network Qt6::Qml Qt6::Quick Qt6::QuickWidgets Qt6::QuickControls2 Qt6::Sql llama)
+target_link_libraries(LlamaBot PRIVATE Qt6::Core Qt6::Widgets Qt6::Network Qt6::Qml Qt6::Quick Qt6::QuickWidgets Qt6::QuickControls2 Qt6::Sql)
+target_link_libraries(LlamaBot PRIVATE llama)
 target_link_libraries(LlamaBot PRIVATE poppler-qt6)
-target_link_libraries(LlamaBot PRIVATE LlamaBotCommon)
+target_link_libraries(LlamaBot PRIVATE LlamaBotCommon QmlApplication)
+target_link_libraries(LlamaBot PRIVATE OpenSSL::SSL OpenSSL::Crypto)
 
 # Qt for iOS sets MACOSX_BUNDLE_GUI_IDENTIFIER automatically since Qt 6.1.
 # If you are developing for iOS or macOS you should consider setting an
@@ -80,6 +117,8 @@ if(UNIX AND NOT APPLE)
     install(FILES ${CMAKE_SOURCE_DIR}/bin/data/resources/llamabot.desktop DESTINATION share/applications/)
     install(FILES ${CMAKE_SOURCE_DIR}/bin/data/images/icon1.png DESTINATION share/icons/hicolor/512x512/apps/ RENAME llamabot.png)
 endif()
+
+qt_import_qml_plugins(LlamaBot)
 
 qt_finalize_executable(LlamaBot)
 

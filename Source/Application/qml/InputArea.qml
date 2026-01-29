@@ -1,7 +1,11 @@
+pragma ComponentBehavior: Bound
+
 import QtQuick
 import QtQuick.Controls
 import QtQuick.Layouts
 import Qt5Compat.GraphicalEffects
+
+import Application.QmlApplication 1.0
 
 Item {
     id: rootItem
@@ -22,7 +26,7 @@ Item {
         closePolicy: Popup.CloseOnEscape | Popup.CloseOnPressOutside
         
         // Liste d'emoji accessible globalement dans le Popup
-        property var emojiList: ["😄","🚀","❤️","👍","😂","🎉","💡","🌟","😎","🤖","🍕","🐱"]
+        property var emojiList: ["😄","🚀","❤️","👍","😂","🎉","💡","🌟","😎","🤖","🍕","🐱"]        
 
         // Fonction pour calculer la position au-dessus du bouton
         function updatePosition() {
@@ -59,6 +63,9 @@ Item {
             Repeater {
                 model: emojiPopup.emojiList.length
                 delegate: Button {
+
+                    required property int index
+
                     Layout.preferredWidth: 30
                     Layout.preferredHeight: 30
                     Layout.alignment: Qt.AlignCenter
@@ -220,10 +227,7 @@ Item {
                                 // Image collée directement depuis le presse-papier
                                 var base64Image = clipboard.getImageAsBase64()
                                 if (base64Image) {
-                                    var base64Image = clipboard.getImageAsBase64()
-                                    if (base64Image) {
-                                        chatController.addAssetBase64(base64Image)
-                                    }
+                                    chatController.addAssetBase64(base64Image)
                                 }
                             } else {
                                 // Coller du texte normalement
@@ -245,8 +249,8 @@ Item {
                 button: themeManager.color("button")
             }             
             text: "Send"
-            enabled: inputField.text.trim().length > 0 || 
-                     (chatController && chatController.pendingAssets.length > 0)
+            enabled: (inputField.text.trim().length > 0) || 
+                     (typeof chatController !== "undefined" && chatController && chatController.pendingAssets && chatController.pendingAssets.length > 0)
             onClicked: {
                 parent.parent.accepted(inputField.text)
                 inputField.clear()

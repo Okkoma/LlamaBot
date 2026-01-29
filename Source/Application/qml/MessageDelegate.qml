@@ -1,8 +1,14 @@
+pragma ComponentBehavior: Bound
+
 import QtQuick
 import QtQuick.Controls
 import QtQuick.Layouts
 
+import Application.QmlApplication 1.0
+
 Item {
+    required property var modelData
+
     id: root
     width: ListView.view.width
     height: contentLayout.height + 20 // Padding
@@ -11,9 +17,8 @@ Item {
         return root.width * 0.85;
     }
 
-    property var messageData: model
-    property bool isUser: messageData ? messageData.role === "user" : false
-    property bool isThought: messageData ? messageData.role === "thought" : false
+    property bool isUser: modelData ? modelData.role === "user" : false
+    property bool isThought: modelData ? modelData.role === "thought" : false
 
     RowLayout {
         id: contentLayout
@@ -57,7 +62,7 @@ Item {
                     anchors.right: parent.right
                     anchors.top: parent.top
                     anchors.bottom: parent.bottom
-                    text: messageData ? messageData.content : ""
+                    text: modelData ? modelData.content : ""
                     color: isThought ? themeManager.color("buttonText") : themeManager.color("text")
                     font.family: themeManager.currentFont
                     font.pixelSize: isThought ? themeManager.currentFontSize * 0.8 : themeManager.currentFontSize

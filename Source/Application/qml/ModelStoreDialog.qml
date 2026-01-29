@@ -1,6 +1,10 @@
+pragma ComponentBehavior: Bound
+
 import QtQuick
 import QtQuick.Controls
 import QtQuick.Layouts
+
+import Application.QmlApplication 1.0
 
 Rectangle {
     id: root
@@ -176,7 +180,10 @@ Rectangle {
                 id: modelDelegate
                 width: modelListView.width
                 height: 60
-                
+
+                required property var model
+                required property int index
+
                 background: Rectangle {
                     color: modelListView.currentIndex === index ? themeManager.color("windowDarker") : (modelDelegate.hovered ? themeManager.color("windowDarker2") : "transparent")
                     border.color: modelListView.currentIndex === index ? themeManager.color("button") : "transparent"
@@ -252,32 +259,32 @@ Rectangle {
                     }
                     Item { Layout.fillWidth: true }
                     Label {
-                        text: detailsPanel.manifest && detailsPanel.manifest.trending !== "" ? "🔥" : " " 
+                        text: (detailsPanel.manifest && detailsPanel.manifest.trending) ? "🔥" : " " 
                         font.family: themeManager.colorEmojiFont
                         font.pixelSize: 18
                     }
                     Label {
-                        text: detailsPanel.manifest && detailsPanel.manifest.trending !== "" ? detailsPanel.manifest.trending : " "
+                        text: (detailsPanel.manifest && detailsPanel.manifest.trending) ? detailsPanel.manifest.trending : " "
                         font.pixelSize: 14
                         color: themeManager.color("text")
                     }
                     Label {
-                        text: detailsPanel.manifest && detailsPanel.manifest.likes !== "" ? "⭐" : " "
+                        text: (detailsPanel.manifest && detailsPanel.manifest.likes) ? "⭐" : " "
                         font.family: themeManager.colorEmojiFont
                         font.pixelSize: 18
                     }
                     Label {
-                        text: detailsPanel.manifest && detailsPanel.manifest.likes !== "" ? detailsPanel.manifest.likes : " "
+                        text: (detailsPanel.manifest && detailsPanel.manifest.likes) ? detailsPanel.manifest.likes : " "
                         font.pixelSize: 14
                         color: themeManager.color("text")
                     }
                     Label {
-                        text: detailsPanel.manifest && detailsPanel.manifest.downloads !== "" ? "📥" : " "
+                        text: (detailsPanel.manifest && detailsPanel.manifest.downloads) ? "📥" : " "
                         font.family: themeManager.colorEmojiFont
                         font.pixelSize: 18
                     }
                     Label {
-                        text: detailsPanel.manifest && detailsPanel.manifest.downloads !== "" ? detailsPanel.manifest.downloads : " "
+                        text: (detailsPanel.manifest && detailsPanel.manifest.downloads) ? detailsPanel.manifest.downloads : " "
                         font.pixelSize: 14
                         color: themeManager.color("text")
                     }

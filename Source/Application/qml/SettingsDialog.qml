@@ -3,6 +3,8 @@ import QtQuick.Controls
 import QtQuick.Layouts
 import QtQuick.Dialogs
 
+import Application.QmlApplication 1.0
+
 Dialog {
     id: dialog
     title: "Settings"

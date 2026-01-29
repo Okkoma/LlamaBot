@@ -2,6 +2,8 @@ import QtQuick
 import QtQuick.Controls
 import QtQuick.Layouts
 
+import Application.QmlApplication 1.0
+
 Rectangle {
     id: root
     // Fix: Utiliser une hauteur fixe basée sur le nombre d'items plutôt que contentHeight
@@ -120,13 +122,13 @@ Rectangle {
     // Debug: Afficher le nombre d'assets
     Text {
         anchors.centerIn: parent
-        text: "Assets: " + (chatController ? chatController.pendingAssets.length : 0)
+        text: "Assets: " + (typeof chatController !== "undefined" && chatController ? chatController.pendingAssets.length : 0)
         color: "red"
         visible: false  // Mettre à true pour déboguer
     }
     
     Connections {
-        target: chatController
+        target: (typeof chatController !== "undefined") ? chatController : null
         function onPendingAssetsChanged() {
             console.log("pendingAssetsChanged - count:", chatController ? chatController.pendingAssets.length : 0)
         }

@@ -1,6 +1,7 @@
 #pragma once
 
 #include <QObject>
+#include <QQmlEngine>
 #include <QJsonObject>
 #include <QMap>
 #include <QList>
@@ -20,12 +21,15 @@
 class ThemeManager : public QObject
 {
     Q_OBJECT
+
     Q_PROPERTY(QString currentStyle READ currentStyle WRITE setStyle NOTIFY styleChanged);
     Q_PROPERTY(QString currentTheme READ currentTheme WRITE setTheme NOTIFY themeChanged);
     Q_PROPERTY(QString currentFont READ currentFont WRITE setFont NOTIFY fontChanged);
     Q_PROPERTY(QString colorEmojiFont READ colorEmojiFont NOTIFY fontChanged);
     Q_PROPERTY(int currentFontSize READ currentFontSize WRITE setFontSize NOTIFY fontChanged);    
     Q_PROPERTY(bool darkMode READ darkMode WRITE setDarkMode NOTIFY darkModeChanged)
+
+    QML_UNCREATABLE("ThemeManager is a singleton provided by the application")
 
 public:
     /**

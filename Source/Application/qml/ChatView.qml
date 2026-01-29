@@ -1,5 +1,9 @@
+pragma ComponentBehavior: Bound
+
 import QtQuick
 import QtQuick.Controls
+
+import Application.QmlApplication 1.0
 
 Item {
     id: root
@@ -17,8 +21,8 @@ Item {
         model: (chatController && chatController.currentChat) ? chatController.currentChat : []
         
         delegate: MessageDelegate {
-            messageData: model
         }
+        
         // Visible scrollbar
         ScrollBar.vertical: ScrollBar {
             policy: ScrollBar.AsNeeded

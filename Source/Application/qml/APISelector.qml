@@ -1,5 +1,9 @@
+pragma ComponentBehavior: Bound
+
 import QtQuick
 import QtQuick.Controls
+
+import Application.QmlApplication 1.0
 
 ComboBox {
     id: apiSelector
@@ -16,6 +20,9 @@ ComboBox {
     }
     
     delegate: ItemDelegate {
+        required property var modelData
+        required property int index
+
         width: apiSelector.width
         contentItem: Row {
             spacing: 10

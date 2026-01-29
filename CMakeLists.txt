@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.16)
+cmake_minimum_required(VERSION 3.19)
 
 project(LlamaBot VERSION 0.1 LANGUAGES CXX)
 
@@ -7,6 +7,14 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 # clangd helper
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
+
+# Qt QML helper
+set(QT_QML_GENERATE_QMLLS_INI ON)
+
+# Qt objects generators
+set(CMAKE_AUTOMOC ON)
+set(CMAKE_AUTOUIC ON)
+set(CMAKE_AUTORCC ON)
 
 # Configuration spécifique pour Android
 if(ANDROID)
@@ -60,15 +68,13 @@ else()
 
     option(BUILD_APPLICATION "Build the application" ON)
     option(BUILD_TEST "Build the tests" ON)
-    option(BUILD_DOCS "Build the documentation" ON)
+    option(BUILD_SERVER "Build the server" OFF)
+    option(BUILD_DOCS "Build the documentation" OFF)
 endif()
 
 # Recherche de Qt6 globale pour tout le projet (y compris les dépendances)
 if(DEFINED ENV{Qt6})
     list(APPEND CMAKE_PREFIX_PATH "$ENV{Qt6}")
-endif()
-if(DEFINED ENV{QT6})
-    list(APPEND CMAKE_PREFIX_PATH "$ENV{QT6}")
 endif()
 
 find_package(Qt6 REQUIRED COMPONENTS 
@@ -83,6 +89,7 @@ find_package(Qt6 REQUIRED COMPONENTS
     Gui
     Sql
 )
+find_package(OpenSSL REQUIRED)
 
 include_directories (Source/Application Source/ThirdParty/llama.cpp/src Source/ThirdParty/poppler/qt6/src)
 
@@ -96,7 +103,12 @@ if (BUILD_TEST AND NOT ANDROID)
 endif()
 
 if (BUILD_APPLICATION)
-    add_subdirectory (Source/Application)
+    add_subdirectory (Source/Application)  
+endif()
+
+if (BUILD_SERVER)
+    #add_subdirectory (Source/ServerGrpcChatStore)
+    add_subdirectory (Source/ServerHttpRestChatStore)
 endif()
 
 # Configuration Doxygen pour la génération de documentation
