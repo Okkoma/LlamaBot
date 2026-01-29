@@ -27,6 +27,7 @@ class ChatController : public QObject
     Q_PROPERTY(bool autoExpandContext READ getAutoExpandContext WRITE setAutoExpandContext NOTIFY autoExpandContextChanged)
     Q_PROPERTY(QVariantList pendingAssets READ pendingAssets NOTIFY pendingAssetsChanged)
 
+    QML_ELEMENT
     QML_UNCREATABLE("ChatController is a singleton provided by the application")
 
 public:

@@ -7,23 +7,29 @@ import QtQuick.Layouts
 import QtQuick.Controls.Material
 import QtQuick.Controls.Universal
 
-import Application.QmlApplication 1.0
+import LlamaBotQml
 
 ApplicationWindow {
-    Material.theme: themeManager.darkMode ? Material.Dark : Material.Light
-    Universal.theme: themeManager.darkMode ? Universal.Dark : Universal.Light
+    id: root
 
-    id: window
     visible: true
     width: 1000
     height: 800
     title: qsTr("ChatBot QML")
+    
+    // Fix for qmllint: declare context properties with their types
+    readonly property ThemeManager themeManager: app.themeManager
+    readonly property ChatController chatController: app.chatController
+    readonly property Clipboard clipboard: app.clipboard
+
+    Material.theme: themeManager.darkMode ? Material.Dark : Material.Light
+    Universal.theme: themeManager.darkMode ? Universal.Dark : Universal.Light
 
     // Listen to theme changes
     Connections {
-        target: themeManager
+        target: root.themeManager
         function onThemeChanged() {
-            console.log("Theme changed in QML:", themeManager.currentTheme);
+            console.log("Theme changed in QML:", root.themeManager.currentTheme);
         }
     }
 
@@ -54,7 +60,7 @@ ApplicationWindow {
                 
                 ToolButton {
                     text: "+"
-                    onClicked: { if (chatController) chatController.createChat() }
+                    onClicked: { if (root.chatController) root.chatController.createChat() }
                     ToolTip.visible: hovered
                     ToolTip.text: "New Chat"
                 }
@@ -64,7 +70,7 @@ ApplicationWindow {
                 Label {
                     id: lbl_Api
                     text: "API:"
-                    color: themeManager.color("text")
+                    color: root.themeManager.color("text")
                 }
                                 
                 APISelector {
@@ -74,7 +80,7 @@ ApplicationWindow {
                 Label {
                     id: lbl_Model
                     text: "Model:"
-                    color: themeManager.color("text")
+                    color: root.themeManager.color("text")
                 }
                     
                 ModelSelector {   
@@ -87,10 +93,10 @@ ApplicationWindow {
                 // RAG Status Indicator
                 ToolButton {
                     text: "📚"
-                    visible: chatController ? chatController.ragEnabled : false
+                    visible: root.chatController ? root.chatController.ragEnabled : false
                     enabled: false
                     ToolTip.visible: hovered
-                    ToolTip.text: "RAG Active: " + (chatController && chatController.ragService ? chatController.ragService.collectionStatus : "N/A")
+                    ToolTip.text: "RAG Active: " + (root.chatController && root.chatController.ragService ? root.chatController.ragService.collectionStatus : "N/A")
                     opacity: 0.7
                 }
                 
@@ -101,8 +107,8 @@ ApplicationWindow {
                     
                     // Connect to ChatController using safe method
                     Component.onCompleted: {
-                        if (chatController) {
-                            loadingSpinner.connectToController(chatController)
+                        if (root.chatController) {
+                            loadingSpinner.connectToController(root.chatController)
                         }
                     }
                 }
@@ -121,9 +127,9 @@ ApplicationWindow {
                         }
                         MenuSeparator {}
                         MenuItem {
-                            text: themeManager.darkMode ? "☀ Light Theme" : "🌙 Dark Theme"
+                            text: root.themeManager.darkMode ? "☀ Light Theme" : "🌙 Dark Theme"
                             onTriggered: {
-                                themeManager.setDarkMode(!themeManager.darkMode)
+                                root.themeManager.setDarkMode(!root.themeManager.darkMode)
                             }
                         }
                         MenuItem {
@@ -172,10 +178,10 @@ ApplicationWindow {
 
     // Add connection to themeManager to listen for theme changes
     Connections {
-        target: themeManager
+        target: root.themeManager
         function onDarkModeChanged() {
-            lbl_Model.color = themeManager.color("text")
-            lbl_Api.color = themeManager.color("text")
+            lbl_Model.color = root.themeManager.color("text")
+            lbl_Api.color = root.themeManager.color("text")
         }
     }    
 }

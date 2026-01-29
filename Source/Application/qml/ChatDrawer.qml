@@ -4,15 +4,20 @@ import QtQuick
 import QtQuick.Controls
 import QtQuick.Layouts
 
-import Application.QmlApplication 1.0
+import LlamaBotQml
 
 Drawer {
-    id: drawer
+    id: root
+
+    readonly property ThemeManager themeManager: app.themeManager
+    readonly property ChatController chatController: app.chatController
+    readonly property Clipboard clipboard: app.clipboard
+
     width: 280
     height: parent.height
     edge: Qt.LeftEdge
     background: Rectangle {
-        color: themeManager.color("window")
+        color: root.themeManager.color("window")
     }
 
     ColumnLayout {
@@ -23,7 +28,7 @@ Drawer {
         Label {
             id: convers
             text: "Conversations"
-            color: themeManager.color("text")
+            color: root.themeManager.color("text")
             font.pixelSize: 18
             font.bold: true
             Layout.fillWidth: true
@@ -33,13 +38,13 @@ Drawer {
             id: chatBtn
             text: "+ New Chat"
             palette {
-                buttonText: themeManager.color("buttonText")
-                button: themeManager.color("button")
+                buttonText: root.themeManager.color("buttonText")
+                button: root.themeManager.color("button")
             }            
             Layout.fillWidth: true
             onClicked: {
-                if (chatController)
-                    chatController.createChat()
+                if (root.chatController)
+                    root.chatController.createChat()
             }
         }
 
@@ -50,21 +55,23 @@ Drawer {
             clip: true
             spacing: 5
 
-            model: chatController ? chatController.chatList : []
+            model: root.chatController ? root.chatController.chatList : []
 
             delegate: ItemDelegate {
+
+                id: chatDelegate
                 width: ListView.view.width
                 height: 60
 
                 required property var modelData
                 required property int index
 
-                property bool isCurrent: (typeof chatController !== "undefined" && chatController) ? (chatController.currentChatIndex === modelData.index) : false
+                property bool isCurrent: (typeof root.chatController !== "undefined" && root.chatController) ? (root.chatController.currentChatIndex === modelData.index) : false
                 // Get the actual Chat object directly from model data
                 property var chatObject: modelData.chatObject
 
                 background: Rectangle {
-                    color: isCurrent ? themeManager.color("windowDarker") : (parent.hovered ? themeManager.color("windowDarker2") : "transparent")
+                    color: chatDelegate.isCurrent ? root.themeManager.color("windowDarker") : (parent.hovered ? root.themeManager.color("windowDarker2") : "transparent")
                     radius: 5
                 }
 
@@ -77,9 +84,9 @@ Drawer {
 
                         Label {
                             id: chatNameLabel
-                            text: modelData.name
-                            color: themeManager.color("buttonText")
-                            font.bold: isCurrent
+                            text: chatDelegate.modelData.name
+                            color: root.themeManager.color("buttonText")
+                            font.bold: chatDelegate.isCurrent
                             Layout.fillWidth: true
                             elide: Text.ElideRight
                         }
@@ -90,8 +97,8 @@ Drawer {
 
                             Label {
                                 id: chatModelLabel
-                                text: modelData.model
-                                color: themeManager.color("buttonText")
+                                text: chatDelegate.modelData.model
+                                color: root.themeManager.color("buttonText")
                                 font.pixelSize: 10
                                 Layout.fillWidth: true
                                 elide: Text.ElideRight
@@ -99,8 +106,8 @@ Drawer {
 
                             Label {
                                 id: tokensLabel
-                                text: chatObject ? " • " + chatObject.contextSizeUsed + "/" + chatObject.contextSize : ""
-                                color: themeManager.color("buttonText")
+                                text: chatDelegate.chatObject ? " • " + chatDelegate.chatObject.contextSizeUsed + "/" + chatDelegate.chatObject.contextSize : ""
+                                color: root.themeManager.color("buttonText")
                                 font.pixelSize: 10
                                 Layout.alignment: Qt.AlignRight
                             }
@@ -115,7 +122,7 @@ Drawer {
                             id: optionsButtonText
                             text: "⋮"
                             font.pixelSize: 24
-                            color: themeManager.color("buttonText")
+                            color: root.themeManager.color("buttonText")
                             horizontalAlignment: Text.AlignHCenter
                             verticalAlignment: Text.AlignVCenter
                         }
@@ -123,7 +130,7 @@ Drawer {
                         background: Rectangle {
                             implicitWidth: 30
                             implicitHeight: 30
-                            color: optionsButton.hovered ? themeManager.color("windowDarker2") : "transparent"
+                            color: optionsButton.hovered ? root.themeManager.color("windowDarker2") : "transparent"
                             radius: 4
                         }
 
@@ -132,9 +139,9 @@ Drawer {
                 }
 
                 onClicked: {
-                    if (chatController)
-                        chatController.switchToChat(modelData.index)
-                    drawer.close()
+                    if (root.chatController)
+                        root.chatController.switchToChat(modelData.index)
+                    root.close()
                 }
 
                 // Support for mobile long press
@@ -144,50 +151,50 @@ Drawer {
                     id: contextMenu
                     MenuItem {
                         text: "Delete"
-                        enabled: (typeof chatController !== "undefined" && chatController) ? (chatController.chatList.length > 1) : false
+                        enabled: (typeof root.chatController !== "undefined" && root.chatController) ? (root.chatController.chatList.length > 1) : false
                         onTriggered: {
-                            if (chatController)
-                                chatController.deleteChat(modelData.index)
+                            if (root.chatController)
+                                root.chatController.deleteChat(chatDelegate.modelData.index)
                         }
                     }
                     Menu {
                         title: "Set Context Size"
-                        MenuItem { text: "2048"; onTriggered: chatObject.contextSize = 2048 }
-                        MenuItem { text: "8192"; onTriggered: chatObject.contextSize = 8192 }
-                        MenuItem { text: "16384"; onTriggered: chatObject.contextSize = 16384 }
-                        MenuItem { text: "65536"; onTriggered: chatObject.contextSize = 65536 }
-                        MenuItem { text: "128000"; onTriggered: chatObject.contextSize = 128000 }
+                        MenuItem { text: "2048"; onTriggered: chatDelegate.chatObject.contextSize = 2048 }
+                        MenuItem { text: "8192"; onTriggered: chatDelegate.chatObject.contextSize = 8192 }
+                        MenuItem { text: "16384"; onTriggered: chatDelegate.chatObject.contextSize = 16384 }
+                        MenuItem { text: "65536"; onTriggered: chatDelegate.chatObject.contextSize = 65536 }
+                        MenuItem { text: "128000"; onTriggered: chatDelegate.chatObject.contextSize = 128000 }
                     }
                     MenuSeparator {}                    
                     Menu {
                         title: "Copy Chat to Clipboard"
                         MenuItem {
                             text: "Full Conversation"
-                            enabled: (typeof chatController !== "undefined" && chatController && chatController.currentChat) ? (chatController.currentChat.rowCount > 0) : false
+                            enabled: (typeof root.chatController !== "undefined" && root.chatController && root.chatController.currentChat) ? (root.chatController.currentChat.rowCount() > 0) : false
                             onTriggered: {
-                                if (chatController && chatController.currentChat) {
-                                    var text = chatController.currentChat.getFullConversation()
-                                    clipboard.setText(text)
+                                if (root.chatController && root.chatController.currentChat) {
+                                    var text = root.chatController.currentChat.getFullConversation()
+                                    root.clipboard.setText(text)
                                 }
                             }
                         }
                         MenuItem {
                             text: "User Prompts Only"
-                            enabled: (typeof chatController !== "undefined" && chatController && chatController.currentChat) ? (chatController.currentChat.rowCount > 0) : false
+                            enabled: (typeof root.chatController !== "undefined" && root.chatController && root.chatController.currentChat) ? (root.chatController.currentChat.rowCount() > 0) : false
                             onTriggered: {
-                                if (chatController && chatController.currentChat) {
-                                    var text = chatController.currentChat.getUserPrompts()
-                                    clipboard.setText(text)
+                                if (root.chatController && root.chatController.currentChat) {
+                                    var text = root.chatController.currentChat.getUserPrompts()
+                                    root.clipboard.setText(text)
                                 }
                             }
                         }
                         MenuItem {
                             text: "Bot Responses Only"
-                            enabled: (typeof chatController !== "undefined" && chatController && chatController.currentChat) ? (chatController.currentChat.rowCount > 0) : false
+                            enabled: (typeof root.chatController !== "undefined" && root.chatController && root.chatController.currentChat) ? (root.chatController.currentChat.rowCount() > 0) : false
                             onTriggered: {
-                                if (chatController && chatController.currentChat) {
-                                    var text = chatController.currentChat.getBotResponses()
-                                    clipboard.setText(text)
+                                if (root.chatController && root.chatController.currentChat) {
+                                    var text = root.chatController.currentChat.getBotResponses()
+                                    root.clipboard.setText(text)
                                 }
                             }
                         }
@@ -195,13 +202,13 @@ Drawer {
                 }
 
                 Connections {
-                    target: themeManager
+                    target: root.themeManager
                     function onDarkModeChanged() {
                         // Update colors for static elements
-                        chatNameLabel.color = themeManager.color("buttonText")
-                        chatModelLabel.color = themeManager.color("buttonText")
-                        tokensLabel.color = themeManager.color("buttonText")
-                        optionsButtonText.color = themeManager.color("buttonText")
+                        chatNameLabel.color = root.themeManager.color("buttonText")
+                        chatModelLabel.color = root.themeManager.color("buttonText")
+                        tokensLabel.color = root.themeManager.color("buttonText")
+                        optionsButtonText.color = root.themeManager.color("buttonText")
                     }
                 }
             }
@@ -210,13 +217,13 @@ Drawer {
 
     // Add connection to themeManager to listen for theme changes
     Connections {
-        target: themeManager
+        target: root.themeManager
         function onDarkModeChanged() {
             // Update colors for static elements
-            drawer.background.color = themeManager.color("window")
-            convers.color = themeManager.color("text")
-            chatBtn.palette.buttonText = themeManager.color("buttonText")
-            chatBtn.palette.button = themeManager.color("button")
+            root.background.color = root.themeManager.color("window")
+            convers.color = root.themeManager.color("text")
+            chatBtn.palette.buttonText = root.themeManager.color("buttonText")
+            chatBtn.palette.button = root.themeManager.color("button")
         }
     }
 }

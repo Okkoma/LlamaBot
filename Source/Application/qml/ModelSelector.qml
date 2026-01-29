@@ -3,14 +3,15 @@ pragma ComponentBehavior: Bound
 import QtQuick
 import QtQuick.Controls
 
-import Application.QmlApplication 1.0
+import LlamaBotQml
 
 ComboBox {
-    id: modelSelector
+    id: root
     
-    property var modelList: chatController ? chatController.getAvailableModels() : []
-    
-    model: modelList
+    readonly property ThemeManager themeManager: app.themeManager
+    readonly property ChatController chatController: app.chatController
+
+    model: chatController ? chatController.getAvailableModels() : []
     textRole: "name"
     
     displayText: chatController && chatController.currentChat ? chatController.currentChat.currentModel : "No Model"
@@ -22,32 +23,34 @@ ComboBox {
     }
     
     delegate: ItemDelegate {
-        required property var modelData
-        required property int index
+        id: modelDelegate
 
-        width: modelSelector.width
+        required property int index
+        property var modelData: root.model[index]
+
+        width: root.width
 
         contentItem: Column {
             Label {
-                text: modelData.name
+                text: modelDelegate.modelData.name
                 font.bold: true
-                color: themeManager.color("text")
+                color: root.themeManager.color("text")
             }
             Label {
-                text: modelData.params || "Unknown size"
+                text: modelDelegate.modelData.params || "Unknown size"
                 font.pixelSize: 10
-                color: themeManager.color("text")
+                color: root.themeManager.color("text")
             }
         }
-        highlighted: modelSelector.highlightedIndex === index
+        highlighted: root.highlightedIndex === index
     }
     
     // Refresh model list when available models change
     Connections {
-        target: chatController || null
+        target: root.chatController || null
         function onAvailableModelsChanged() {
-            if (chatController)
-                modelSelector.modelList = chatController.getAvailableModels()
+            if (root.chatController)
+                root.model = root.chatController.getAvailableModels()
         }
     }
 }

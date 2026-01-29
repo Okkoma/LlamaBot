@@ -1,6 +1,7 @@
 #pragma once
 
 #include <QObject>
+#include <QQmlEngine>
 #include <QMap>
 #include <QVariant>
 #include <memory>
@@ -13,7 +14,7 @@
  * Manages multiple model sources and exposes them to QML.
  * Handles fetching models, filtering, sorting, and downloading.
  */
-class ModelStoreDialog : public QObject
+class ModelStore : public QObject
 {
     Q_OBJECT
     Q_PROPERTY(QStringList availableSources READ availableSources CONSTANT)
@@ -24,9 +25,12 @@ class ModelStoreDialog : public QObject
     Q_PROPERTY(bool isDownloading READ isDownloading NOTIFY downloadingChanged)
     Q_PROPERTY(float downloadProgress READ downloadProgress NOTIFY downloadProgressChanged)
 
+    QML_ELEMENT
+    QML_UNCREATABLE("ModelStore is a singleton provided by the application")
+
 public:
-    explicit ModelStoreDialog(QObject* parent = nullptr);
-    ~ModelStoreDialog();
+    explicit ModelStore(QObject* parent = nullptr);
+    ~ModelStore();
 
     template <typename T> void RegisterModelSource(const QString& name);
 

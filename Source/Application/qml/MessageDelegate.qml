@@ -4,12 +4,15 @@ import QtQuick
 import QtQuick.Controls
 import QtQuick.Layouts
 
-import Application.QmlApplication 1.0
+import LlamaBotQml
 
 Item {
+    id: root
+
+    readonly property ThemeManager themeManager: app.themeManager
+
     required property var modelData
 
-    id: root
     width: ListView.view.width
     height: contentLayout.height + 20 // Padding
 
@@ -26,31 +29,31 @@ Item {
         anchors.topMargin: 10
         width: root.width - 20
         anchors.horizontalCenter: root.horizontalCenter
-        layoutDirection: isUser ? Qt.RightToLeft : Qt.LeftToRight
+        layoutDirection: root.isUser ? Qt.RightToLeft : Qt.LeftToRight
         spacing: 10
         
         Rectangle {
             id: userframe
             width: 40; height: 40; radius: 20
-            color: isUser ? themeManager.color("windowDarker") : themeManager.color("windowDarker2")
-            opacity: isThought ? 0.6 : 1.0
+            color: root.isUser ? root.themeManager.color("windowDarker") : root.themeManager.color("windowDarker2")
+            opacity: root.isThought ? 0.6 : 1.0
             Layout.alignment: Qt.AlignTop
             Label {
                 anchors.centerIn: userframe
-                text: isUser ? "🧑" : (isThought ? "💭" : "🤖")
+                text: root.isUser ? "🧑" : (root.isThought ? "💭" : "🤖")
                 font.pixelSize: 20
-                opacity: isThought ? 0.7 : 1.0
+                opacity: root.isThought ? 0.7 : 1.0
             }
         }
         
         Rectangle {
             id: bubble
             Layout.maximumWidth: root.width * 0.95
-            Layout.preferredWidth: bubbleWidth()
+            Layout.preferredWidth: root.bubbleWidth()
             Layout.preferredHeight: msgText.contentHeight + 20
-            color: isUser ? themeManager.color("windowDarker") : themeManager.color("windowDarker2")
+            color: root.isUser ? root.themeManager.color("windowDarker") : root.themeManager.color("windowDarker2")
             border.width: 0
-            opacity: isThought ? 0.8 : 1.0
+            opacity: root.isThought ? 0.8 : 1.0
             radius: 10
             
             Item {
@@ -62,11 +65,11 @@ Item {
                     anchors.right: parent.right
                     anchors.top: parent.top
                     anchors.bottom: parent.bottom
-                    text: modelData ? modelData.content : ""
-                    color: isThought ? themeManager.color("buttonText") : themeManager.color("text")
-                    font.family: themeManager.currentFont
-                    font.pixelSize: isThought ? themeManager.currentFontSize * 0.8 : themeManager.currentFontSize
-                    font.italic: isThought
+                    text: root.modelData ? root.modelData.content : ""
+                    color: root.isThought ? root.themeManager.color("buttonText") : root.themeManager.color("text")
+                    font.family: root.themeManager.currentFont
+                    font.pixelSize: root.isThought ? root.themeManager.currentFontSize * 0.8 : root.themeManager.currentFontSize
+                    font.italic: root.isThought
                     wrapMode: TextEdit.Wrap
                     textFormat: TextEdit.MarkdownText
                     selectByMouse: true
@@ -80,15 +83,15 @@ Item {
 
     // Add connection to themeManager to listen for theme changes
     Connections {
-        target: themeManager
+        target: root.themeManager
         function onDarkModeChanged() {
-            userframe.color = isUser ? themeManager.color("windowDarker") : themeManager.color("windowDarker2")
-            bubble.color = isUser ? themeManager.color("windowDarker") : themeManager.color("windowDarker2")
-            msgText.color = isThought ? themeManager.color("buttonText") : themeManager.color("text")
+            userframe.color = root.isUser ? root.themeManager.color("windowDarker") : root.themeManager.color("windowDarker2")
+            bubble.color = root.isUser ? root.themeManager.color("windowDarker") : root.themeManager.color("windowDarker2")
+            msgText.color = root.isThought ? root.themeManager.color("buttonText") : root.themeManager.color("text")
         }
         function onFontChanged() {
-            msgText.font.family = themeManager.currentFont
-            msgText.font.pixelSize = isThought ? themeManager.currentFontSize * 0.8 : themeManager.currentFontSize
+            msgText.font.family = root.themeManager.currentFont
+            msgText.font.pixelSize = root.isThought ? root.themeManager.currentFontSize * 0.8 : root.themeManager.currentFontSize
         }
     }
 }

@@ -29,6 +29,8 @@ class ThemeManager : public QObject
     Q_PROPERTY(int currentFontSize READ currentFontSize WRITE setFontSize NOTIFY fontChanged);    
     Q_PROPERTY(bool darkMode READ darkMode WRITE setDarkMode NOTIFY darkModeChanged)
 
+    QML_ELEMENT
+    QML_SINGLETON
     QML_UNCREATABLE("ThemeManager is a singleton provided by the application")
 
 public:

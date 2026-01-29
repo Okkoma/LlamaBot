@@ -1,8 +1,8 @@
 import QtQuick
-import QtQuick.Controls
 
 Item {
     id: root
+    
     width: size
     height: size
     property int size: 24

@@ -8,7 +8,7 @@
 class Clipboard : public QObject
 {
     Q_OBJECT
-
+    QML_ELEMENT
     QML_UNCREATABLE("Clipboard is a singleton provided by the application")
 
 public:

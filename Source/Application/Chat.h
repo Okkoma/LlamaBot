@@ -58,6 +58,7 @@ class Chat : public QAbstractListModel
     Q_PROPERTY(int contextSizeUsed READ getContextSizeUsed NOTIFY contextSizeUsedChanged)
     Q_PROPERTY(int contextSize READ getContextSize WRITE setContextSize NOTIFY contextSizeChanged)
 
+    QML_ELEMENT
     QML_UNCREATABLE("Chat is an abstract class")
 
 public:
@@ -83,7 +84,7 @@ public:
     
     enum MessageRole { Role = Qt::UserRole + 1, Content, Assets };
 
-    int rowCount(const QModelIndex &parent = QModelIndex()) const override
+    Q_INVOKABLE int rowCount(const QModelIndex &parent = QModelIndex()) const override
     { 
         return history_.size();
     }

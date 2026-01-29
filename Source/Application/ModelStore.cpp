@@ -3,9 +3,9 @@
 #include <QDir>
 #include <QSettings>
 
-#include "ModelStoreDialog.h"
+#include "ModelStore.h"
 
-ModelStoreDialog::ModelStoreDialog(QObject* parent) :
+ModelStore::ModelStore(QObject* parent) :
     QObject(parent), 
     currentSort_(ModelSource::SortOrder::Trending),
     currentSizeFilter_(ModelSource::SizeFilter::All), 
@@ -23,11 +23,11 @@ ModelStoreDialog::ModelStoreDialog(QObject* parent) :
     }
 }
 
-ModelStoreDialog::~ModelStoreDialog()
+ModelStore::~ModelStore()
 {
 }
 
-void ModelStoreDialog::initializeSources()
+void ModelStore::initializeSources()
 {
     // Create all sources
     QStringList sources = ModelSource::getSources();
@@ -71,7 +71,7 @@ void ModelStoreDialog::initializeSources()
     }
 }
 
-QStringList ModelStoreDialog::availableSources() const
+QStringList ModelStore::availableSources() const
 {
     QStringList keys;
     std::transform(
@@ -82,7 +82,7 @@ QStringList ModelStoreDialog::availableSources() const
     return keys;
 }
 
-void ModelStoreDialog::setCurrentSource(const QString& sourceName)
+void ModelStore::setCurrentSource(const QString& sourceName)
 {
     if (currentSourceName_ != sourceName && sources_.find(sourceName) != sources_.end())
     {
@@ -93,12 +93,12 @@ void ModelStoreDialog::setCurrentSource(const QString& sourceName)
     }
 }
 
-const QString& ModelStoreDialog::getCurrentSource() const
+const QString& ModelStore::getCurrentSource() const
 {
     return currentSourceName_;
 }
 
-void ModelStoreDialog::setStatus(const QString& message)
+void ModelStore::setStatus(const QString& message)
 {
     if (statusMessage_ != message)
     {
@@ -107,7 +107,7 @@ void ModelStoreDialog::setStatus(const QString& message)
     }
 }
 
-void ModelStoreDialog::setAuthToken(const QString& token)
+void ModelStore::setAuthToken(const QString& token)
 {
     auto it = sources_.find(currentSourceName_);
     QString currentToken = it->second->getAuthToken();
@@ -118,13 +118,13 @@ void ModelStoreDialog::setAuthToken(const QString& token)
     }
 }
 
-const QString& ModelStoreDialog::getAuthToken() const
+const QString& ModelStore::getAuthToken() const
 {
     auto it = sources_.find(currentSourceName_);
     return it != sources_.end() ? it->second->getAuthToken() : NULL_QSTRING;
 }
 
-ModelSource::SortOrder ModelStoreDialog::parseSortOrder(const QString& sort)
+ModelSource::SortOrder ModelStore::parseSortOrder(const QString& sort)
 {
     if (sort == "Trending") return ModelSource::SortOrder::Trending;
     if (sort == "Likes") return ModelSource::SortOrder::Likes;
@@ -132,7 +132,7 @@ ModelSource::SortOrder ModelStoreDialog::parseSortOrder(const QString& sort)
     return ModelSource::SortOrder::Trending;
 }
 
-ModelSource::SizeFilter ModelStoreDialog::parseSizeFilter(const QString& size)
+ModelSource::SizeFilter ModelStore::parseSizeFilter(const QString& size)
 {
     if (size == "2B") return ModelSource::SizeFilter::Size2B;
     if (size == "4B") return ModelSource::SizeFilter::Size4B;
@@ -141,7 +141,7 @@ ModelSource::SizeFilter ModelStoreDialog::parseSizeFilter(const QString& size)
     return ModelSource::SizeFilter::All;
 }
 
-void ModelStoreDialog::fetchModels()
+void ModelStore::fetchModels()
 {
     if (sources_.find(currentSourceName_) == sources_.end())
         return;
@@ -169,25 +169,25 @@ void ModelStoreDialog::fetchModels()
         });
 }
 
-void ModelStoreDialog::setSort(const QString& sortType)
+void ModelStore::setSort(const QString& sortType)
 {
     currentSort_ = parseSortOrder(sortType);
     fetchModels();
 }
 
-void ModelStoreDialog::setSizeFilter(const QString& size)
+void ModelStore::setSizeFilter(const QString& size)
 {
     currentSizeFilter_ = parseSizeFilter(size);
     fetchModels();
 }
 
-void ModelStoreDialog::setSearchName(const QString& name)
+void ModelStore::setSearchName(const QString& name)
 {
     searchName_ = name;
     fetchModels();
 }
 
-QVariantMap ModelStoreDialog::modelToVariant(const ModelManifest& model)
+QVariantMap ModelStore::modelToVariant(const ModelManifest& model)
 {
     QVariantMap map;
     map["name"] = model.name;
@@ -201,7 +201,7 @@ QVariantMap ModelStoreDialog::modelToVariant(const ModelManifest& model)
     return map;
 }
 
-QVariantMap ModelStoreDialog::modelDetailsToVariant(const ModelDetails& modelDetails)
+QVariantMap ModelStore::modelDetailsToVariant(const ModelDetails& modelDetails)
 {
     QVariantMap map;
     map["createdDate"] = modelDetails.createdDate;
@@ -225,7 +225,7 @@ QVariantMap ModelStoreDialog::modelDetailsToVariant(const ModelDetails& modelDet
     return map;
 }
 
-void ModelStoreDialog::fetchModelDetails(const QString& modelId)
+void ModelStore::fetchModelDetails(const QString& modelId)
 {
     if (sources_.find(currentSourceName_) == sources_.end()) 
         return;
@@ -253,7 +253,7 @@ void ModelStoreDialog::fetchModelDetails(const QString& modelId)
         });
 }
 
-void ModelStoreDialog::downloadFile(const QString& modelId, const QVariantMap& fileInfo)
+void ModelStore::downloadFile(const QString& modelId, const QVariantMap& fileInfo)
 {
     if (sources_.find(currentSourceName_) == sources_.end())
         return;
@@ -276,7 +276,7 @@ void ModelStoreDialog::downloadFile(const QString& modelId, const QVariantMap& f
     source->downloadFile(modelId, fileInfo["digest"].toString(), fileInfo["name"].toString(), savePath);
 }
 
-void ModelStoreDialog::downloadAllFiles(const QString& modelId, const QVariantList& fileInfos)
+void ModelStore::downloadAllFiles(const QString& modelId, const QVariantList& fileInfos)
 {
     if (sources_.find(currentSourceName_) == sources_.end())
         return;
@@ -303,7 +303,7 @@ void ModelStoreDialog::downloadAllFiles(const QString& modelId, const QVariantLi
     }
 }
 
-void ModelStoreDialog::cancelDownload()
+void ModelStore::cancelDownload()
 {
     if (sources_.find(currentSourceName_) != sources_.end())
     {

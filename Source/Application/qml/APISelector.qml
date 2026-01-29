@@ -3,10 +3,13 @@ pragma ComponentBehavior: Bound
 import QtQuick
 import QtQuick.Controls
 
-import Application.QmlApplication 1.0
+import LlamaBotQml
 
 ComboBox {
-    id: apiSelector
+    id: root
+
+    readonly property ThemeManager themeManager: app.themeManager
+    readonly property ChatController chatController: app.chatController
 
     model: chatController ? chatController.getAvailableAPIs() : []
     textRole: "name"
@@ -20,24 +23,26 @@ ComboBox {
     }
     
     delegate: ItemDelegate {
-        required property var modelData
-        required property int index
+        id: apiDelegate
 
-        width: apiSelector.width
+        required property int index
+        property var modelData: root.model[index]
+
+        width: root.width
         contentItem: Row {
             spacing: 10
             Label {
-                text: modelData.name
+                text: apiDelegate.modelData.name
                 font.bold: true
                 anchors.verticalCenter: parent.verticalCenter
             }
             Label {
-                text: modelData.ready ? "●" : "○"
-                color: modelData.ready ? themeManager.color("windowDarker") : themeManager.color("windowDarker2")
+                text: apiDelegate.modelData.ready ? "●" : "○"
+                color: apiDelegate.modelData.ready ? root.themeManager.color("windowDarker") : root.themeManager.color("windowDarker2")
                 font.pixelSize: 16
                 anchors.verticalCenter: parent.verticalCenter
             }
         }
-        highlighted: apiSelector.highlightedIndex === index
+        highlighted: root.highlightedIndex === index
     }
 }

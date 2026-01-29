@@ -5,10 +5,15 @@ import QtQuick.Controls
 import QtQuick.Layouts
 import Qt5Compat.GraphicalEffects
 
-import Application.QmlApplication 1.0
+import LlamaBotQml
 
 Item {
-    id: rootItem
+    id: root
+
+    readonly property ThemeManager themeManager: app.themeManager
+    readonly property ChatController chatController: app.chatController
+    readonly property Clipboard clipboard: app.clipboard
+
     // Utiliser un Item au lieu d'un Rectangle pour éviter les effets de survol
     Rectangle {
         id: bgRect
@@ -21,7 +26,7 @@ Item {
     // Popup d'emoji (placé en dehors du RowLayout pour un meilleur positionnement)
     Popup {
         id: emojiPopup
-        parent: rootItem
+        parent: root
         modal: false
         closePolicy: Popup.CloseOnEscape | Popup.CloseOnPressOutside
         
@@ -30,7 +35,7 @@ Item {
 
         // Fonction pour calculer la position au-dessus du bouton
         function updatePosition() {
-            var buttonPos = rootItem.mapFromItem(emojiButton, 0, 0)
+            var buttonPos = root.mapFromItem(emojiPopupButton, 0, 0)
             x = buttonPos.x
             y = buttonPos.y - height - 5
         }
@@ -38,8 +43,8 @@ Item {
         onAboutToShow: updatePosition()
 
         background: Rectangle {
-            color: themeManager.color("windowDarker")
-            border.color: themeManager.color("windowDarker2")
+            color: root.themeManager.color("windowDarker")
+            border.color: root.themeManager.color("windowDarker2")
             border.width: 1
             radius: 8
             
@@ -63,9 +68,10 @@ Item {
             Repeater {
                 model: emojiPopup.emojiList.length
                 delegate: Button {
-
+                    id: emojiButton
                     required property int index
-
+                    property string emoji: emojiPopup.emojiList[index]
+                    
                     Layout.preferredWidth: 30
                     Layout.preferredHeight: 30
                     Layout.alignment: Qt.AlignCenter
@@ -76,22 +82,22 @@ Item {
                         anchors.centerIn: parent     
                         horizontalAlignment: Text.AlignHCenter
                         verticalAlignment: Text.AlignVCenter
-                        font.family: themeManager.colorEmojiFont
+                        font.family: root.themeManager.colorEmojiFont
                         font.pixelSize: 20
-                        text: emojiPopup.emojiList[index]
-                        color: themeManager.color("text")
+                        text: emojiButton.emoji
+                        color: root.themeManager.color("text")
                     }
                     
                     background: Rectangle {
                         anchors.centerIn: textid                        
                         width: parent.width
                         height: parent.height
-                        color: parent.hovered ? themeManager.color("accent") : "transparent"
+                        color: parent.hovered ? root.themeManager.color("accent") : "transparent"
                         radius: 8
                     }
 
                     onClicked: {
-                        inputField.insert(inputField.cursorPosition, emojiPopup.emojiList[index])
+                        inputField.insert(inputField.cursorPosition, emoji)
                         emojiPopup.close()
                         inputField.forceActiveFocus()
                     }
@@ -100,16 +106,16 @@ Item {
         }
     }
 
-    implicitHeight: Math.max(emojiButton.height * 1.2, rowLayout.height + 20) // s'adapte au contenu + marges
+    implicitHeight: Math.max(emojiPopupButton.height * 1.2, rowLayout.height + 20) // s'adapte au contenu + marges
 
     FontMetrics {
         id: fontMetrics
-        font.family: themeManager.currentFont
-        font.pixelSize: themeManager.currentFontSize * 1.2
+        font.family: root.themeManager.currentFont
+        font.pixelSize: root.themeManager.currentFontSize * 1.2
     }
 
     readonly property real preferredInputHeight: 
-        Math.max(emojiButton.height * 1.2,
+        Math.max(emojiPopupButton.height * 1.2,
             Math.min(150, Math.max((fontMetrics.height * 2) + inputField.topPadding + inputField.bottomPadding, 
                                    inputField.contentHeight + inputField.topPadding + inputField.bottomPadding)))
 
@@ -122,14 +128,14 @@ Item {
         spacing: 6
 
         Button { // Bouton pour ouvrir le popup d'emoji
-            id: emojiButton
+            id: emojiPopupButton
             Layout.alignment: Qt.AlignBottom
-            font.family: themeManager.currentFont
+            font.family: root.themeManager.currentFont
             font.pixelSize: 20
             text: "😌"
             palette {
-                buttonText: themeManager.color("buttonText")
-                button: themeManager.color("button")
+                buttonText: root.themeManager.color("buttonText")
+                button: root.themeManager.color("button")
             }                  
             onClicked: emojiPopup.open()
         }
@@ -141,7 +147,7 @@ Item {
             clip: true
             
             // Hauteur dynamique : calculée pour au moins 2 lignes
-            Layout.preferredHeight: rootItem.preferredInputHeight
+            Layout.preferredHeight: root.preferredInputHeight
             ScrollBar.horizontal.policy: ScrollBar.AlwaysOff
             
             ScrollBar.vertical: ScrollBar {
@@ -150,9 +156,9 @@ Item {
                 y: inputField.topPadding + 4
                 contentItem: Rectangle {
                     implicitWidth: 8
-                    implicitHeight: rootItem.preferredInputHeight - inputField.topPadding - inputField.bottomPadding - 8
+                    implicitHeight: root.preferredInputHeight - inputField.topPadding - inputField.bottomPadding - 8
                     radius: width / 2
-                    color: themeManager.color("windowDarker2")
+                    color: root.themeManager.color("windowDarker2")
                     opacity: 0.3
                 }
                 
@@ -162,9 +168,9 @@ Item {
             TextArea {
                 id: inputField
                 placeholderText: "Type a message..."
-                color: themeManager.color("text")
-                font.family: themeManager.currentFont
-                font.pixelSize: themeManager.currentFontSize * 1.2
+                color: root.themeManager.color("text")
+                font.family: root.themeManager.currentFont
+                font.pixelSize: root.themeManager.currentFontSize * 1.2
                 verticalAlignment: Text.AlignTop // Alignement standard pour le texte multi-lignes
                 wrapMode: Text.Wrap
                 selectByMouse: true
@@ -173,7 +179,7 @@ Item {
                 // Marge interne pour le texte
                 leftPadding: 6
                 rightPadding: 6
-                topPadding: themeManager.currentFontSize * 1.2
+                topPadding: root.themeManager.currentFontSize * 1.2
                 bottomPadding: 6
 
                 // Handle Shift+Enter
@@ -205,29 +211,29 @@ Item {
                     MenuItem { text: "Copy"; enabled: inputField.selectedText.length > 0; onTriggered: inputField.copy() }
                     MenuItem { 
                         text: "Paste"; 
-                        enabled: inputField.canPaste || clipboard.hasUrls() || clipboard.hasImage(); 
+                        enabled: inputField.canPaste || root.clipboard.hasUrls() || root.clipboard.hasImage(); 
                         onTriggered: {
                             // Vérifier d'abord si le presse-papier contient des fichiers/images
-                            if (clipboard.hasUrls()) {
-                                var urls = clipboard.getUrls()
+                            if (root.clipboard.hasUrls()) {
+                                var urls = root.clipboard.getUrls()
                                 if (urls.length > 0) {
                                     // Vérifier si c'est une image
                                     var filePath = urls[0]
                                     var extension = filePath.split('.').pop().toLowerCase()
                                     if (extension === "png" || extension === "jpg" || extension === "jpeg" || 
                                         extension === "gif" || extension === "webp") {
-                                        chatController.addAsset(filePath)
+                                        root.chatController.addAsset(filePath)
                                     } else {
                                         // Pour les autres fichiers, on pourrait les traiter différemment
                                         // ou simplement coller le chemin comme texte
                                         inputField.paste()
                                     }
                                 }
-                            } else if (clipboard.hasImage()) {
+                            } else if (root.clipboard.hasImage()) {
                                 // Image collée directement depuis le presse-papier
-                                var base64Image = clipboard.getImageAsBase64()
+                                var base64Image = root.clipboard.getImageAsBase64()
                                 if (base64Image) {
-                                    chatController.addAssetBase64(base64Image)
+                                    root.chatController.addAssetBase64(base64Image)
                                 }
                             } else {
                                 // Coller du texte normalement
@@ -245,12 +251,12 @@ Item {
             id: sendBtn
             Layout.alignment: Qt.AlignBottom        
             palette {
-                buttonText: themeManager.color("buttonText")
-                button: themeManager.color("button")
+                buttonText: root.themeManager.color("buttonText")
+                button: root.themeManager.color("button")
             }             
             text: "Send"
             enabled: (inputField.text.trim().length > 0) || 
-                     (typeof chatController !== "undefined" && chatController && chatController.pendingAssets && chatController.pendingAssets.length > 0)
+                     (typeof root.chatController !== "undefined" && root.chatController && root.chatController.pendingAssets && root.chatController.pendingAssets.length > 0)
             onClicked: {
                 parent.parent.accepted(inputField.text)
                 inputField.clear()
@@ -260,20 +266,20 @@ Item {
 
     // Add connection to themeManager to listen for theme changes
     Connections {
-        target: themeManager
+        target: root.themeManager
         function onDarkModeChanged() {
-            inputField.color = themeManager.color("text")
-            sendBtn.palette.buttonText = themeManager.color("buttonText")
-            sendBtn.palette.button = themeManager.color("button")
-            emojiButton.palette.buttonText = themeManager.color("buttonText")
-            emojiButton.palette.button = themeManager.color("button")
-            emojiPopup.background.color = themeManager.color("windowDarker")
-            emojiPopup.background.border.color = themeManager.color("windowDarker2")
+            inputField.color = root.themeManager.color("text")
+            sendBtn.palette.buttonText = root.themeManager.color("buttonText")
+            sendBtn.palette.button = root.themeManager.color("button")
+            emojiPopupButton.palette.buttonText = root.themeManager.color("buttonText")
+            emojiPopupButton.palette.button = root.themeManager.color("button")
+            emojiPopup.background.color = root.themeManager.color("windowDarker")
+            emojiPopup.background.border.color = root.themeManager.color("windowDarker2")
         }
         function onFontChanged() {
-            inputField.font.family = themeManager.currentFont
-            inputField.font.pixelSize = themeManager.currentFontSize * 1.2
-            inputField.topPadding = themeManager.currentFontSize * 1.2
+            inputField.font.family = root.themeManager.currentFont
+            inputField.font.pixelSize = root.themeManager.currentFontSize * 1.2
+            inputField.topPadding = root.themeManager.currentFontSize * 1.2
         }
     }
 }

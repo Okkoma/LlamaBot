@@ -9,7 +9,7 @@
 
 #include "ChatController.h"
 #include "Clipboard.h"
-#include "ModelStoreDialog.h"
+#include "ModelStore.h"
 #include "ThemeManager.h"
 
 #include "Application.h"
@@ -18,13 +18,13 @@ Application::Application(int& argc, char** argv) :
     QApplication(argc, argv),
     services_(this)
 {
-    setApplicationName("ChatBot");
+    setApplicationName("LlamaBot");
     setApplicationVersion("0.1.0");
 
     // Set application icon
     QIcon appIcon("qrc:/icons/icon1.png");
     setWindowIcon(appIcon);
-    setDesktopFileName("chatbot");
+    setDesktopFileName("llamabot");
 
     QDir::setCurrent(applicationDirPath());
 
@@ -43,17 +43,13 @@ Application::Application(int& argc, char** argv) :
     chatController_ = new ChatController(ApplicationServices::get<LLMServices>(), this);
 
     // Initialize Model Store Dialog
-    modelStoreDialog_ = new ModelStoreDialog(this);
+    modelStore_ = new ModelStore(this);
 
     // Initialize QML
     qmlEngine_ = new QQmlApplicationEngine(this);
 
     // Register Controller and Types
-    qmlEngine_->rootContext()->setContextProperty("application", this);
-    qmlEngine_->rootContext()->setContextProperty("themeManager", ApplicationServices::get<ThemeManager>());
-    qmlEngine_->rootContext()->setContextProperty("clipboard", clipboard_);
-    qmlEngine_->rootContext()->setContextProperty("chatController", chatController_);
-    qmlEngine_->rootContext()->setContextProperty("modelStoreDialog", modelStoreDialog_);
+    qmlEngine_->rootContext()->setContextProperty("app", this);
 
     // Load Main.qml from QML module
     connect(
@@ -63,14 +59,15 @@ Application::Application(int& argc, char** argv) :
             Q_UNUSED(objUrl);
             if (!obj)
             {
-                qCritical() << "Failed to load Main.qml from QmlApplication module";
+                qCritical() << "Failed to load Main.qml";
                 QCoreApplication::exit(-1);
             }
         },
-        Qt::QueuedConnection);
+        Qt::QueuedConnection
+    );
 
     // Charge le point d'entrée du module
-    qmlEngine_->loadFromModule("Application.QmlApplication", "Main");
+    qmlEngine_->loadFromModule("LlamaBotQml", "Main");
 }
 
 Application::~Application()
@@ -84,4 +81,9 @@ Application::~Application()
         delete qmlEngine_;
         qmlEngine_ = nullptr;
     }
+}
+
+ThemeManager* Application::themeManager() const
+{
+    return ApplicationServices::get<ThemeManager>();
 }
