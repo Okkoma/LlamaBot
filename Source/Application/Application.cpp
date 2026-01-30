@@ -2,6 +2,7 @@
 #include <QDebug>
 #include <QDir>
 #include <QIcon>
+#include <QQmlContext>
 
 #include "LLMServices.h"
 
@@ -9,6 +10,7 @@
 #include "Clipboard.h"
 #include "ModelStore.h"
 #include "ThemeManager.h"
+#include "../Common/ErrorSystem.h"
 
 #include "Application.h"
 
@@ -41,6 +43,7 @@ Application::Application(int& argc, char** argv) :
     services_.initialize();
 
     qDebug() << "LlamaBot - initialize ... qml services";
+    qmlEngine_->rootContext()->setContextProperty("ErrorSystem", ErrorSystem::instancePtr());
     chatController_ = qmlEngine_->singletonInstance<ChatController*>("LlamaBotQml", "ChatController");
     clipboard_ = qmlEngine_->singletonInstance<Clipboard*>("LlamaBotQml", "Clipboard");
     modelStore_ = qmlEngine_->singletonInstance<ModelStore*>("LlamaBotQml", "ModelStore");

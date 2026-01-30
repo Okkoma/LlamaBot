@@ -24,7 +24,10 @@ void ErrorSystem::logError(int err, const QStringList& params)
 {
     QMutexLocker locker(&mutex_);
     if (errorTypes_.size() > err)
+    {
         loggedErrors_.emplace_back(err, QDateTime::currentDateTime(), params);
+        emit errorsChanged();
+    }
 }
 
 QString ErrorSystem::formatError(const ErrorInfo& info) const

@@ -23,7 +23,6 @@ Item {
         clip: true
         spacing: 10
         
-        // Ensure we handle null currentChat
         model: ChatController.currentChat
         
         delegate: MessageDelegate {
@@ -73,13 +72,46 @@ Item {
 
     InputArea {
         id: inputArea
-        anchors.bottom: parent.bottom
+        anchors.bottom: messageErrorView.top
         anchors.left: parent.left
         anchors.right: parent.right
         
         onAccepted: (text) => {
             if (ChatController)
                 ChatController.sendMessage(text)
+        }
+    }
+
+    // Message Error View
+    ListView {
+        id: messageErrorView
+        anchors.bottom: parent.bottom
+        anchors.left: parent.left
+        anchors.right: parent.right
+
+        model: ErrorSystem.getErrors()
+        visible: model.count > 0
+        
+        height: model.count > 0 ? 40 : 0
+
+        delegate: Text {
+            required property var modelData
+            required property int index
+            text: index !== -1 ? modelData : ""
+            color: ThemeManager.color("text")
+        }
+
+        // Visible scrollbar
+        ScrollBar.vertical: ScrollBar {
+            policy: ScrollBar.AlwaysOn
+        }
+        
+        Connections {
+            target: ErrorSystem
+            function onErrorsChanged() {
+                model: ErrorSystem.getErrors()
+                console.log("Error added in QML");
+            }
         }
     }
 }

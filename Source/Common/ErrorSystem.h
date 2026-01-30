@@ -16,8 +16,10 @@
  * - Consulter le dernier message d'erreur ou l'historique complet
  *
  */
-class ErrorSystem
+class ErrorSystem : public QObject
 {
+    Q_OBJECT
+
 public:
     /**
      * @brief Retourne l'instance unique du système d'erreurs.
@@ -25,7 +27,7 @@ public:
      * Fournit l'accès singleton au système de gestion des erreurs.
      */
     static ErrorSystem& instance();
-
+    static ErrorSystem* instancePtr() { return &instance(); }
     /**
      * @brief Constructeur de copie supprimé.
      *
@@ -84,12 +86,15 @@ public:
      *         Cette liste est vide si aucun historique (jamais vide si l'historique
      *         contient au moins un message).
      */
-    QStringList getErrors(int index=0, int count=-1) const;
+    Q_INVOKABLE QStringList getErrors(int index=0, int count=-1) const;
 
     void clearHistory();
 
     qsizetype getNumTypes() const { return errorTypes_.size(); }
     qsizetype size() const { return loggedErrors_.size(); }
+
+signals:
+    void errorsChanged();
 
 private:
     /**
