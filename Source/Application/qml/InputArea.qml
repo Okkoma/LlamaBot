@@ -254,11 +254,19 @@ Item {
                 button: ThemeManager.color("button")
             }             
             text: "Send"
-            enabled: (inputField.text.trim().length > 0) || 
-                     (typeof ChatController !== "undefined" && ChatController && ChatController.pendingAssets && ChatController.pendingAssets.length > 0)
+            enabled: text == "Send" && ((inputField.text.trim().length > 0) || 
+                     (typeof ChatController !== "undefined" && ChatController && ChatController.pendingAssets && ChatController.pendingAssets.length > 0))
             onClicked: {
-                root.accepted(inputField.text)
-                inputField.clear()
+                if (text === "Send") {
+                    sendBtn.text = "Stop";
+                    enabled = true;
+                    root.accepted(inputField.text)
+                    inputField.clear()
+                } else {
+                    sendBtn.text = "Send";
+                    enabled = false;    
+                    ChatController.stopGeneration();
+                }
             }
         }
     }
