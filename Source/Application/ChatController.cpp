@@ -8,17 +8,28 @@
 
 #include "ChatController.h"
 
+ChatController::ChatController(QObject* parent) :
+    QObject(parent),
+    currentChat_(nullptr),
+    chatCounter_(0)
+{
+    qDebug() << "ChatController()";
+}
 
 ChatController::ChatController(LLMServices* llmservices, QObject* parent) :
     QObject(parent),
     llmServices_(llmservices),
     currentChat_(nullptr),
-    chatCounter_(0),
-    ragService_(new RAGService(llmservices, this))
+    chatCounter_(0)
 {
-    // Fix: Connect LLMServices signals to ChatController signals to notify QML
-    connect(llmServices_, &LLMServices::defaultContextSizeChanged, this, &ChatController::defaultContextSizeChanged);
-    connect(llmServices_, &LLMServices::autoExpandContextChanged, this, &ChatController::autoExpandContextChanged);
+    initialize(llmservices);
+}
+
+void ChatController::initialize(LLMServices* llmservices)
+{
+    llmServices_ = llmservices;
+    ragService_ = new RAGService(llmservices, this);
+    localStore_ = new ChatStorageLocal(llmservices);
 
     // Try to load existing chats
     localStore_ = new ChatStorageLocal(llmservices);
@@ -34,12 +45,17 @@ ChatController::ChatController(LLMServices* llmservices, QObject* parent) :
         // If loaded chats have no API set (or were created from scratch), set default
         if (currentChat_ && currentChat_->getCurrentApi() == "none")
             setAPI(apiList.front()->name_);
-    }
+    }    
+
+    // Fix: Connect LLMServices signals to ChatController signals to notify QML
+    connect(llmServices_, &LLMServices::defaultContextSizeChanged, this, &ChatController::defaultContextSizeChanged);
+    connect(llmServices_, &LLMServices::autoExpandContextChanged, this, &ChatController::autoExpandContextChanged);    
 }
 
 ChatController::~ChatController()
 {
     // Chats will be deleted automatically as they are parented to this
+    qDebug() << "~ChatController()";
 }
 
 QVariantList ChatController::chatList() const

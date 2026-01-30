@@ -2,8 +2,6 @@
 #include <QDebug>
 #include <QDir>
 #include <QIcon>
-#include <QQmlApplicationEngine>
-#include <QQmlContext>
 
 #include "LLMServices.h"
 
@@ -18,6 +16,7 @@ Application::Application(int& argc, char** argv) :
     QApplication(argc, argv),
     services_(this)
 {
+    qDebug() << "LlamaBot - initialize ...";
     setApplicationName("LlamaBot");
     setApplicationVersion("0.1.0");
 
@@ -34,24 +33,22 @@ Application::Application(int& argc, char** argv) :
     parser.addVersionOption();
     parser.process(*this);
 
-    services_.initialize();
-
-    // Initialize Clipboard
-    clipboard_ = new Clipboard(this);
-
-    // Initialize Controller
-    chatController_ = new ChatController(ApplicationServices::get<LLMServices>(), this);
-
-    // Initialize Model Store Dialog
-    modelStore_ = new ModelStore(this);
-
     // Initialize QML
+    qDebug() << "LlamaBot - initialize ... ui";
     qmlEngine_ = new QQmlApplicationEngine(this);
 
-    // Register Controller and Types
-    qmlEngine_->rootContext()->setContextProperty("app", this);
+    qDebug() << "LlamaBot - initialize ... services";
+    services_.initialize();
 
-    // Load Main.qml from QML module
+    qDebug() << "LlamaBot - initialize ... qml services";
+    chatController_ = qmlEngine_->singletonInstance<ChatController*>("LlamaBotQml", "ChatController");
+    clipboard_ = qmlEngine_->singletonInstance<Clipboard*>("LlamaBotQml", "Clipboard");
+    modelStore_ = qmlEngine_->singletonInstance<ModelStore*>("LlamaBotQml", "ModelStore");
+    themeManager_ = qmlEngine_->singletonInstance<ThemeManager*>("LlamaBotQml", "ThemeManager");
+    // Initialise ChatController et le lier avec LLMServices
+    chatController_->initialize(ApplicationServices::get<LLMServices>());  
+
+    // Charger l'interface principale Main.qml (QML module)
     connect(
         qmlEngine_, &QQmlApplicationEngine::objectCreated, this,
         [](QObject* obj, const QUrl& objUrl)
@@ -67,23 +64,12 @@ Application::Application(int& argc, char** argv) :
     );
 
     // Charge le point d'entrée du module
+    qDebug() << "LlamaBot - initialize ... load main";
     qmlEngine_->loadFromModule("LlamaBotQml", "Main");
 }
 
 Application::~Application()
 {
     if (qmlEngine_)
-    {
-        // Clear the context property to prevent QML from accessing chatController during shutdown
-        qmlEngine_->rootContext()->setContextProperty("chatController", QVariant());
-
-        // Delete the engine explicitly
         delete qmlEngine_;
-        qmlEngine_ = nullptr;
-    }
-}
-
-ThemeManager* Application::themeManager() const
-{
-    return ApplicationServices::get<ThemeManager>();
 }

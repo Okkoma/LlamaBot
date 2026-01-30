@@ -1,6 +1,8 @@
 pragma ComponentBehavior: Bound
 
+// qmllint disable import
 import QtQuick
+// qmllint enable import
 import QtQuick.Controls
 
 import LlamaBotQml
@@ -8,17 +10,14 @@ import LlamaBotQml
 ComboBox {
     id: root
     
-    readonly property ThemeManager themeManager: app.themeManager
-    readonly property ChatController chatController: app.chatController
-
-    model: chatController ? chatController.getAvailableModels() : []
+    model: ChatController ? ChatController.getAvailableModels() : []
     textRole: "name"
     
-    displayText: chatController && chatController.currentChat ? chatController.currentChat.currentModel : "No Model"
+    displayText: ChatController && ChatController.currentChat ? ChatController.currentChat.currentModel : "No Model"
     
     onActivated: (index) => {
-        if (chatController && currentValue) {
-            chatController.setModel(currentValue.name)
+        if (ChatController && currentValue) {
+            ChatController.setModel(currentValue.name)
         }
     }
     
@@ -34,12 +33,12 @@ ComboBox {
             Label {
                 text: modelDelegate.modelData.name
                 font.bold: true
-                color: root.themeManager.color("text")
+                color: ThemeManager.color("text")
             }
             Label {
                 text: modelDelegate.modelData.params || "Unknown size"
                 font.pixelSize: 10
-                color: root.themeManager.color("text")
+                color: ThemeManager.color("text")
             }
         }
         highlighted: root.highlightedIndex === index
@@ -47,10 +46,10 @@ ComboBox {
     
     // Refresh model list when available models change
     Connections {
-        target: root.chatController || null
+        target: ChatController || null
         function onAvailableModelsChanged() {
-            if (root.chatController)
-                root.model = root.chatController.getAvailableModels()
+            if (ChatController)
+                root.model = ChatController.getAvailableModels()
         }
     }
 }

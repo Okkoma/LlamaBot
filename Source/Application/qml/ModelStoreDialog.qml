@@ -1,6 +1,8 @@
 pragma ComponentBehavior: Bound
 
+// qmllint disable import
 import QtQuick
+// qmllint enable import
 import QtQuick.Controls
 import QtQuick.Layouts
 
@@ -9,17 +11,12 @@ import LlamaBotQml
 Rectangle {
     id: root
 
-    readonly property ThemeManager themeManager: app.themeManager
-    readonly property ChatController chatController: app.chatController
-    readonly property Clipboard clipboard: app.clipboard
-    readonly property ModelStore modelStore: app.modelStore
-    
-    color: themeManager.color("window")
+    color: ThemeManager.color("window")
 
     signal closeRequested()
 
-    property bool isDownloading: modelStore.isDownloading
-    property string statusMessage: modelStore.statusMessage
+    property bool isDownloading: ModelStore.isDownloading
+    property string statusMessage: ModelStore.statusMessage
 
     ColumnLayout {
         anchors.fill: parent
@@ -36,30 +33,30 @@ Rectangle {
                 spacing: 5
                 Label { 
                     text: "Source"
-                    color: root.themeManager.color("text")
+                    color: ThemeManager.color("text")
                     font.bold: true
                 }
                 ComboBox {
                     id: sourceCombo
-                    model: root.modelStore.availableSources
+                    model: ModelStore.availableSources
                     Layout.preferredWidth: 150
                     palette {
-                        buttonText: root.themeManager.color("buttonText")
-                        button: root.themeManager.color("button")
-                        window: root.themeManager.color("window")
-                        text: root.themeManager.color("text")
+                        buttonText: ThemeManager.color("buttonText")
+                        button: ThemeManager.color("button")
+                        window: ThemeManager.color("window")
+                        text: ThemeManager.color("text")
                     }
                     
                     onCurrentTextChanged: {
                         if (currentText !== "") {
-                            root.modelStore.currentSource = currentText
-                            root.modelStore.fetchModels()
+                            ModelStore.currentSource = currentText
+                            ModelStore.fetchModels()
                         }
                     }
                     
                     Component.onCompleted: {
                         // Set initial selection
-                        currentIndex = find(root.modelStore.currentSource)
+                        currentIndex = find(ModelStore.currentSource)
                     }
                 }
             }
@@ -69,7 +66,7 @@ Rectangle {
                 spacing: 5
                 Label { 
                     text: "Sort By"
-                    color: root.themeManager.color("text")
+                    color: ThemeManager.color("text")
                     font.bold: true
                 }
                 ComboBox {
@@ -77,12 +74,12 @@ Rectangle {
                     model: ["Trending", "Likes", "Date"]
                     Layout.preferredWidth: 140
                     palette {
-                        buttonText: root.themeManager.color("buttonText")
-                        button: root.themeManager.color("button")
-                        window: root.themeManager.color("window")
-                        text: root.themeManager.color("text")
+                        buttonText: ThemeManager.color("buttonText")
+                        button: ThemeManager.color("button")
+                        window: ThemeManager.color("window")
+                        text: ThemeManager.color("text")
                     }
-                    onCurrentTextChanged: root.modelStore.setSort(currentText)
+                    onCurrentTextChanged: ModelStore.setSort(currentText)
                 }
             }
             
@@ -91,7 +88,7 @@ Rectangle {
                 spacing: 5
                 Label { 
                     text: "Size Filter"
-                    color: root.themeManager.color("text")
+                    color: ThemeManager.color("text")
                     font.bold: true
                 }
                 ComboBox {
@@ -99,12 +96,12 @@ Rectangle {
                     model: ["All", "2B", "4B", "8B", "20B"]
                     Layout.preferredWidth: 100
                     palette {
-                        buttonText: root.themeManager.color("buttonText")
-                        button: root.themeManager.color("button")
-                        window: root.themeManager.color("window")
-                        text: root.themeManager.color("text")
+                        buttonText: ThemeManager.color("buttonText")
+                        button: ThemeManager.color("button")
+                        window: ThemeManager.color("window")
+                        text: ThemeManager.color("text")
                     }
-                    onCurrentTextChanged: root.modelStore.setSizeFilter(currentText)
+                    onCurrentTextChanged: ModelStore.setSizeFilter(currentText)
                 }
             }
 
@@ -113,18 +110,18 @@ Rectangle {
                 spacing: 5
                 Label { 
                     text: "Name Filter"
-                    color: root.themeManager.color("text")
+                    color: ThemeManager.color("text")
                     font.bold: true
                 }
                 TextField {
                     id: mustContainsField
-                    text: root.modelStore.searchName
+                    text: ModelStore.searchName
                     Layout.preferredWidth: 250
                     palette {
-                        text: root.themeManager.color("text")
-                        base: root.themeManager.color("windowDarker")
+                        text: ThemeManager.color("text")
+                        base: ThemeManager.color("windowDarker")
                     }
-                    onEditingFinished: root.modelStore.searchName = text
+                    onEditingFinished: ModelStore.searchName = text
                 }
             }            
 
@@ -133,10 +130,10 @@ Rectangle {
             Button {
                 text: "Refresh"
                 palette {
-                    buttonText: root.themeManager.color("buttonText")
-                    button: root.themeManager.color("button")
+                    buttonText: ThemeManager.color("buttonText")
+                    button: ThemeManager.color("button")
                 }
-                onClicked: root.modelStore.fetchModels()
+                onClicked: ModelStore.fetchModels()
             }            
         }
 /*
@@ -149,20 +146,20 @@ Rectangle {
                 spacing: 5
                 Label { 
                     text: "Auth Token (optional)"
-                    color: root.themeManager.color("text")
+                    color: ThemeManager.color("text")
                     font.bold: true
                 }
                 TextField {
                     id: bearerTokenField
                     placeholderText: "hf_..."
-                    text: root.modelStore.bearerToken
+                    text: ModelStore.bearerToken
                     echoMode: TextField.Password
                     Layout.preferredWidth: 250
                     palette {
-                        text: root.themeManager.color("text")
-                        base: root.themeManager.color("windowDarker")
+                        text: ThemeManager.color("text")
+                        base: ThemeManager.color("windowDarker")
                     }
-                    onEditingFinished: root.modelStore.bearerToken = text
+                    onEditingFinished: ModelStore.bearerToken = text
                 }
             }                   
         }
@@ -191,8 +188,8 @@ Rectangle {
                 required property int index
 
                 background: Rectangle {
-                    color: modelListView.currentIndex === modelDelegate.index ? root.themeManager.color("windowDarker") : (modelDelegate.hovered ? root.themeManager.color("windowDarker2") : "transparent")
-                    border.color: modelListView.currentIndex === modelDelegate.index ? root.themeManager.color("button") : "transparent"
+                    color: modelListView.currentIndex === modelDelegate.index ? ThemeManager.color("windowDarker") : (modelDelegate.hovered ? ThemeManager.color("windowDarker2") : "transparent")
+                    border.color: modelListView.currentIndex === modelDelegate.index ? ThemeManager.color("button") : "transparent"
                     border.width: 1
                 }
                 
@@ -205,19 +202,19 @@ Rectangle {
                             text: modelDelegate.modelData.name || ""
                             font.bold: true
                             font.pixelSize: 16
-                            color: root.themeManager.color("text")
+                            color: ThemeManager.color("text")
                             Layout.fillWidth: true
                         }
                         Label {
                             text: modelDelegate.modelData.size ? (modelDelegate.modelData.size / 1024 / 1024 / 1024).toFixed(2) + " GB" : "Unknown"
-                            color: root.themeManager.color("text")
+                            color: ThemeManager.color("text")
                             font.pixelSize: 14
                         }
                     }
                     
                     Label {
                         text: modelDelegate.modelData.description || ""
-                        color: root.themeManager.color("text")
+                        color: ThemeManager.color("text")
                         opacity: 0.7
                         font.pixelSize: 12
                         elide: Text.ElideRight
@@ -230,7 +227,7 @@ Rectangle {
                     detailsPanel.manifest = modelsModel.get(index)
                     detailsPanel.details = ({})
                     filesCombo.visible = false
-                    root.modelStore.fetchModelDetails(modelData.name || modelData.tag)
+                    ModelStore.fetchModelDetails(modelData.name || modelData.tag)
                 }                
             }                   
         }
@@ -241,8 +238,8 @@ Rectangle {
             Layout.fillWidth: true
             Layout.preferredHeight: 250
             visible: modelListView.currentIndex >= 0
-            color: root.themeManager.color("windowDarker")
-            border.color: root.themeManager.color("button")
+            color: ThemeManager.color("windowDarker")
+            border.color: ThemeManager.color("button")
             border.width: 1
             radius: 4
             
@@ -261,38 +258,38 @@ Rectangle {
                         text: detailsPanel.manifest && detailsPanel.manifest.name || "Select a model"
                         font.bold: true
                         font.pixelSize: 18
-                        color: root.themeManager.color("text")
+                        color: ThemeManager.color("text")
                     }
                     Item { Layout.fillWidth: true }
                     Label {
                         text: (detailsPanel.manifest && detailsPanel.manifest.trending) ? "🔥" : " " 
-                        font.family: root.themeManager.colorEmojiFont
+                        font.family: ThemeManager.colorEmojiFont
                         font.pixelSize: 18
                     }
                     Label {
                         text: (detailsPanel.manifest && detailsPanel.manifest.trending) ? detailsPanel.manifest.trending : " "
                         font.pixelSize: 14
-                        color: root.themeManager.color("text")
+                        color: ThemeManager.color("text")
                     }
                     Label {
                         text: (detailsPanel.manifest && detailsPanel.manifest.likes) ? "⭐" : " "
-                        font.family: root.themeManager.colorEmojiFont
+                        font.family: ThemeManager.colorEmojiFont
                         font.pixelSize: 18
                     }
                     Label {
                         text: (detailsPanel.manifest && detailsPanel.manifest.likes) ? detailsPanel.manifest.likes : " "
                         font.pixelSize: 14
-                        color: root.themeManager.color("text")
+                        color: ThemeManager.color("text")
                     }
                     Label {
                         text: (detailsPanel.manifest && detailsPanel.manifest.downloads) ? "📥" : " "
-                        font.family: root.themeManager.colorEmojiFont
+                        font.family: ThemeManager.colorEmojiFont
                         font.pixelSize: 18
                     }
                     Label {
                         text: (detailsPanel.manifest && detailsPanel.manifest.downloads) ? detailsPanel.manifest.downloads : " "
                         font.pixelSize: 14
-                        color: root.themeManager.color("text")
+                        color: ThemeManager.color("text")
                     }
                     
                     Item { Layout.fillWidth: true } // SPACER
@@ -301,8 +298,8 @@ Rectangle {
                         text: "Close"
                         Layout.alignment: Qt.AlignRight
                         palette {
-                            buttonText: root.themeManager.color("buttonText")
-                            button: root.themeManager.color("button")
+                            buttonText: ThemeManager.color("buttonText")
+                            button: ThemeManager.color("button")
                         }
                         onClicked: { 
                             modelListView.currentIndex = -1 
@@ -312,7 +309,7 @@ Rectangle {
                 
                 Label {
                     text: detailsPanel.manifest && detailsPanel.manifest.desc || "Loading description ..."
-                    color: root.themeManager.color("text")
+                    color: ThemeManager.color("text")
                 }
                 
                 ComboBox {
@@ -321,10 +318,10 @@ Rectangle {
                     textRole: "name"
                     Layout.preferredWidth: 400
                     palette {
-                        buttonText: root.themeManager.color("buttonText")
-                        button: root.themeManager.color("button")
-                        window: root.themeManager.color("window")
-                        text: root.themeManager.color("text")
+                        buttonText: ThemeManager.color("buttonText")
+                        button: ThemeManager.color("button")
+                        window: ThemeManager.color("window")
+                        text: ThemeManager.color("text")
                     }
                     popup.height: 200
                 }
@@ -337,7 +334,7 @@ Rectangle {
                     ProgressBar {
                         id: downloadBar
                         visible: root.isDownloading
-                        value: root.modelStore.downloadProgress
+                        value: ModelStore.downloadProgress
                         Layout.fillWidth: true
                     }
 
@@ -345,11 +342,11 @@ Rectangle {
                         text: "Download File"
                         visible: !root.isDownloading
                         palette {
-                            buttonText: root.themeManager.color("buttonText")
-                            button: root.themeManager.color("button")
+                            buttonText: ThemeManager.color("buttonText")
+                            button: ThemeManager.color("button")
                         }
                         onClicked: {
-                            root.modelStore.downloadFile(detailsPanel.details.name, detailsPanel.details.files[filesCombo.currentIndex]);
+                            ModelStore.downloadFile(detailsPanel.details.name, detailsPanel.details.files[filesCombo.currentIndex]);
                         }
                     }
 
@@ -357,11 +354,11 @@ Rectangle {
                         text: "Download All Files"
                         visible: !root.isDownloading
                         palette {
-                            buttonText: root.themeManager.color("buttonText")
-                            button: root.themeManager.color("button")
+                            buttonText: ThemeManager.color("buttonText")
+                            button: ThemeManager.color("button")
                         }
                         onClicked: {
-                            root.modelStore.downloadAllFiles(detailsPanel.details.name, detailsPanel.details.files);                            
+                            ModelStore.downloadAllFiles(detailsPanel.details.name, detailsPanel.details.files);                            
                         }
                     }
 
@@ -369,11 +366,11 @@ Rectangle {
                         text: "Cancel"
                         visible: root.isDownloading
                         palette {
-                            buttonText: root.themeManager.color("buttonText")
-                            button: root.themeManager.color("button")
+                            buttonText: ThemeManager.color("buttonText")
+                            button: ThemeManager.color("button")
                         }
                         onClicked: {
-                            root.modelStore.cancelDownload()
+                            ModelStore.cancelDownload()
                         }
                     }                    
                 }
@@ -391,7 +388,7 @@ Rectangle {
                 
                 Text {
                     text: root.statusMessage
-                    color: root.themeManager.color("text")
+                    color: ThemeManager.color("text")
                     font.italic: true
                     width: implicitWidth
                 }
@@ -403,8 +400,8 @@ Rectangle {
                 text: "Close"
                 Layout.alignment: Qt.AlignRight
                 palette {
-                    buttonText: root.themeManager.color("buttonText")
-                    button: root.themeManager.color("button")
+                    buttonText: ThemeManager.color("buttonText")
+                    button: ThemeManager.color("button")
                 }
                 onClicked: root.closeRequested()
             }
@@ -412,7 +409,7 @@ Rectangle {
     }
     
     Connections {
-        target: root.modelStore
+        target: ModelStore
         
         function onModelsListChanged(models) {
             modelsModel.clear()
@@ -440,16 +437,16 @@ Rectangle {
         }
         
         function onDownloadFinished(success) {
-            if (success && root.chatController) {
+            if (success && ChatController) {
                 // Rafraîchir la liste des modèles disponibles après un téléchargement réussi
-                root.chatController.refreshModels()
+                ChatController.refreshModels()
             }
         }
     }
     
     // Initial fetch
     Component.onCompleted: {
-        root.modelStore.fetchModels() // Triggered by sourceCombo initial set or manually?
+        ModelStore.fetchModels() // Triggered by sourceCombo initial set or manually?
         // Let sourceCombo trigger it via bindings
     }
 }

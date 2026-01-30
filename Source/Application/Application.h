@@ -1,17 +1,15 @@
 #pragma once
 
 #include <QApplication>
-#include <QQmlEngine>
+#include <QQmlApplicationEngine>
 #include <QFont>
 
 #include "ApplicationServices.h"
 
-#include "ChatController.h"
-#include "Clipboard.h"
-#include "ModelStore.h"
-#include "ThemeManager.h"
-
-class QQmlApplicationEngine;
+class ChatController;
+class Clipboard;
+class ModelStore;
+class ThemeManager;
 
 /**
  * @class Application
@@ -29,13 +27,6 @@ class QQmlApplicationEngine;
 class Application : public QApplication
 {
     Q_OBJECT
-    Q_PROPERTY(ChatController* chatController READ chatController CONSTANT)
-    Q_PROPERTY(ModelStore* modelStore READ modelStore CONSTANT)
-    Q_PROPERTY(ThemeManager* themeManager READ themeManager CONSTANT)
-    Q_PROPERTY(Clipboard* clipboard READ clipboard CONSTANT)
-
-    QML_ELEMENT
-    QML_UNCREATABLE("Application is a singleton provided by the application")
 
 public:
     /**
@@ -54,15 +45,11 @@ public:
      */
     ~Application() override;
 
-    ChatController* chatController() const { return chatController_; }
-    ModelStore* modelStore() const { return modelStore_; }
-    ThemeManager* themeManager() const;
-    Clipboard* clipboard() const { return clipboard_; }
-
 private:
     QQmlApplicationEngine* qmlEngine_;    ///< Moteur QML pour le rendu de l'interface utilisateur
     ChatController* chatController_;      ///< Contrôleur pour la gestion des chats et conversations
     ModelStore* modelStore_;              ///< Gestionnaire des modèles
     ApplicationServices services_;        ///< Services d'application pour les fonctionnalités transverses
     Clipboard* clipboard_;                ///< Gestionnaire du presse-papiers système
+    ThemeManager* themeManager_;          ///< Gestionnaire de Theme
 };

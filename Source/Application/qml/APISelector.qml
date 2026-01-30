@@ -1,6 +1,8 @@
 pragma ComponentBehavior: Bound
 
+// qmllint disable import
 import QtQuick
+// qmllint enable import
 import QtQuick.Controls
 
 import LlamaBotQml
@@ -8,17 +10,14 @@ import LlamaBotQml
 ComboBox {
     id: root
 
-    readonly property ThemeManager themeManager: app.themeManager
-    readonly property ChatController chatController: app.chatController
-
-    model: chatController ? chatController.getAvailableAPIs() : []
+    model: ChatController.getAvailableAPIs()
     textRole: "name"
     
-    displayText: chatController && chatController.currentChat ? chatController.currentChat.currentApi : "No API"
+    displayText: ChatController.currentChat ? ChatController.currentChat.currentApi : "No API"
     
     onActivated: (index) => {
-        if (chatController && currentValue) {
-            chatController.setAPI(currentValue.name)
+        if (currentValue) {
+            ChatController.setAPI(currentValue.name)
         }
     }
     
@@ -38,7 +37,7 @@ ComboBox {
             }
             Label {
                 text: apiDelegate.modelData.ready ? "●" : "○"
-                color: apiDelegate.modelData.ready ? root.themeManager.color("windowDarker") : root.themeManager.color("windowDarker2")
+                color: apiDelegate.modelData.ready ? ThemeManager.color("windowDarker") : ThemeManager.color("windowDarker2")
                 font.pixelSize: 16
                 anchors.verticalCenter: parent.verticalCenter
             }

@@ -1,6 +1,8 @@
 pragma ComponentBehavior: Bound
 
+// qmllint disable import
 import QtQuick
+// qmllint enable import
 import QtQuick.Controls
 import QtQuick.Layouts
 
@@ -8,16 +10,12 @@ import LlamaBotQml
 
 Rectangle {
     id: root
-
-    readonly property ThemeManager themeManager: app.themeManager
-    readonly property ChatController chatController: app.chatController
-    readonly property Clipboard clipboard: app.clipboard
     
     // Fix: Utiliser une hauteur fixe basée sur le nombre d'items plutôt que contentHeight
     height: assetList.count > 0 ? 150 : 0
     visible: assetList.count > 0
-    color: themeManager.color("windowDarker")
-    border.color: themeManager.color("windowDarker2")
+    color: ThemeManager.color("windowDarker")
+    border.color: ThemeManager.color("windowDarker2")
     border.width: 1
     
     Behavior on height {
@@ -38,7 +36,7 @@ Rectangle {
             orientation: ListView.Horizontal
             spacing: 10
             // Fix: Ajouter une vérification de null et utiliser explicitement la propriété
-            model: root.chatController ? root.chatController.pendingAssets : null
+            model: ChatController.pendingAssets
             
             // Fix: Définir explicitement la hauteur des items
             implicitHeight: 120
@@ -51,8 +49,8 @@ Rectangle {
 
                 width: 120
                 height: 120
-                color: root.themeManager.color("window")
-                border.color: root.themeManager.color("windowDarker2")
+                color: ThemeManager.color("window")
+                border.color: ThemeManager.color("windowDarker2")
                 border.width: 1
                 radius: 8
                 
@@ -105,23 +103,23 @@ Rectangle {
                             text: (assetDelegate.assetData && assetDelegate.assetData.name) ? assetDelegate.assetData.name : "Image"
                             elide: Text.ElideMiddle
                             font.pixelSize: 10
-                            color: root.themeManager.color("text")
+                            color: ThemeManager.color("text")
                         }
                         
                         Button {
                             flat: true
                             width: 14
                             height: 14
-                            font.family: root.themeManager.colorEmojiFont
+                            font.family: ThemeManager.colorEmojiFont
                             text: "❌"
                             font.pixelSize: 14
                             palette {
-                                buttonText: root.themeManager.color("text")
+                                buttonText: ThemeManager.color("text")
                                 button: "transparent"
                             }
                             onClicked: {
-                                if (root.chatController) {
-                                    root.chatController.removeAsset(assetDelegate.index)
+                                if (ChatController) {
+                                    ChatController.removeAsset(assetDelegate.index)
                                 }
                             }
                         }
@@ -134,23 +132,23 @@ Rectangle {
     // Debug: Afficher le nombre d'assets
     Text {
         anchors.centerIn: parent
-        text: "Assets: " + (typeof root.chatController !== "undefined" && root.chatController ? root.chatController.pendingAssets.length : 0)
+        text: "Assets: " + ChatController.pendingAssets.length
         color: "red"
         visible: false  // Mettre à true pour déboguer
     }
     
     Connections {
-        target: (typeof root.chatController !== "undefined") ? root.chatController : null
+        target: ChatController
         function onPendingAssetsChanged() {
-            console.log("pendingAssetsChanged - count:", root.chatController ? root.chatController.pendingAssets.length : 0)
+            console.log("pendingAssetsChanged - count:", ChatController.pendingAssets.length)
         }
     }
     
     Connections {
-        target: root.themeManager
+        target: ThemeManager
         function onDarkModeChanged() {
-            root.color = root.themeManager.color("windowDarker")
-            root.border.color = root.themeManager.color("windowDarker2")
+            root.color = ThemeManager.color("windowDarker")
+            root.border.color = ThemeManager.color("windowDarker2")
         }
     }
 }

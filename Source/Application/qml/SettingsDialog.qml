@@ -1,4 +1,6 @@
+// qmllint disable import
 import QtQuick
+// qmllint enable import
 import QtQuick.Controls
 import QtQuick.Layouts
 import QtQuick.Dialogs
@@ -7,9 +9,6 @@ import LlamaBotQml
 
 Dialog {
     id: root
-
-    readonly property ThemeManager themeManager: app.themeManager
-    readonly property ChatController chatController: app.chatController
 
     title: "Settings"
     modal: true
@@ -44,9 +43,9 @@ Dialog {
             ComboBox {
                 id: styleSelector
                 Layout.fillWidth: true
-                model: root.themeManager.availableStyles()
+                model: ThemeManager.availableStyles()
                 Component.onCompleted: {
-                    currentIndex = find(root.themeManager.currentStyle)
+                    currentIndex = find(ThemeManager.currentStyle)
                 }
             }
 
@@ -59,9 +58,9 @@ Dialog {
             ComboBox {
                 id: themeSelector
                 Layout.fillWidth: true
-                model: root.themeManager.availableThemes()
+                model: ThemeManager.availableThemes()
                 Component.onCompleted: {
-                    currentIndex = find(root.themeManager.currentTheme)
+                    currentIndex = find(ThemeManager.currentTheme)
                 }            
             }
 
@@ -75,16 +74,16 @@ Dialog {
                 id: fontSizeSelector
                 Layout.fillWidth: true
                 from: 10
-                value: root.themeManager.currentFontSize
+                value: ThemeManager.currentFontSize
                 to: 40   
-                onMoved: root.themeManager.currentFontSize = value
+                onMoved: ThemeManager.currentFontSize = value
             }
 
             // RAG Section
             Rectangle {
                 Layout.fillWidth: true
                 height: 1
-                color: root.themeManager.color("border")
+                color: ThemeManager.color("border")
             }
 
             Label {
@@ -95,8 +94,8 @@ Dialog {
             Switch {
                 id: ragToggle
                 text: "Enable RAG"
-                checked: root.chatController ? root.chatController.ragEnabled : false
-                onToggled: { if (root.chatController) root.chatController.ragEnabled = checked; }
+                checked: ChatController ? ChatController.ragEnabled : false
+                onToggled: { if (ChatController) ChatController.ragEnabled = checked; }
                 ToolTip.visible: hovered
                 ToolTip.text: "Retrieve context from indexed documents"
             }
@@ -117,15 +116,15 @@ Dialog {
                 Button {
                     text: "🗑️ Clear Index"
                     onClicked: {
-                        if (root.chatController && root.chatController.ragService) root.chatController.ragService.clearCollection()
+                        if (ChatController && ChatController.ragService) ChatController.ragService.clearCollection()
                     }
                 }
             }
 
             Label {
-                text: root.chatController && root.chatController.ragService ? root.chatController.ragService.collectionStatus : "N/A"
+                text: ChatController && ChatController.ragService ? ChatController.ragService.collectionStatus : "N/A"
                 font.pixelSize: 12
-                color: root.themeManager.color("text")
+                color: ThemeManager.color("text")
                 Layout.fillWidth: true
                 wrapMode: Text.WordWrap
             }
@@ -134,7 +133,7 @@ Dialog {
             Rectangle {
                 Layout.fillWidth: true
                 height: 1
-                color: root.themeManager.color("border")
+                color: ThemeManager.color("border")
             }
 
             Label {
@@ -154,16 +153,16 @@ Dialog {
                     to: 128000
                     stepSize: 4096
                     editable: true
-                    value: root.chatController ? root.chatController.defaultContextSize : 2048
-                    onValueModified: { if (root.chatController) root.chatController.defaultContextSize = value }
+                    value: ChatController ? ChatController.defaultContextSize : 2048
+                    onValueModified: { if (ChatController) ChatController.defaultContextSize = value }
                 }
             }
 
             Switch {
                 id: autoExpandToggle
                 text: "Auto-expand Context"
-                checked: root.chatController ? root.chatController.autoExpandContext : true
-                onToggled: { if (root.chatController) root.chatController.autoExpandContext = checked }
+                checked: ChatController ? ChatController.autoExpandContext : true
+                onToggled: { if (ChatController) ChatController.autoExpandContext = checked }
                 ToolTip.visible: hovered
                 ToolTip.text: "Automatically double context size when full (up to 128k)"
             }
@@ -179,10 +178,10 @@ Dialog {
             anchors.bottomMargin: 50
             DialogButtonBox.buttonRole: DialogButtonBox.AcceptRole
             onClicked: {
-                root.themeManager.setTheme(themeSelector.model[themeSelector.currentIndex == -1 ? 0 : themeSelector.currentIndex]);                
-                root.themeManager.setFontSize(fontSizeSelector.value);
-                if (root.themeManager.currentStyle != styleSelector.model[styleSelector.currentIndex]) {
-                    root.themeManager.setStyle(styleSelector.model[styleSelector.currentIndex]);
+                ThemeManager.setTheme(themeSelector.model[themeSelector.currentIndex == -1 ? 0 : themeSelector.currentIndex]);                
+                ThemeManager.setFontSize(fontSizeSelector.value);
+                if (ThemeManager.currentStyle != styleSelector.model[styleSelector.currentIndex]) {
+                    ThemeManager.setStyle(styleSelector.model[styleSelector.currentIndex]);
                     validateDialog.open();
                 }
                 else
@@ -206,7 +205,7 @@ Dialog {
         onButtonClicked: function (button, role) {
             switch (button) {
             case MessageDialog.Ok:
-                root.themeManager.restartApplication();
+                ThemeManager.restartApplication();
                 break;
             }
             root.close();
@@ -220,7 +219,7 @@ Dialog {
             // Convert file:// URL to local path
             var path = selectedFolder.toString()
             path = path.replace(/^(file:\/{2})/,"")
-            root.chatController.ragService.ingestDirectory(path)
+            ChatController.ragService.ingestDirectory(path)
         }
     }
 }

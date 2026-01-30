@@ -28,15 +28,20 @@ class ChatController : public QObject
     Q_PROPERTY(QVariantList pendingAssets READ pendingAssets NOTIFY pendingAssetsChanged)
 
     QML_ELEMENT
+    QML_SINGLETON
     QML_UNCREATABLE("ChatController is a singleton provided by the application")
 
 public:
+    explicit ChatController(QObject* parent = nullptr);
+
     /**
      * @brief Constructeur du contrôleur de chat
      * @param service Service LLM à utiliser pour les opérations de chat
      * @param parent Objet parent Qt (optionnel)
      */
     explicit ChatController(LLMServices* service, QObject* parent = nullptr);
+    
+    void initialize(LLMServices* llmservices);
     
     /**
      * @brief Destructeur du contrôleur de chat

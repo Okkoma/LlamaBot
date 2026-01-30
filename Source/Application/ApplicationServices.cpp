@@ -29,10 +29,6 @@ ApplicationServices::~ApplicationServices()
 
 void ApplicationServices::initialize()
 {
-    // add theme manager as service
-    add<ThemeManager>(this);
-    qDebug() << "ApplicationServices: add ThemeManager:" << get<ThemeManager>();
-
     // register llm api entries
     LLMService::registerService<LlamaCppService>(LLMEnum::LLMType::LlamaCpp);    
     LLMService::registerService<OllamaService>(LLMEnum::LLMType::Ollama);

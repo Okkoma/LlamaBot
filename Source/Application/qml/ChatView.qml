@@ -1,15 +1,14 @@
 pragma ComponentBehavior: Bound
 
+// qmllint disable import
 import QtQuick
+// qmllint enable import
 import QtQuick.Controls
 
 import LlamaBotQml
 
 Item {
     id: root
-
-    readonly property ThemeManager themeManager: app.themeManager
-    readonly property ChatController chatController: app.chatController
 
     ListView {
         id: messageList
@@ -21,7 +20,7 @@ Item {
         spacing: 10
         
         // Ensure we handle null currentChat
-        model: (root.chatController && root.chatController.currentChat) ? root.chatController.currentChat : []
+        model: ChatController.currentChat
         
         delegate: MessageDelegate {
         }
@@ -51,7 +50,7 @@ Item {
         }
 
         Connections {
-            target: root.chatController && root.chatController.currentChat ? root.chatController.currentChat : null
+            target: ChatController.currentChat
             function onMessagesChanged() {
                 // Smart auto-scroll during streaming updates
                 messageList.smartScroll()
@@ -73,8 +72,8 @@ Item {
         anchors.right: parent.right
         
         onAccepted: (text) => {
-            if (root.chatController)
-                root.chatController.sendMessage(text)
+            if (ChatController)
+                ChatController.sendMessage(text)
         }
     }
 }

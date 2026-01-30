@@ -22,10 +22,11 @@ class LLMServices;
 class RAGService : public QObject
 {
     Q_OBJECT
-    QML_ELEMENT
-    QML_UNCREATABLE("RAGService is provided by ChatController")
     Q_PROPERTY(QString collectionStatus READ getCollectionStatus NOTIFY collectionStatusChanged)
 
+    QML_ELEMENT
+    QML_UNCREATABLE("RAGService is provided by ChatController")
+    
 public:
     /**
      * @brief Constructeur de RAGService

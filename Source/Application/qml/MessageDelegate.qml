@@ -1,6 +1,8 @@
 pragma ComponentBehavior: Bound
 
+// qmllint disable import
 import QtQuick
+// qmllint enable import
 import QtQuick.Controls
 import QtQuick.Layouts
 
@@ -8,8 +10,6 @@ import LlamaBotQml
 
 Item {
     id: root
-
-    readonly property ThemeManager themeManager: app.themeManager
 
     required property var modelData
 
@@ -35,7 +35,7 @@ Item {
         Rectangle {
             id: userframe
             width: 40; height: 40; radius: 20
-            color: root.isUser ? root.themeManager.color("windowDarker") : root.themeManager.color("windowDarker2")
+            color: root.isUser ? ThemeManager.color("windowDarker") : ThemeManager.color("windowDarker2")
             opacity: root.isThought ? 0.6 : 1.0
             Layout.alignment: Qt.AlignTop
             Label {
@@ -51,7 +51,7 @@ Item {
             Layout.maximumWidth: root.width * 0.95
             Layout.preferredWidth: root.bubbleWidth()
             Layout.preferredHeight: msgText.contentHeight + 20
-            color: root.isUser ? root.themeManager.color("windowDarker") : root.themeManager.color("windowDarker2")
+            color: root.isUser ? ThemeManager.color("windowDarker") : ThemeManager.color("windowDarker2")
             border.width: 0
             opacity: root.isThought ? 0.8 : 1.0
             radius: 10
@@ -66,9 +66,9 @@ Item {
                     anchors.top: parent.top
                     anchors.bottom: parent.bottom
                     text: root.modelData ? root.modelData.content : ""
-                    color: root.isThought ? root.themeManager.color("buttonText") : root.themeManager.color("text")
-                    font.family: root.themeManager.currentFont
-                    font.pixelSize: root.isThought ? root.themeManager.currentFontSize * 0.8 : root.themeManager.currentFontSize
+                    color: root.isThought ? ThemeManager.color("buttonText") : ThemeManager.color("text")
+                    font.family: ThemeManager.currentFont
+                    font.pixelSize: root.isThought ? ThemeManager.currentFontSize * 0.8 : ThemeManager.currentFontSize
                     font.italic: root.isThought
                     wrapMode: TextEdit.Wrap
                     textFormat: TextEdit.MarkdownText
@@ -83,15 +83,15 @@ Item {
 
     // Add connection to themeManager to listen for theme changes
     Connections {
-        target: root.themeManager
+        target: ThemeManager
         function onDarkModeChanged() {
-            userframe.color = root.isUser ? root.themeManager.color("windowDarker") : root.themeManager.color("windowDarker2")
-            bubble.color = root.isUser ? root.themeManager.color("windowDarker") : root.themeManager.color("windowDarker2")
-            msgText.color = root.isThought ? root.themeManager.color("buttonText") : root.themeManager.color("text")
+            userframe.color = root.isUser ? ThemeManager.color("windowDarker") : ThemeManager.color("windowDarker2")
+            bubble.color = root.isUser ? ThemeManager.color("windowDarker") : ThemeManager.color("windowDarker2")
+            msgText.color = root.isThought ? ThemeManager.color("buttonText") : ThemeManager.color("text")
         }
         function onFontChanged() {
-            msgText.font.family = root.themeManager.currentFont
-            msgText.font.pixelSize = root.isThought ? root.themeManager.currentFontSize * 0.8 : root.themeManager.currentFontSize
+            msgText.font.family = ThemeManager.currentFont
+            msgText.font.pixelSize = root.isThought ? ThemeManager.currentFontSize * 0.8 : ThemeManager.currentFontSize
         }
     }
 }

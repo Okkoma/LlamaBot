@@ -1,4 +1,6 @@
+// qmllint disable import
 import QtQuick
+// qmllint enable import
 
 Item {
     id: root
