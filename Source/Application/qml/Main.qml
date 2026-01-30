@@ -137,7 +137,8 @@ ApplicationWindow {
                 }
             }
         }
-
+        
+        // Chat View
         ChatView {
             Layout.fillWidth: true
             Layout.fillHeight: true

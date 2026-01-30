@@ -12,6 +12,8 @@ import LlamaBotQml
 Item {
     id: root
 
+    readonly property var currentChat: ChatController.currentChat
+
     // Utiliser un Item au lieu d'un Rectangle pour éviter les effets de survol
     Rectangle {
         id: bgRect
@@ -254,18 +256,22 @@ Item {
                 button: ThemeManager.color("button")
             }             
             text: "Send"
-            enabled: text == "Send" && ((inputField.text.trim().length > 0) || 
-                     (typeof ChatController !== "undefined" && ChatController && ChatController.pendingAssets && ChatController.pendingAssets.length > 0))
+            enabled: text === "Stop" || (inputField.text.trim().length > 0 || ChatController.pendingAssets.length > 0)
             onClicked: {
                 if (text === "Send") {
-                    sendBtn.text = "Stop";
-                    enabled = true;
-                    root.accepted(inputField.text)
-                    inputField.clear()
+                    root.accepted(inputField.text)                    
                 } else {
-                    sendBtn.text = "Send";
-                    enabled = false;    
-                    ChatController.stopGeneration();
+                    ChatController.stopGeneration()
+                }
+            }
+            Connections {
+                target: root.currentChat
+                function onProcessingStarted() {
+                    sendBtn.text = "Stop"
+                    inputField.clear()
+                }                
+                function onProcessingFinished() {
+                    sendBtn.text = "Send"
                 }
             }
         }
