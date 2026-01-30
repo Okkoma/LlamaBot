@@ -4,9 +4,9 @@ pragma ComponentBehavior: Bound
 import QtQuick
 // qmllint enable import
 import QtQuick.Controls
-import QtQuick.Layouts
 import QtQuick.Controls.Material
 import QtQuick.Controls.Universal
+import QtQuick.Layouts
 
 import LlamaBotQml
 
@@ -20,14 +20,6 @@ ApplicationWindow {
     
     Material.theme: ThemeManager.darkMode ? Material.Dark : Material.Light
     Universal.theme: ThemeManager.darkMode ? Universal.Dark : Universal.Light
-
-    // Listen to theme changes
-    Connections {
-        target: ThemeManager
-        function onThemeChanged() {
-            console.log("Theme changed in QML:", ThemeManager.currentTheme);
-        }
-    }
 
     // Chat Drawer
     ChatDrawer {
@@ -176,9 +168,27 @@ ApplicationWindow {
         id: settingsDialog
     }
 
+    // Wheel Handler
+    Item {
+        id: wheelHandler
+        anchors.fill: parent        
+        WheelHandler {
+            acceptedModifiers: Qt.ControlModifier
+            onWheel: (event)=> {
+                event.accepted = true
+                var sign = Math.sign(event.angleDelta.y)
+                if (sign < 0 && ThemeManager.currentFontSize > 10 || sign > 0 && ThemeManager.currentFontSize < 40)
+                    ThemeManager.currentFontSize += sign;
+            }
+        }
+    }
+
     // Add connection to themeManager to listen for theme changes
     Connections {
         target: ThemeManager
+        function onThemeChanged() {
+            console.log("Theme changed in QML:", ThemeManager.currentTheme);
+        }        
         function onDarkModeChanged() {
             lbl_Model.color = ThemeManager.color("text")
             lbl_Api.color = ThemeManager.color("text")
