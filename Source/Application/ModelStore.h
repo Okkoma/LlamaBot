@@ -26,6 +26,7 @@ class ModelStore : public QObject
     Q_PROPERTY(float downloadProgress READ downloadProgress NOTIFY downloadProgressChanged)
 
     QML_ELEMENT
+    QML_SINGLETON
     QML_UNCREATABLE("ModelStore is a singleton provided by the application")
 
 public:
