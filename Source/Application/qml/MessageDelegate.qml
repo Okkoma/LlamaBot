@@ -56,15 +56,36 @@ Item {
             opacity: root.isThought ? 0.8 : 1.0
             radius: 10
             
-            Item {
+            Flickable {
+                id: flick
                 anchors.fill: bubble
                 anchors.margins: 10
+                contentWidth: msgText.contentWidth
+                contentHeight: msgText.contentHeight
+                clip: true
+
+                ScrollBar.horizontal : ScrollBar {
+                    policy: ScrollBar.AsNeeded
+                }
+
+                function ensureVisible(r)
+                {
+                    if (contentX >= r.x)
+                        contentX = r.x;
+                    else if (contentX+width <= r.x+r.width)
+                        contentX = r.x+r.width-width;
+                    if (contentY >= r.y)
+                        contentY = r.y;
+                    else if (contentY+height <= r.y+r.height)
+                        contentY = r.y+r.height-height;
+                }
+     
                 TextEdit {
                     id: msgText
-                    anchors.left: parent.left
-                    anchors.right: parent.right
-                    anchors.top: parent.top
-                    anchors.bottom: parent.bottom
+                    anchors.left: bubble.left
+                    anchors.right: bubble.right
+                    anchors.top: bubble.top
+                    anchors.bottom: bubble.bottom
                     text: root.modelData ? root.modelData.content : ""
                     color: root.isThought ? ThemeManager.color("buttonText") : ThemeManager.color("text")
                     font.family: ThemeManager.currentFont
@@ -74,6 +95,9 @@ Item {
                     textFormat: TextEdit.MarkdownText
                     selectByMouse: true
                     readOnly: true
+                    width: flick.width
+                    focus: true
+                    onCursorRectangleChanged: flick.ensureVisible(cursorRectangle)                    
                 }
             }
         }
