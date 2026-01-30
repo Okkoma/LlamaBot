@@ -95,7 +95,7 @@ void LLMServicesTest::test_model_aggregation()
     m1->addModel("model-a");
     services.addAPI(m1);
 
-    LLMModel model = services.getModel(model.toString());
+    LLMModel model = services.getModel("model-a:7B");
     QCOMPARE(model.name_, QString("model-a"));
     QCOMPARE(model.num_params_, QString("7B"));
     QCOMPARE(model.toString(), QString("model-a:7B"));
