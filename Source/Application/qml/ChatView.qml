@@ -10,6 +10,10 @@ import LlamaBotQml
 Item {
     id: root
 
+    // Use QtObject to satisfy Connections target requirement and qmllint check
+    // Use var to avoid qmllint being unable to resolve Chat -> QObject inheritance
+    readonly property var currentChat: ChatController.currentChat
+
     ListView {
         id: messageList
         anchors.top: parent.top
@@ -50,7 +54,9 @@ Item {
         }
 
         Connections {
-            target: ChatController.currentChat
+            target: root.currentChat
+            // Only handle signals if target is valid
+            enabled: root.currentChat !== null
             function onMessagesChanged() {
                 // Smart auto-scroll during streaming updates
                 messageList.smartScroll()

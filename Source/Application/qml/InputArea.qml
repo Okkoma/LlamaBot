@@ -41,6 +41,7 @@ Item {
         onAboutToShow: updatePosition()
 
         background: Rectangle {
+            id: emojiPopupBackground
             color: ThemeManager.color("windowDarker")
             border.color: ThemeManager.color("windowDarker2")
             border.width: 1
@@ -90,7 +91,7 @@ Item {
                         anchors.centerIn: textid                        
                         width: parent.width
                         height: parent.height
-                        color: parent.hovered ? ThemeManager.color("accent") : "transparent"
+                        color: emojiButton.hovered ? ThemeManager.color("accent") : "transparent"
                         radius: 8
                     }
 
@@ -256,7 +257,7 @@ Item {
             enabled: (inputField.text.trim().length > 0) || 
                      (typeof ChatController !== "undefined" && ChatController && ChatController.pendingAssets && ChatController.pendingAssets.length > 0)
             onClicked: {
-                parent.parent.accepted(inputField.text)
+                root.accepted(inputField.text)
                 inputField.clear()
             }
         }
@@ -271,8 +272,8 @@ Item {
             sendBtn.palette.button = ThemeManager.color("button")
             emojiPopupButton.palette.buttonText = ThemeManager.color("buttonText")
             emojiPopupButton.palette.button = ThemeManager.color("button")
-            emojiPopup.background.color = ThemeManager.color("windowDarker")
-            emojiPopup.background.border.color = ThemeManager.color("windowDarker2")
+            emojiPopupBackground.color = ThemeManager.color("windowDarker")
+            emojiPopupBackground.border.color = ThemeManager.color("windowDarker2")
         }
         function onFontChanged() {
             inputField.font.family = ThemeManager.currentFont

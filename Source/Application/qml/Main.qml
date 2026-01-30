@@ -156,13 +156,16 @@ ApplicationWindow {
         
         contentItem: Loader {
             id: dialogLoader
-            // anchors.fill: parent // Removed to avoid overlapping header
             active: modelStorePopup.opened
             source: "ModelStoreDialog.qml"
-            onLoaded: {
-                item.closeRequested.connect(function() {
-                    modelStorePopup.close()
-                })
+        }
+
+        Connections {
+            target: dialogLoader.item
+            // Use ignoreUnknownSignals because the linter can't know the exact type of the loaded item
+            ignoreUnknownSignals: true
+            function onCloseRequested() {
+                modelStorePopup.close()
             }
         }
     }

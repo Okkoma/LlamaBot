@@ -69,7 +69,7 @@ Drawer {
                 property var chatObject: modelData.chatObject
 
                 background: Rectangle {
-                    color: chatDelegate.isCurrent ? ThemeManager.color("windowDarker") : (parent.hovered ? ThemeManager.color("windowDarker2") : "transparent")
+                    color: chatDelegate.isCurrent ? ThemeManager.color("windowDarker") : (chatDelegate.hovered ? ThemeManager.color("windowDarker2") : "transparent")
                     radius: 5
                 }
 
