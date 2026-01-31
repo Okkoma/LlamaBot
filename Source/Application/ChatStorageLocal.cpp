@@ -68,7 +68,7 @@ bool ChatStorageLocal::isAvailable() const
 {
     if (!QSqlDatabase::isDriverAvailable("QSQLITE"))
     {
-        ErrorSystem::instance().logError(ERRCODE_SQLDATABASE_NO_DRIVER);
+        ErrorSystem::instance().log(ERRCODE_SQLDATABASE_NO_DRIVER);
         qDebug() << "database: no sql driver !";
         return false;
     }
@@ -89,7 +89,7 @@ bool ChatStorageLocal::openDatabase()
     db_.setDatabaseName(dbPath());
     if (!db_.open())
     {
-        ErrorSystem::instance().logError(ERRCODE_SQLDATABASE_FAILED_OPEN);
+        ErrorSystem::instance().log(ERRCODE_SQLDATABASE_FAILED_OPEN);
         qDebug() << "database: open failed !";
         return false;
     }
@@ -105,7 +105,7 @@ bool ChatStorageLocal::openDatabase()
         ");";
     if (!q.exec(createSql))
     {
-        ErrorSystem::instance().logError(ERRCODE_SQLDATABASE_FAILED_INITIALIZE, QStringList(q.lastError().text()));
+        ErrorSystem::instance().log(ERRCODE_SQLDATABASE_FAILED_INITIALIZE, QStringList(q.lastError().text()));
         qDebug() << "database: initialization failed !";
         return false;
     }
@@ -146,7 +146,7 @@ std::optional<QJsonArray> ChatStorageLocal::loadJsonDb()
 
     if (!QFile::exists(dbPath()) || !openDatabase())
     {
-        ErrorSystem::instance().logError(ERRCODE_SQLDATABASE_FAILED_OPEN, QStringList(dbPath()));            
+        ErrorSystem::instance().log(ERRCODE_SQLDATABASE_FAILED_OPEN, QStringList(dbPath()));            
         qDebug() << "ChatStorageLocal::loadJsonDb() ... ERRCODE_SQLDATABASE_FAILED_OPEN !";
         return std::nullopt;
     }
@@ -154,7 +154,7 @@ std::optional<QJsonArray> ChatStorageLocal::loadJsonDb()
     QSqlQuery query(db_);
     if (!query.exec("SELECT payload_json FROM conversations ORDER BY updated_at ASC;"))
     {
-        ErrorSystem::instance().logError(ERRCODE_SQLDATABASE_FAILED_READ, QStringList(query.lastError().text()));            
+        ErrorSystem::instance().log(ERRCODE_SQLDATABASE_FAILED_READ, QStringList(query.lastError().text()));            
         qDebug() << "ChatStorageLocal::loadJsonDb() ... ERRCODE_SQLDATABASE_FAILED_READ !";
         return std::nullopt;
     }
@@ -176,14 +176,14 @@ bool ChatStorageLocal::saveJsonDb(const QJsonArray& chats)
 {
     if (!openDatabase())
     {
-        ErrorSystem::instance().logError(ERRCODE_SQLDATABASE_FAILED_OPEN);
+        ErrorSystem::instance().log(ERRCODE_SQLDATABASE_FAILED_OPEN);
         return false;
     }
 
     QSqlQuery query(db_);
     if (!db_.transaction())  
     {
-        ErrorSystem::instance().logError(ERRCODE_SQLDATABASE_FAILED_TRANSACTION, QStringList(db_.lastError().text()));
+        ErrorSystem::instance().log(ERRCODE_SQLDATABASE_FAILED_TRANSACTION, QStringList(db_.lastError().text()));
         return false;
     }
 
@@ -191,7 +191,7 @@ bool ChatStorageLocal::saveJsonDb(const QJsonArray& chats)
     if (!query.exec("DELETE FROM conversations;"))
     {
         db_.rollback();
-        ErrorSystem::instance().logError(ERRCODE_SQLDATABASE_FAILED_DELETE, QStringList(query.lastError().text()));
+        ErrorSystem::instance().log(ERRCODE_SQLDATABASE_FAILED_DELETE, QStringList(query.lastError().text()));
         return false;
     }
 
@@ -199,7 +199,7 @@ bool ChatStorageLocal::saveJsonDb(const QJsonArray& chats)
     if (!query.prepare("INSERT INTO conversations(id, name, payload_json, updated_at) VALUES(?, ?, ?, ?);"))
     {
         db_.rollback();
-        ErrorSystem::instance().logError(ERRCODE_SQLDATABASE_FAILED_INSERT, QStringList(query.lastError().text()));
+        ErrorSystem::instance().log(ERRCODE_SQLDATABASE_FAILED_INSERT, QStringList(query.lastError().text()));
         return false;
     }
 
@@ -222,14 +222,14 @@ bool ChatStorageLocal::saveJsonDb(const QJsonArray& chats)
         if (!query.exec())
         {
             db_.rollback();
-            ErrorSystem::instance().logError(ERRCODE_SQLDATABASE_FAILED_INSERT, QStringList(query.lastError().text()));
+            ErrorSystem::instance().log(ERRCODE_SQLDATABASE_FAILED_INSERT, QStringList(query.lastError().text()));
             return false;
         }
     }
 
     if (!db_.commit())
     {
-        ErrorSystem::instance().logError(ERRCODE_SQLDATABASE_FAILED_COMMIT, QStringList(db_.lastError().text()));
+        ErrorSystem::instance().log(ERRCODE_SQLDATABASE_FAILED_COMMIT, QStringList(db_.lastError().text()));
         return false;
     }
 

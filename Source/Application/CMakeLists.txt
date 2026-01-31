@@ -66,6 +66,7 @@ qt_add_qml_module(LlamaBotQml
         HuggingFaceModelSource.h HuggingFaceModelSource.cpp
         OllamaModelSource.h OllamaModelSource.cpp
         RAGService.h
+        ErrorMessenger.h ErrorMessenger.cpp
 )  
 
 target_link_libraries(LlamaBotQml PRIVATE Qt6::Core Qt6::Widgets Qt6::Network Qt6::Qml Qt6::Quick Qt6::QuickWidgets Qt6::QuickControls2 Qt6::Sql)

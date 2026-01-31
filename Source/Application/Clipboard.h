@@ -1,14 +1,13 @@
 #pragma once
 
-#include <QQmlEngine>
 #include <QClipboard>
 #include <QGuiApplication>
 #include <QObject>
+#include <QQmlEngine>
 
 class Clipboard : public QObject
 {
     Q_OBJECT
-
 
     QML_ELEMENT
     QML_SINGLETON

@@ -82,10 +82,6 @@ Item {
      
                 TextEdit {
                     id: msgText
-                    anchors.left: bubble.left
-                    anchors.right: bubble.right
-                    anchors.top: bubble.top
-                    anchors.bottom: bubble.bottom
                     text: root.modelData ? root.modelData.content : ""
                     color: root.isThought ? ThemeManager.color("buttonText") : ThemeManager.color("text")
                     font.family: ThemeManager.currentFont

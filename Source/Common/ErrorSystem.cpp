@@ -20,14 +20,11 @@ void ErrorSystem::clearHistory()
     loggedErrors_.clear();
 }
 
-void ErrorSystem::logError(int err, const QStringList& params)
+void ErrorSystem::log(int err, const QStringList& params)
 {
     QMutexLocker locker(&mutex_);
-    if (errorTypes_.size() > err)
-    {
+    if (err < errorTypes_.size())
         loggedErrors_.emplace_back(err, QDateTime::currentDateTime(), params);
-        emit errorsChanged();
-    }
 }
 
 QString ErrorSystem::formatError(const ErrorInfo& info) const

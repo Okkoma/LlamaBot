@@ -4,7 +4,6 @@
 #include "RAGService.h"
 #include "ChatStorage.h"
 
-
 /**
  * @class ChatController
  * @brief Contrôleur principal pour la gestion des chats et conversations

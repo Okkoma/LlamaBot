@@ -89,10 +89,8 @@ Item {
         anchors.left: parent.left
         anchors.right: parent.right
 
-        model: ErrorSystem.getErrors()
-        visible: model.count > 0
-        
-        height: model.count > 0 ? 40 : 0
+        visible: false
+        height: visible ? 40 : 0
 
         delegate: Text {
             required property var modelData
@@ -101,17 +99,16 @@ Item {
             color: ThemeManager.color("text")
         }
 
-        // Visible scrollbar
         ScrollBar.vertical: ScrollBar {
             policy: ScrollBar.AlwaysOn
         }
-        
-        Connections {
-            target: ErrorSystem
-            function onErrorsChanged() {
-                model: ErrorSystem.getErrors()
-                console.log("Error added in QML");
-            }
-        }
     }
+
+    Connections {
+        target: ErrorMessenger
+        function onErrorPopped(error) {
+            messageErrorView.model = ErrorMessenger.get(10)
+            messageErrorView.visible = true
+        }
+    }    
 }

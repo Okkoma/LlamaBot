@@ -17,9 +17,9 @@ private slots:
 
     void test_singleton();
     void test_registerError();
-    void test_logError_without_params();
-    void test_logError_with_params();
-    void test_logError_unregistered_code();
+    void test_log_without_params();
+    void test_log_with_params();
+    void test_log_unregistered_code();
     void test_getErrors_empty_history();
     void test_getErrors_positive_index();
     void test_getErrors_negative_index();
@@ -71,43 +71,43 @@ void ErrorSystemTest::test_registerError()
     int err2 = errorSystem.registerError("Autre erreur");
     QCOMPARE(errorSystem.getNumTypes(), 2);
 
-    // Vérifier que les messages sont enregistrés en testant via logError
-    errorSystem.logError(err1);
+    // Vérifier que les messages sont enregistrés en testant via log
+    errorSystem.log(err1);
     QStringList errors = errorSystem.getErrors();
     QCOMPARE(errorSystem.size(), 1);
     QVERIFY(errors.first().contains("Erreur de test"));
 }
 
-void ErrorSystemTest::test_logError_without_params()
+void ErrorSystemTest::test_log_without_params()
 {
     ErrorSystem& errorSystem = ErrorSystem::instance();
     
     int err1 = errorSystem.registerError("Message simple");
-    errorSystem.logError(err1);
+    errorSystem.log(err1);
 
     QStringList errors = errorSystem.getErrors();
     QVERIFY(errors.first().contains("Message simple"));
     QVERIFY(errors.first().contains("[")); // Vérifier le format avec timestamp
 }
 
-void ErrorSystemTest::test_logError_with_params()
+void ErrorSystemTest::test_log_with_params()
 {
     ErrorSystem& errorSystem = ErrorSystem::instance();
     
     int err1 = errorSystem.registerError("Erreur avec paramètre: %1");
-    errorSystem.logError(err1, { "valeur1" });
+    errorSystem.log(err1, { "valeur1" });
     
     QStringList errors = errorSystem.getErrors(-1, 1);
     QCOMPARE(errors.size(), 1);
     QVERIFY(errors.first().contains("Erreur avec paramètre: valeur1"));
 }
 
-void ErrorSystemTest::test_logError_unregistered_code()
+void ErrorSystemTest::test_log_unregistered_code()
 {
     ErrorSystem& errorSystem = ErrorSystem::instance();
     
     int initialCount = errorSystem.getErrors().size();
-    errorSystem.logError(9999); // Code non enregistré
+    errorSystem.log(9999); // Code non enregistré
     
     // L'erreur ne doit pas être ajoutée à l'historique
     QCOMPARE(errorSystem.getErrors().size(), initialCount);
@@ -130,11 +130,11 @@ void ErrorSystemTest::test_getErrors_positive_index()
     int err2 = errorSystem.registerError( "Erreur 2");
     int err3 = errorSystem.registerError( "Erreur 3");
     
-    errorSystem.logError(err1);
+    errorSystem.log(err1);
     QThread::msleep(10); // Petit délai pour avoir des timestamps différents
-    errorSystem.logError(err2);
+    errorSystem.log(err2);
     QThread::msleep(10);
-    errorSystem.logError(err3);
+    errorSystem.log(err3);
     
     // Tester index 0 (premier message)
     QStringList errors0 = errorSystem.getErrors(0, 1);
@@ -152,7 +152,7 @@ void ErrorSystemTest::test_getErrors_negative_index()
     ErrorSystem& errorSystem = ErrorSystem::instance();
     
     int err1 = errorSystem.registerError("Dernière erreur");
-    errorSystem.logError(err1);
+    errorSystem.log(err1);
     
     // Tester index -1 (dernier message)
     QStringList errors = errorSystem.getErrors(-1, 1);
@@ -161,7 +161,7 @@ void ErrorSystemTest::test_getErrors_negative_index()
     
     // Tester index -2 (avant-dernier message)
     int err2 = errorSystem.registerError("Avant-dernière erreur");
-    errorSystem.logError(err2);
+    errorSystem.log(err2);
     
     QStringList errors2 = errorSystem.getErrors(-2, 1);
     QCOMPARE(errors2.size(), 1);
@@ -176,9 +176,9 @@ void ErrorSystemTest::test_getErrors_count_limit()
     int err2 = errorSystem.registerError("Erreur B");
     int err3 = errorSystem.registerError("Erreur C");
     
-    errorSystem.logError(err1);
-    errorSystem.logError(err2);
-    errorSystem.logError(err3);
+    errorSystem.log(err1);
+    errorSystem.log(err2);
+    errorSystem.log(err3);
     
     // Demander seulement 2 messages
     QStringList errors = errorSystem.getErrors(0, 2);
@@ -192,7 +192,7 @@ void ErrorSystemTest::test_getErrors_count_zero()
     ErrorSystem& errorSystem = ErrorSystem::instance();
     
     int err1 = errorSystem.registerError("Erreur test");
-    errorSystem.logError(err1);
+    errorSystem.log(err1);
     
     // Avec count = 0, devrait retourner tous les messages disponibles
     QStringList errors = errorSystem.getErrors(0, 0);
@@ -206,8 +206,8 @@ void ErrorSystemTest::test_getErrors_count_negative()
     int err1 = errorSystem.registerError("Erreur Y");
     int err2 = errorSystem.registerError("Erreur X");
     
-    errorSystem.logError(err1);
-    errorSystem.logError(err2);
+    errorSystem.log(err1);
+    errorSystem.log(err2);
     
     // Avec count = -1 (par défaut), devrait retourner tous les messages depuis l'index
     QStringList errors = errorSystem.getErrors(0, -1);
@@ -219,7 +219,7 @@ void ErrorSystemTest::test_getErrors_index_out_of_bounds()
     ErrorSystem& errorSystem = ErrorSystem::instance();
     
     int err1 = errorSystem.registerError("Seule erreur");
-    errorSystem.logError(err1);
+    errorSystem.log(err1);
     
     // Index très grand devrait être clampé
     QStringList errors = errorSystem.getErrors(1000, 1);
@@ -235,7 +235,7 @@ void ErrorSystemTest::test_getErrors_formatting()
     ErrorSystem& errorSystem = ErrorSystem::instance();
     
     int err1 = errorSystem.registerError("Message formaté");
-    errorSystem.logError(err1);
+    errorSystem.log(err1);
     
     QStringList errors = errorSystem.getErrors(-1, 1);
     QCOMPARE(errors.size(), 1);
@@ -252,7 +252,7 @@ void ErrorSystemTest::test_getErrors_multiple_params()
     ErrorSystem& errorSystem = ErrorSystem::instance();
     
     int err1 = errorSystem.registerError("Erreur: %1, %2, %3");
-    errorSystem.logError(err1, {"param1", "param2", "param3"});
+    errorSystem.log(err1, {"param1", "param2", "param3"});
     
     QStringList errors = errorSystem.getErrors(-1, 1);
     QCOMPARE(errors.size(), 1);
@@ -267,11 +267,11 @@ void ErrorSystemTest::test_getErrors_order()
     int err2 = errorSystem.registerError("Deuxième");
     int err3 = errorSystem.registerError("Troisième");
     
-    errorSystem.logError(err1);
+    errorSystem.log(err1);
     QThread::msleep(10);
-    errorSystem.logError(err2);
+    errorSystem.log(err2);
     QThread::msleep(10);
-    errorSystem.logError(err3);
+    errorSystem.log(err3);
     
     // Récupérer tous les messages depuis le début
     QStringList errors = errorSystem.getErrors(0, -1);
@@ -294,7 +294,7 @@ void ErrorSystemTest::test_concurrent_access()
     QList<QStringList> results;
     for (int i = 0; i < 10; ++i)
     {
-        errorSystem.logError(err1);
+        errorSystem.log(err1);
         results.append(errorSystem.getErrors(-1, 1));
     }
     

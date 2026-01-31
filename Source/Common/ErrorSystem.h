@@ -1,10 +1,9 @@
 #pragma once
 
-#include <QString>
-#include <QMap>
 #include <QMutex>
 #include <QDateTime>
 #include <QList>
+#include <QString>
 
 /**
  * @class ErrorSystem ThreadSafe
@@ -58,7 +57,7 @@ public:
      * @param params Liste optionnelle de paramètres venant remplacer les placeholders
      *               présents dans le message d'erreur associé au code.
      */
-    void logError(int code, const QStringList& params = QStringList());
+    void log(int code, const QStringList& params = QStringList());
 
     /**
      * @brief Retourne le/les message(s) d'erreur formaté(s) à partir de l'historique.
@@ -66,7 +65,7 @@ public:
      * Chaque message retourné contient :
      * - La date et l'heure d'enregistrement de l'erreur
      * - Le texte du message d'erreur associé au code
-     * - Les paramètres éventuellement fournis lors de l'appel à @ref logError,
+     * - Les paramètres éventuellement fournis lors de l'appel à @ref log,
      *   appliqués sur les placeholders (par ex. %1, %2, ...) du message.
      *
      * @param index Index du premier message dans l'historique :
@@ -86,15 +85,12 @@ public:
      *         Cette liste est vide si aucun historique (jamais vide si l'historique
      *         contient au moins un message).
      */
-    Q_INVOKABLE QStringList getErrors(int index=0, int count=-1) const;
+    QStringList getErrors(int index=0, int count=-1) const;
 
     void clearHistory();
 
     qsizetype getNumTypes() const { return errorTypes_.size(); }
     qsizetype size() const { return loggedErrors_.size(); }
-
-signals:
-    void errorsChanged();
 
 private:
     /**

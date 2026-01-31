@@ -10,7 +10,6 @@
 #include "Clipboard.h"
 #include "ModelStore.h"
 #include "ThemeManager.h"
-#include "../Common/ErrorSystem.h"
 
 #include "Application.h"
 
@@ -43,13 +42,12 @@ Application::Application(int& argc, char** argv) :
     services_.initialize();
 
     qDebug() << "LlamaBot - initialize ... qml services";
-    qmlEngine_->rootContext()->setContextProperty("ErrorSystem", ErrorSystem::instancePtr());
-    chatController_ = qmlEngine_->singletonInstance<ChatController*>("LlamaBotQml", "ChatController");
-    clipboard_ = qmlEngine_->singletonInstance<Clipboard*>("LlamaBotQml", "Clipboard");
-    modelStore_ = qmlEngine_->singletonInstance<ModelStore*>("LlamaBotQml", "ModelStore");
-    themeManager_ = qmlEngine_->singletonInstance<ThemeManager*>("LlamaBotQml", "ThemeManager");
+    ChatController* controller = qmlEngine_->singletonInstance<ChatController*>("LlamaBotQml", "ChatController");
+    qmlEngine_->singletonInstance<Clipboard*>("LlamaBotQml", "Clipboard");
+    qmlEngine_->singletonInstance<ModelStore*>("LlamaBotQml", "ModelStore");
+    qmlEngine_->singletonInstance<ThemeManager*>("LlamaBotQml", "ThemeManager");
     // Initialise ChatController et le lier avec LLMServices
-    chatController_->initialize(ApplicationServices::get<LLMServices>());  
+    controller->initialize(ApplicationServices::get<LLMServices>());  
 
     // Charger l'interface principale Main.qml (QML module)
     connect(

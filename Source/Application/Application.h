@@ -2,14 +2,8 @@
 
 #include <QApplication>
 #include <QQmlApplicationEngine>
-#include <QFont>
 
 #include "ApplicationServices.h"
-
-class ChatController;
-class Clipboard;
-class ModelStore;
-class ThemeManager;
 
 /**
  * @class Application
@@ -47,9 +41,5 @@ public:
 
 private:
     QQmlApplicationEngine* qmlEngine_;    ///< Moteur QML pour le rendu de l'interface utilisateur
-    ChatController* chatController_;      ///< Contrôleur pour la gestion des chats et conversations
-    ModelStore* modelStore_;              ///< Gestionnaire des modèles
     ApplicationServices services_;        ///< Services d'application pour les fonctionnalités transverses
-    Clipboard* clipboard_;                ///< Gestionnaire du presse-papiers système
-    ThemeManager* themeManager_;          ///< Gestionnaire de Theme
 };
