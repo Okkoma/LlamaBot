@@ -78,7 +78,7 @@ qt_add_executable(Test_LlamaCpp
 )
 # Note: LlamaCpp needs llama.cpp headers/libs if real generation is tested, 
 # but for basic service logic we might get away with it if mocks/stubs are used or if focused on config.
-target_link_libraries(Test_LlamaCpp PRIVATE Qt6::Core Qt6::Qml Qt6::Widgets Qt6::Network Qt6::Test llama)
+target_link_libraries(Test_LlamaCpp PRIVATE Qt6::Core Qt6::Qml Qt6::Widgets Qt6::Network Qt6::Test llama LlamaBotCommon)
 add_test(NAME Test_LlamaCpp COMMAND Test_LlamaCpp)
 
 qt_add_executable(Test_StorageLocal

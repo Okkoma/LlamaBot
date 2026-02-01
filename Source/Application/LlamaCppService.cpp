@@ -4,17 +4,22 @@
 
 #include <QtConcurrent/QtConcurrent>
 
+#include "ErrorSystem.h"
+
 #include "LlamaCppService.h"
 
+static int ERRCODE_LLAMACPP_ONTEXT_EXCEEDED = ErrorSystem::instance().registerError("LlamaCpp - ontext exceeded");
+static int ERRCODE_LLAMACPP_FAILED_DECODE   = ErrorSystem::instance().registerError("LlamaCpp - failed to decode");
+static int ERRCODE_LLAMACPP_FAILED_CONVERT_TOKEN_TO_PIECE = ErrorSystem::instance().registerError("LlamaCpp - failed to convert token to piece");
+static int ERRCODE_LLAMACPP_FAILED_CREATE_CONTEXT = ErrorSystem::instance().registerError("LlamaCpp - failed to create context");
 
-const QString LlamaGenerationErrors_[4] =
+int generationErrorCodes_[]
 {
-    QString("end of generation"),
-    QString("ontext exceeded"),
-    QString("failed to decode"),
-    QString("failed to convert token to piece")
+    0,
+    ERRCODE_LLAMACPP_ONTEXT_EXCEEDED,
+    ERRCODE_LLAMACPP_FAILED_DECODE,
+    ERRCODE_LLAMACPP_FAILED_CONVERT_TOKEN_TO_PIECE
 };
-
 
 // Utility function to check available GPU memory
 bool checkGpuMemoryAvailable(size_t requiredBytes)
@@ -202,25 +207,28 @@ QString LLamaDetokenize(LlamaCppChatData& data, const std::vector<llama_token>& 
     return QString(text1);
 }
 
+int getUsedVRAM(llama_context* ctx) 
+{
+    return 1 + llama_memory_seq_pos_max(llama_get_memory(ctx), 0) 
+             - llama_memory_seq_pos_min(llama_get_memory(ctx), 0);
+}
+
 int LlamaGenerateStep(LlamaCppChatData& data)
 {
-    qDebug() << "LlamaGenerateStep:";
+    //qDebug() << "LlamaGenerateStep:";
 
     const llama_vocab* vocab = llama_model_get_vocab(data.model_->model_);
 
     // check if we have enough space in the context to evaluate this batch
     data.n_ctx_ = llama_n_ctx(data.ctx_);
-
-    data.n_ctx_used_ = 1 + llama_memory_seq_pos_max(llama_get_memory(data.ctx_), 0) 
-                         - llama_memory_seq_pos_min(llama_get_memory(data.ctx_), 0);
-
-    qDebug() << "... before sampling :"
-             << " tokens in RAM: " << data.batch_.n_tokens
-             << " tokens in VRAM:" << data.n_ctx_used_;
+    data.n_ctx_used_ = getUsedVRAM(data.ctx_);
 
     if (data.batch_.n_tokens + data.n_ctx_used_ >= data.n_ctx_ - 50) // add 50 tokens for security
     {
         qWarning() << "LlamaGenerateStep: error -1 = ontext exceeded";
+        qDebug()   << "    n_ctx: " << data.n_ctx_
+                   << "    tokens in RAM: " << data.batch_.n_tokens
+                   << "    tokens in VRAM:" << data.n_ctx_used_;
         return -1;
     }
 
@@ -236,13 +244,8 @@ int LlamaGenerateStep(LlamaCppChatData& data)
     // store the new generated token in response vector
     data.response_tokens_.push_back(data.currentToken_);
 
-    data.n_ctx_used_ = 1 + llama_memory_seq_pos_max(llama_get_memory(data.ctx_), 0) 
-                         - llama_memory_seq_pos_min(llama_get_memory(data.ctx_), 0);
+    data.n_ctx_used_ = getUsedVRAM(data.ctx_);
 
-    qDebug() << "... after sampling :"
-             << "tokens in RAM: " << data.context_tokens_.size() + data.response_tokens_.size()
-             << "tokens in VRAM:" << data.n_ctx_used_;
-    
     // is it an end of generation?
     if (llama_vocab_is_eog(vocab, data.currentToken_))
     {
@@ -314,6 +317,11 @@ void LlamaCppChatData::initialize(LlamaModelData* model)
     ctx_params.flash_attn_type = LLAMA_FLASH_ATTN_TYPE_ENABLED;
 
     ctx_ = LLamaInitializeContext(model_->model_, ctx_params);
+    if (!ctx_)
+    {
+        ErrorSystem::instance().log(ERRCODE_LLAMACPP_FAILED_CREATE_CONTEXT);
+        return;        
+    }
 
     // initialize the sampler
     smpl_ = llama_sampler_chain_init(llama_sampler_chain_default_params());
@@ -366,8 +374,16 @@ void LlamaCppChatData::reset()
 {
     qDebug() << "LlamaCppChatData::reset";
     deinitialize();
+    
     if (model_)
+    {
         initialize(model_);
+        if (!ctx_)
+        {
+            qWarning() << "LlamaCppChatData::reset ... no context !";
+            return;        
+        }
+    }
     
     if (response_tokens_.size())
         context_tokens_.insert(context_tokens_.end(), response_tokens_.begin(), response_tokens_.end());
@@ -381,28 +397,42 @@ bool prepareStartGeneration(LlamaCppChatData& data, Chat* chat, bool resetted)
     data.response_.clear();
     data.response_tokens_.clear();
     
-    std::vector<llama_token>* entryTokens = &data.context_tokens_;
-
     // if a history exists and the tokens are not already got, do it with the full history
     if (chat->getHistory().size() > 2 && !data.context_tokens_.size())
     {
         QString formatedEntry = chat->getFormattedHistory();
         data.context_tokens_ = LlamaTokenize(data, formatedEntry);
-        entryTokens = &data.context_tokens_;
         qDebug() << "prepareStartGeneration: tokenize all history";
     }
-    // otherwise add only the new user prompt
-    else if (!resetted)
+    
+    // add the new user prompt
+    if (!resetted)
     {
         QString formatedEntry = chat->getFormattedMessage("user", -1);
         data.prompt_tokens_ = LlamaTokenize(data, formatedEntry);
         data.context_tokens_.insert(data.context_tokens_.end(), data.prompt_tokens_.begin(), data.prompt_tokens_.end());
-        entryTokens = &data.prompt_tokens_;
         qDebug() << "prepareStartGeneration: insert new user message in prompt";
     }
+    else
+        data.prompt_tokens_.clear();
 
+    bool contextInVRAM = getUsedVRAM(data.ctx_) >= data.context_tokens_.size() - data.prompt_tokens_.size() -1;
+    qDebug() << "prepareStartGeneration: getUsedVRAM:" << getUsedVRAM(data.ctx_) << "context_tokens:" << data.context_tokens_.size() - data.prompt_tokens_.size();
+
+    std::vector<llama_token>* entryTokens;
+    if (contextInVRAM && !resetted)
+    {
+        qDebug() << "prepareStartGeneration: context in VRAM, adding only the prompt to the batch ... resetted:" << resetted;
+        entryTokens = &data.prompt_tokens_;
+    }
+    else
+    {
+        qDebug() << "prepareStartGeneration: no context in VRAM, adding all the context to the batch ... resetted:" << resetted;
+        entryTokens = &data.context_tokens_;
+    }
+
+    qDebug() << "prepareStartGeneration: entryTokens" << entryTokens->size();
     data.batch_ = llama_batch_get_one(entryTokens->data(), entryTokens->size());
-
     return true;
 }
 
@@ -545,7 +575,7 @@ struct LlamaCppProcessThread : public LlamaCppProcess
             QObject::connect(worker_, &LlamaCppWorker::generationFinished, service_,
                 [this, chat]()
                 {
-                    if (chat)                    
+                    if (chat)
                         chat->setProcessing(false);
                     
                     QMutexLocker locker(&mutex_);
@@ -554,9 +584,8 @@ struct LlamaCppProcessThread : public LlamaCppProcess
                 });
 
             QObject::connect(worker_, &LlamaCppWorker::errorOccurred, service_,
-                [this, chat](const QString& error)
+                [this, chat]()
                 {
-                    qWarning() << "LlamaCppApi thread error:" << error;
                     if (chat)
                         chat->setProcessing(false);
                 });
@@ -673,6 +702,12 @@ void LlamaCppWorker::processRequest()
             {
                 qDebug() << "LlamaCppWorker: Auto-expanding context to" << newSize;
                 data.chat_->setContextSize(newSize);
+                if (!data.ctx_)
+                {
+                    ErrorSystem::instance().log(generationErrorCodes_[-data.currentToken_]);
+                    emit errorOccurred();
+                    break;
+                }
                 // continue to next step
                 continue;
             }
@@ -681,7 +716,10 @@ void LlamaCppWorker::processRequest()
         if (data.currentToken_ <= 0) // End of generation
         {
             if (data.currentToken_ < 0)
-                emit errorOccurred(LlamaGenerationErrors_[-data.currentToken_]);
+            {
+                ErrorSystem::instance().log(generationErrorCodes_[-data.currentToken_]);
+                emit errorOccurred();
+            }
             break;
         }
 
@@ -780,7 +818,13 @@ void LlamaCppService::initializeData(LlamaCppChatData* data, LlamaModelData* mod
         qWarning() << "LlamaCppService::initializeData ... no model !";
         return;        
     }
+
     data->initialize(model);
+    if (!data->ctx_)
+    {
+        qWarning() << "LlamaCppService::initializeData ... no context !";
+        return;        
+    }
 
     if (!data->generateProcess_)
     {
@@ -956,6 +1000,7 @@ void LlamaCppService::post(Chat* chat, const QString& content, bool streamed)
             if (!data || !data->model_)
             {
                 qWarning() << "LlamaCppService::post: no data or no model";
+                chat->setProcessing(false);
                 return;
             }
             
@@ -964,6 +1009,7 @@ void LlamaCppService::post(Chat* chat, const QString& content, bool streamed)
             {
                 qWarning() << "LlamaCppService::post: context not initialized - cannot generate";
                 qWarning() << "Context could not be created, likely due to insufficient GPU memory";
+                chat->setProcessing(false);
                 return;
             }
             
@@ -971,6 +1017,7 @@ void LlamaCppService::post(Chat* chat, const QString& content, bool streamed)
             if (!data->generateProcess_)
             {
                 qWarning() << "LlamaCppService::post: generation process not initialized";
+                chat->setProcessing(false);
                 return;
             }
             

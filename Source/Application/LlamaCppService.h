@@ -196,9 +196,8 @@ signals:
     
     /**
      * @brief Signal émis lorsqu'une erreur se produit
-     * @param error Message d'erreur
      */
-    void errorOccurred(const QString& error);
+    void errorOccurred();
 
 private:
     LlamaCppProcess* process_;   ///< Processus à exécuter

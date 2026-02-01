@@ -318,10 +318,18 @@ public:
      */
     void setData(ChatData* data) 
     {
-        data->n_ctx_ = data_.n_ctx_;
-        data->n_ctx_used_ = data_.n_ctx_used_;
-        data->context_tokens_ = data_.context_tokens_;
-        dataPtr_ = data; 
+        dataPtr_ = data;
+        if (dataPtr_)
+        {
+            dataPtr_->n_ctx_ = data_.n_ctx_;
+            dataPtr_->n_ctx_used_ = data_.n_ctx_used_;
+            dataPtr_->context_tokens_ = data_.context_tokens_;
+            
+            qDebug() << "Chat::setData load currentdata in dataPtr"
+                     << "n_ctx:" << dataPtr_->n_ctx_
+                     << "n_ctx_used:" << dataPtr_->n_ctx_used_
+                     << "context_tokens:" << dataPtr_->context_tokens_.size();
+        }
     }
 
     /**

@@ -2,7 +2,7 @@
 set(CMAKE_AUTOMOC ON)
 
 # Librairie commune utilisée par Application et les serveurs
-add_library(LlamaBotCommon
+add_library(LlamaBotCommon STATIC
     ErrorSystem.h
     ErrorSystem.cpp
 )

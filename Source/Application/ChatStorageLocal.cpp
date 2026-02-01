@@ -14,28 +14,19 @@
 
 #include "ChatStorageLocal.h"
 
-
-static int ERRCODE_SQLDATABASE_NO_DRIVER;
-static int ERRCODE_SQLDATABASE_FAILED_OPEN;
-static int ERRCODE_SQLDATABASE_FAILED_INITIALIZE;
-static int ERRCODE_SQLDATABASE_FAILED_READ;
-static int ERRCODE_SQLDATABASE_FAILED_TRANSACTION;
-static int ERRCODE_SQLDATABASE_FAILED_DELETE;
-static int ERRCODE_SQLDATABASE_FAILED_INSERT;
-static int ERRCODE_SQLDATABASE_FAILED_COMMIT;
+static int ERRCODE_SQLDATABASE_NO_DRIVER = ErrorSystem::instance().registerError("ERRCODE_SQLDATABASE_NO_DRIVER");
+static int ERRCODE_SQLDATABASE_FAILED_OPEN = ErrorSystem::instance().registerError("ERRCODE_SQLDATABASE_FAILED_OPEN");
+static int ERRCODE_SQLDATABASE_FAILED_INITIALIZE = ErrorSystem::instance().registerError("ERRCODE_SQLDATABASE_FAILED_INITIALIZE");
+static int ERRCODE_SQLDATABASE_FAILED_READ = ErrorSystem::instance().registerError("ERRCODE_SQLDATABASE_FAILED_READ");
+static int ERRCODE_SQLDATABASE_FAILED_TRANSACTION = ErrorSystem::instance().registerError("ERRCODE_SQLDATABASE_FAILED_TRANSACTION");
+static int ERRCODE_SQLDATABASE_FAILED_DELETE = ErrorSystem::instance().registerError("ERRCODE_SQLDATABASE_FAILED_DELETE");
+static int ERRCODE_SQLDATABASE_FAILED_INSERT = ErrorSystem::instance().registerError("ERRCODE_SQLDATABASE_FAILED_INSERT");
+static int ERRCODE_SQLDATABASE_FAILED_COMMIT = ErrorSystem::instance().registerError("ERRCODE_SQLDATABASE_FAILED_COMMIT");
 
 ChatStorageLocal::ChatStorageLocal(LLMServices* llmservices) :
     ChatStorage(llmservices),
     connectionName_(QString("chat_local_%1").arg(QUuid::createUuid().toString(QUuid::WithoutBraces)))
 {
-    ERRCODE_SQLDATABASE_NO_DRIVER = ErrorSystem::instance().registerError("ERRCODE_SQLDATABASE_NO_DRIVER");
-    ERRCODE_SQLDATABASE_FAILED_OPEN = ErrorSystem::instance().registerError("ERRCODE_SQLDATABASE_FAILED_OPEN");
-    ERRCODE_SQLDATABASE_FAILED_INITIALIZE = ErrorSystem::instance().registerError("ERRCODE_SQLDATABASE_FAILED_INITIALIZE");
-    ERRCODE_SQLDATABASE_FAILED_READ = ErrorSystem::instance().registerError("ERRCODE_SQLDATABASE_FAILED_READ");
-    ERRCODE_SQLDATABASE_FAILED_TRANSACTION = ErrorSystem::instance().registerError("ERRCODE_SQLDATABASE_FAILED_TRANSACTION");
-    ERRCODE_SQLDATABASE_FAILED_DELETE = ErrorSystem::instance().registerError("ERRCODE_SQLDATABASE_FAILED_DELETE");
-    ERRCODE_SQLDATABASE_FAILED_INSERT = ErrorSystem::instance().registerError("ERRCODE_SQLDATABASE_FAILED_INSERT");
-    ERRCODE_SQLDATABASE_FAILED_COMMIT = ErrorSystem::instance().registerError("ERRCODE_SQLDATABASE_FAILED_COMMIT");
 }
 
 ChatStorageLocal::~ChatStorageLocal()
@@ -146,7 +137,7 @@ std::optional<QJsonArray> ChatStorageLocal::loadJsonDb()
 
     if (!QFile::exists(dbPath()) || !openDatabase())
     {
-        ErrorSystem::instance().log(ERRCODE_SQLDATABASE_FAILED_OPEN, QStringList(dbPath()));            
+        ErrorSystem::instance().log(ERRCODE_SQLDATABASE_FAILED_OPEN, QStringList(dbPath()));
         qDebug() << "ChatStorageLocal::loadJsonDb() ... ERRCODE_SQLDATABASE_FAILED_OPEN !";
         return std::nullopt;
     }

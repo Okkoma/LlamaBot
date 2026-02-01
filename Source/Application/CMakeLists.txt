@@ -71,11 +71,11 @@ qt_add_qml_module(LlamaBotQml
 
 target_link_libraries(LlamaBotQml PRIVATE Qt6::Core Qt6::Widgets Qt6::Network Qt6::Qml Qt6::Quick Qt6::QuickWidgets Qt6::QuickControls2 Qt6::Sql)
 
+target_link_libraries(LlamaBot PRIVATE LlamaBotCommon)
+target_link_libraries(LlamaBot PRIVATE LlamaBotQml)
 target_link_libraries(LlamaBot PRIVATE Qt6::Core Qt6::Widgets Qt6::Network Qt6::Qml Qt6::Quick Qt6::QuickWidgets Qt6::QuickControls2 Qt6::Sql)
 target_link_libraries(LlamaBot PRIVATE llama)
 target_link_libraries(LlamaBot PRIVATE poppler-qt6)
-target_link_libraries(LlamaBot PRIVATE LlamaBotCommon)
-target_link_libraries(LlamaBot PRIVATE LlamaBotQml)
 target_link_libraries(LlamaBot PRIVATE OpenSSL::SSL OpenSSL::Crypto)
 
 # Qt for iOS sets MACOSX_BUNDLE_GUI_IDENTIFIER automatically since Qt 6.1.

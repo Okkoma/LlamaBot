@@ -68,7 +68,7 @@ else()
 
     option(BUILD_APPLICATION "Build the application" ON)
     option(BUILD_TEST "Build the tests" ON)
-    option(BUILD_SERVER "Build the server" OFF)
+    option(BUILD_SERVER "Build the server" ON)
     option(BUILD_DOCS "Build the documentation" OFF)
 endif()
 
@@ -91,7 +91,7 @@ find_package(Qt6 REQUIRED COMPONENTS
 )
 find_package(OpenSSL REQUIRED)
 
-include_directories (Source/Application Source/ThirdParty/llama.cpp/src Source/ThirdParty/poppler/qt6/src)
+include_directories (Source/Common Source/Application Source/ThirdParty/llama.cpp/src Source/ThirdParty/poppler/qt6/src)
 
 add_subdirectory (Source/Common)
 add_subdirectory (Source/ThirdParty/llama.cpp)
