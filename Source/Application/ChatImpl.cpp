@@ -236,7 +236,10 @@ void ChatImpl::updateCurrentAIStream(const QString& text)
     }
 
     if (finalized)
+    {
+        qDebug() << "Chat::updateCurrentAIStream: finalized !";
         currentAIStream_.clear();
+    }
 
     emit messagesChanged();
     emit streamUpdated(text);

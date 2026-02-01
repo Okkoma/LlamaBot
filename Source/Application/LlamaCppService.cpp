@@ -395,7 +395,8 @@ bool prepareStartGeneration(LlamaCppChatData& data, Chat* chat, bool resetted)
 {
     data.chat_ = chat;
     data.response_.clear();
-    data.response_tokens_.clear();
+    if (!resetted)
+        data.response_tokens_.clear();
     
     // if a history exists and the tokens are not already got, do it with the full history
     if (chat->getHistory().size() > 2 && !data.context_tokens_.size())
