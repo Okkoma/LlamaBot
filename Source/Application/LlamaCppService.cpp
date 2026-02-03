@@ -264,7 +264,7 @@ int LlamaGenerateStep(LlamaCppChatData& data)
     }
 
     buf[n] = 0;
-    //qDebug() << "LlamaGenerateStep: response:" << buf << "tokenid:" << data.tokenId_;
+    //qDebug() << "LlamaGenerateStep: response:" << buf << "currentToken:" << data.currentToken_;
     data.response_ = QString(buf);
 
     return static_cast<int>(data.currentToken_);
@@ -1182,19 +1182,27 @@ std::vector<LLMModel> LlamaCppService::getAvailableModels() const
     if (ollamaApi)
         result = llmservices_->getAvailableModels(ollamaApi);
 
-    QString appDataModelsPath = QStandardPaths::writableLocation(QStandardPaths::AppDataLocation) + "/models";
-    QDir appDataModelsDir(appDataModelsPath);
-    if (appDataModelsDir.exists())
+    QStringList paths;
+    paths += QStandardPaths::writableLocation(QStandardPaths::AppDataLocation) + "/models";
+    if (!llmservices_->getCustomModelsPath().isEmpty())
+        paths += llmservices_->getCustomModelsPath();
+
+    for (const QString& path : paths)
     {
-        QDirIterator it(appDataModelsPath, QStringList() << "*.gguf", QDir::Files, QDirIterator::NoIteratorFlags);
-        while (it.hasNext())
+        qDebug() << "LlamaCppService::getAvailableModels: path:" << path;
+        QDir appDataModelsDir(path);
+        if (appDataModelsDir.exists())
         {
-            it.next();
-            LLMModel model;
-            model.filePath_ = it.fileInfo().absoluteFilePath();
-            model.name_ = it.fileName().replace(".gguf", ""); // Use filename as model name
-            model.num_params_ = "";                           // Unknown without parsing GGUF header
-            result.push_back(model);
+            QDirIterator it(path, QStringList() << "*.gguf", QDir::Files, QDirIterator::NoIteratorFlags);
+            while (it.hasNext())
+            {
+                it.next();
+                LLMModel model;
+                model.filePath_ = it.fileInfo().absoluteFilePath();
+                model.name_ = it.fileName().replace(".gguf", ""); // Use filename as model name
+                model.num_params_ = "";                           // Unknown without parsing GGUF header
+                result.push_back(model);
+            }
         }
     }
 

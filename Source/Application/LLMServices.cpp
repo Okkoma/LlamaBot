@@ -45,6 +45,11 @@ void LLMServices::addAPI(LLMService* api)
     }
 }
 
+void LLMServices::setCustomModelsPath(const QString& path)
+{
+    customModelsPath_ = path;
+}
+
 void LLMServices::post(LLMService* api, Chat* chat, const QString& content, bool streamed)
 {
     api->post(chat, content, streamed);

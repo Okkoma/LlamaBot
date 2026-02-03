@@ -169,6 +169,18 @@ public:
         }
     }
 
+        /**
+     * @brief Retourne le chemin d'accès personnalisé vers les modeles
+     * @return le chemin d'accès
+     */
+     const QString& getCustomModelsPath() const { return customModelsPath_; }
+
+    /**
+     * @brief Définit le chemin d'accès personnalisé vers les modeles
+     * @param path le chemin
+     */
+     void setCustomModelsPath(const QString& path);
+
 signals:
     /**
      * @brief Signal émis lorsque la taille de contexte par défaut change
@@ -237,4 +249,5 @@ private:
     bool allowSharedModels_;                 ///< Indique si le partage des modèles est activé
     int defaultContextSize_ = LLM_DEFAULT_CONTEXT_SIZE; ///< Taille de contexte par défaut
     bool autoExpandContext_ = true;          ///< Auto-expansion du contexte
+    QString customModelsPath_;
 };

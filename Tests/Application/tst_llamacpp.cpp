@@ -1,4 +1,6 @@
 #include <QtTest>
+#include <QElapsedTimer>
+#include <QCoreApplication>
 
 #include "mock_services.h"
 
@@ -20,7 +22,12 @@ void LlamaCppTest::initTestCase()
 {
     qDebug() << "LlamaCppTest::initTestCase()";
     ApplicationServices mockservice(this);
-    mockservice.initialize();       
+    mockservice.initialize();
+
+    // Supprimer le fichier de config au cas où pour démarrer propre
+    if (QFile::exists("LLMService.json"))
+        QFile::remove("LLMService.json");
+
     LLMService::registerService<LlamaCppService>(LLMEnum::LLMType::LlamaCpp);
 }
 
@@ -52,23 +59,52 @@ void LlamaCppTest::test_llamacpp_parameters()
 
 void LlamaCppTest::test_llamacpp_streaming()
 {
-    qDebug() << "LlamaCppTest::test_llamacpp_streaming()";
+    qDebug() << "LlamaCppTest::test_llamacpp_streaming() ...";
     LLMServices services(this);
-    LLMService* service = services.get("LlamaCpp");
+
+    LLMService* llamaCppService = services.get("LlamaCpp");
+
+    llamaCppService->start();
     
     ChatImpl chat(&services);
     chat.setApi("LlamaCpp");
 
-    service->post(&chat, "Bonjour", true);
-    QCOMPARE(chat.data(chat.rowCount()-1, Chat::MessageRole::Content).toString(), QString("Bonjour"));
+    // 1. use local model from the main application target
+    // with LLMService::setCustomModelsPath
+    // 2. or add a symbolic link to an available model 
+    // in the local test target directory .local/share/Test_LlamaCpp
+    // => Ok use this one.
 
-    // attendre la réponse
-    QSignalSpy spy(&chat, &Chat::messagesChanged);
+    QSignalSpy processingFinished(&chat, &ChatImpl::processingFinished);
 
-    qDebug() << "LlamaCppTest::test_llamacpp_streaming() role: " << chat.data(chat.rowCount()-1, Chat::MessageRole::Role).toString();
-    qDebug() << "LlamaCppTest::test_llamacpp_streaming() content: " << chat.data(chat.rowCount()-1, Chat::MessageRole::Content).toString();
-    QVERIFY(chat.data(chat.rowCount()-1, Chat::MessageRole::Role).toString() == "assistant");
-    QVERIFY(chat.data(chat.rowCount()-1, Chat::MessageRole::Content).toString().isEmpty() == false);
+    llamaCppService->post(&chat, "Bonjour", true);
+    
+    qDebug() << "LlamaCppTest::test_llamacpp_streaming() ... posted";
+
+    // Wait with event loop processing to allow cross-thread signals to be delivered
+    QElapsedTimer timer;
+    timer.start();
+    const int timeoutMs = 10000; // 10 seconds timeout for model loading + generation
+    
+    while (processingFinished.count() == 0 && timer.elapsed() < timeoutMs)
+    {
+        QCoreApplication::processEvents(QEventLoop::AllEvents, 100);
+        QThread::msleep(50);
+    }
+
+    if (processingFinished.count() > 0)
+        qDebug() << "LlamaCppTest::test_llamacpp_streaming() ... generation finished successfully!";
+    else
+        qDebug() << "LlamaCppTest::test_llamacpp_streaming() ... test timeout !";
+
+    qDebug() << "LlamaCppTest::test_llamacpp_streaming() [0] role: " << chat.data(0, Chat::MessageRole::Role).toString();
+    qDebug() << "LlamaCppTest::test_llamacpp_streaming() [0] content: " << chat.data(0, Chat::MessageRole::Content).toString();
+    qDebug() << "LlamaCppTest::test_llamacpp_streaming() [1] role: " << chat.data(1, Chat::MessageRole::Role).toString();
+    qDebug() << "LlamaCppTest::test_llamacpp_streaming() [1] content: " << chat.data(1, Chat::MessageRole::Content).toString();
+
+    QCOMPARE(chat.data(0, Chat::MessageRole::Content).toString(), QString("Bonjour"));
+    QVERIFY(chat.data(1, Chat::MessageRole::Role).toString() != "user");
+    QVERIFY(chat.data(1, Chat::MessageRole::Content).toString().isEmpty() != true);
 }
 
 QTEST_MAIN(LlamaCppTest)

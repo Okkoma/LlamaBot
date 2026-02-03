@@ -116,12 +116,12 @@ void ChatImpl::finalizeStream()
     // finalize to add the last streamed response
     if (!currentAIStream_.isEmpty())
     {
-        qDebug() << "Chat::finalizeStream: ";
+        qDebug() << "ChatImpl::finalizeStream: ";
 
         // History is already updated during streaming in updateCurrentAIStream()
         if (history_.isEmpty() || history_.last().role_ != currentAIRole_ || history_.last().content_ != currentAIStream_)
         {
-            qWarning() << "Chat::finalizeStream: history was not updated during streaming, adding now";
+            qWarning() << "ChatImpl::finalizeStream: history was not updated during streaming, adding now";
             addMessage(currentAIRole_, currentAIStream_);
             emit messagesChanged();
         }
@@ -156,11 +156,11 @@ void ChatImpl::updateCurrentAIStream(const QString& text)
     else 
         currentAIStream_ += text;
 
-    //qDebug() << "Chat::updateCurrentAIStream:" << text;
+    //qDebug() << "ChatImpl::updateCurrentAIStream:" << text;
     
     sanitizeStream(currentAIStream_);
 
-    //qDebug() << "Chat::updateCurrentAIStream:" << currentAIStream_;
+    //qDebug() << "ChatImpl::updateCurrentAIStream:" << currentAIStream_;
 
     // find all "thought" or default assistant messages in the stream
     struct MessageStringView
