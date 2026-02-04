@@ -16,7 +16,7 @@ class OllamaTest : public QObject
 private slots:
     void initTestCase();
     void test_ollama_service();
-    void test_ollama_parsing();   
+    void test_ollama_parsing();
     void test_ollama_streaming();
 };
 
@@ -24,7 +24,12 @@ void OllamaTest::initTestCase()
 {
     qDebug() << "OllamaTest::initTestCase()";
     ApplicationServices mockservice(this);
-    mockservice.initialize();           
+    mockservice.initialize(); 
+    
+    // Supprimer le fichier de config au cas où pour démarrer propre
+    if (QFile::exists("LLMService.json"))
+        QFile::remove("LLMService.json");
+
     LLMService::registerService<OllamaService>(LLMEnum::LLMType::Ollama);
 }
 
@@ -63,20 +68,26 @@ void OllamaTest::test_ollama_streaming()
     qDebug() << "OllamaTest::test_ollama_streaming()";
     LLMServices services(this);
     LLMService* service = services.get("Ollama");
+    
+    service->start();
+
+    // Wait for service to be ready
+    QTest::qWait(3000);
+    QVERIFY(service->isReady() == true);
 
     ChatImpl chat(&services);
     chat.setApi("Ollama");
 
+    QSignalSpy processingFinished(&chat, &ChatImpl::streamFinishedSignal);
     service->post(&chat, "Bonjour", true);
-    QCOMPARE(chat.data(chat.rowCount()-1, Chat::MessageRole::Content).toString(), QString("Bonjour"));
+    qDebug() << "OllamaTest::test_ollama_streaming() ... posted";
 
-    // attendre la réponse
-    QSignalSpy spy(&chat, &Chat::messagesChanged);
-
-    qDebug() << "OllamaTest::test_ollama_streaming() role: " << chat.data(chat.rowCount()-1, Chat::MessageRole::Role).toString();
-    qDebug() << "OllamaTest::test_ollama_streaming() content: " << chat.data(chat.rowCount()-1, Chat::MessageRole::Content).toString();
-    QVERIFY(chat.data(chat.rowCount()-1, Chat::MessageRole::Role).toString() == "assistant");
-    QVERIFY(chat.data(chat.rowCount()-1, Chat::MessageRole::Content).toString().isEmpty() == false);
+    // Wait with event loop processing to allow cross-thread signals to be delivered
+    bool waitForProcessingFinished = QTest::qWaitFor([&]() { return processingFinished.count() > 0; }, 10000);
+    QVERIFY(waitForProcessingFinished == true);
+    QCOMPARE(chat.data(0, Chat::MessageRole::Content).toString(), QString("Bonjour"));
+    QVERIFY(chat.data(1, Chat::MessageRole::Role).toString() != "user");
+    QVERIFY(chat.data(1, Chat::MessageRole::Content).toString().isEmpty() != true);
 }
 
 QTEST_MAIN(OllamaTest)

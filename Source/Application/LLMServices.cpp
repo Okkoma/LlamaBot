@@ -260,7 +260,7 @@ void LLMServices::createDefaultServiceJsonFile()
 }
 
 void LLMServices::initialize()
-{  
+{
     if (!loadServiceJsonFile())
         createDefaultServiceJsonFile();
 

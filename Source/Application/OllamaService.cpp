@@ -124,16 +124,24 @@ OllamaService::~OllamaService()
 
 bool OllamaService::start()
 {
-    if (!canStartProcess())
-        return false;
+    qDebug() << "OllamaService: start";
 
-    if (!programProcess_)
-        programProcess_ = std::shared_ptr<QProcess>(new QProcess());
+    if (!networkManager_)
+        networkManager_ = new QNetworkAccessManager(this);
 
-    if (isProcessStarted() == false)
+    if (!isReady())
     {
-        programProcess_->start(programPath_, programArguments_);
-        qDebug() << "OllamaService: startProcess:" << name_;
+        if (!canStartProcess())
+            return false;
+
+        if (!programProcess_)
+            programProcess_ = std::shared_ptr<QProcess>(new QProcess());
+
+        if (!isProcessStarted())
+        {
+            programProcess_->start(programPath_, programArguments_);
+            qDebug() << "OllamaService: startProcess:" << name_ << programPath_ << programArguments_;
+        }
     }
 
     return isProcessStarted();
@@ -141,15 +149,22 @@ bool OllamaService::start()
 
 bool OllamaService::stop()
 {
-    if (!isProcessStarted())
-        return true;
+    qDebug() << "OllamaService: stop";
 
-    delete networkManager_;
+    if (networkManager_)
+    {
+        delete networkManager_;
+        networkManager_ = nullptr;
+    }
 
-    qDebug() << "OllamaService: stopProcess:" << name_;
+    if (isProcessStarted())
+    {
+        qDebug() << "OllamaService: stopProcess:" << name_;
+        programProcess_->terminate();
+        return programProcess_->waitForFinished();
+    }
 
-    programProcess_->terminate();
-    return programProcess_->waitForFinished();
+    return true;
 }
 
 bool OllamaService::isReady() const
@@ -164,6 +179,7 @@ bool OllamaService::canStartProcess() const
 
 bool OllamaService::isProcessStarted() const
 {
+    qDebug() << "OllamaService: isProcessStarted:" << programProcess_.get() << (programProcess_ != nullptr ? programProcess_->state() : QProcess::ProcessState::NotRunning);
     return programProcess_ && programProcess_->state() != QProcess::NotRunning;
 }
 
@@ -349,10 +365,9 @@ void OllamaService::postInternal(Chat* chat, const QString& content, bool stream
 void OllamaService::post(Chat* chat, const QString& content, bool streamed)
 {
     // api availability : post when api is ready
-    if (!isProcessStarted())
+    if (!isReady())
     {
         qDebug() << "OllamaService::post: api not started";
-
         if (canStartProcess() && requireStartProcess())
         {
             start();
@@ -377,12 +392,16 @@ void OllamaService::post(Chat* chat, const QString& content, bool streamed)
 
 bool OllamaService::requireStartProcess()
 {
+#ifndef TEST
     qDebug() << "Require the user authorization for starting the service" << name_;
     // Demander la confirmation à l'utilisateur
     QMessageBox::StandardButton reply;
     reply = QMessageBox::question(nullptr, "Confirmation", "Do you want to start the service " + name_ + "?",
         QMessageBox::Yes | QMessageBox::No);
     return (reply == QMessageBox::Yes);
+#else
+    return false;
+#endif    
 }
 
 bool OllamaService::handleMessageError(Chat* chat, const QString& message)
