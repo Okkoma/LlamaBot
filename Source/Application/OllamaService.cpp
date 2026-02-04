@@ -167,6 +167,12 @@ bool OllamaService::stop()
     return true;
 }
 
+void OllamaService::stopStream(Chat* chat)
+{
+    qDebug() << "OllamaService: stopStream";
+    emit stopStreamRequested();
+}
+
 bool OllamaService::isReady() const
 {
     return (isUrlAccessible() && isAPIAccessible()) || isProcessStarted();
@@ -300,6 +306,7 @@ void OllamaService::postInternal(Chat* chat, const QString& content, bool stream
         messagesArray.append(msgObj);
 
         payload["messages"] = messagesArray;
+        payload["think"] = true;
 
         if (payload.contains("prompt"))
         {
@@ -344,6 +351,20 @@ void OllamaService::postInternal(Chat* chat, const QString& content, bool stream
                 reply->deleteLater();
                 if (chat)
                     chat->setProcessing(false);
+                llmservices_->disconnect(reply, &QNetworkReply::readyRead, llmservices_, nullptr);
+                llmservices_->disconnect(reply, &QNetworkReply::finished, llmservices_, nullptr);
+                llmservices_->disconnect(this, &LLMService::stopStreamRequested, llmservices_, nullptr);
+            });
+        llmservices_->connect(this, &LLMService::stopStreamRequested, llmservices_, [this, chat, reply]()
+            {
+                qDebug() << "OllamaService::postInternal streamed: stopStreamRequested";
+                reply->abort();
+                reply->deleteLater();
+                if (chat)                
+                    chat->setProcessing(false);
+                llmservices_->disconnect(reply, &QNetworkReply::readyRead, llmservices_, nullptr);
+                llmservices_->disconnect(reply, &QNetworkReply::finished, llmservices_, nullptr);
+                llmservices_->disconnect(this, &LLMService::stopStreamRequested, llmservices_, nullptr);
             });
     }
     else
@@ -358,6 +379,7 @@ void OllamaService::postInternal(Chat* chat, const QString& content, bool stream
                 reply->deleteLater();
                 if (chat)
                     chat->setProcessing(false);
+                llmservices_->disconnect(networkManager_, &QNetworkAccessManager::finished, llmservices_, nullptr);
             });
     }
 }

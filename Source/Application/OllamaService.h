@@ -183,6 +183,12 @@ public:
     bool stop() override;
     
     /**
+     * @brief Arrête le streaming pour un chat
+     * @param chat Chat à arrêter
+     */
+    void stopStream(Chat* chat) override;
+        
+    /**
      * @brief Vérifie si le service est prêt
      * @return true si le service est prêt, false sinon
      */

@@ -105,6 +105,8 @@ signals:
     void modelLoadingStarted(const QString& modelName);
     void modelLoadingFinished(const QString& modelName, bool success);
 
+    void stopStreamRequested();
+
 private:
     static std::unordered_map<int, LLMAPIFactory> factories_;
 };
