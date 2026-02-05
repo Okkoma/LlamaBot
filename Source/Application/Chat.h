@@ -96,8 +96,8 @@ public:
         
         const ChatMessage& msg = history_[index.row()];
         if (role == Role) return msg.role_;
-        if (role == Content) return msg.content_;
-        if (role == Assets) return msg.assets_;
+        else if (role == Content) return msg.content_;
+        else if (role == Assets) return msg.assets_;
         return {};
     }
 
@@ -108,8 +108,8 @@ public:
         
         const ChatMessage& msg = history_[index];
         if (role == Role) return msg.role_;
-        if (role == Content) return msg.content_;
-        if (role == Assets) return msg.assets_;
+        else if (role == Content) return msg.content_;
+        else if (role == Assets) return msg.assets_;
         return {};
     }
 
@@ -316,7 +316,7 @@ public:
      * @brief Définit les données de chat
      * @param data Pointeur vers les données de chat
      */
-    void setData(ChatData* data) 
+    void setChatData(ChatData* data) 
     {
         dataPtr_ = data;
         if (dataPtr_)

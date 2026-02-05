@@ -224,7 +224,11 @@ void ChatImpl::updateCurrentAIStream(const QString& text)
     {
         if (msgindex < messages_.size())
         {
-            modifyMessage(msgindex, msg.role_, msg.content_.toString());
+            // reduit la modification des messages tous les 'accCharBeforeUpdate' caractères
+            const int accCharBeforeUpdate = 15;
+
+            if (msg.content_.size() % accCharBeforeUpdate == 0)
+                modifyMessage(msgindex, msg.role_, msg.content_.toString());
             messages_[msgindex] = QString("%1 %2\n").arg(aiPrompt_).arg(msg.content_.toString());
         }
         else

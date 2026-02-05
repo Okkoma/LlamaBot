@@ -195,16 +195,18 @@ QString LLamaDetokenize(LlamaCppChatData& data, const std::vector<llama_token>& 
 {
     // param skipLastToken : generally to remove the "end of sentence" token
 
+    qDebug() << "LLamaDetokenize ...";
+    QTime start = QTime::currentTime();
+    
     const llama_vocab* vocab = llama_model_get_vocab(data.model_->model_);
     const int size = tokens.size() * LLM_MAX_TOKEN_LEN;
-    if (size > 65535)
-    {
-        qCritical() << "LLamaDetokenize : size > 65535 ..." << size;
-        return {};
-    }
-    char text1[65535] = {0};
-    int n = llama_detokenize(vocab, tokens.data(), tokens.size() + (skipLastToken ? -1 : 0), text1, sizeof(text1) - 1, true, true);
-    return QString(text1);
+    QVector<char> text1;
+    text1.resize(size);
+    int n = llama_detokenize(vocab, tokens.data(), tokens.size() + (skipLastToken ? -1 : 0), text1.data(), text1.size() - 1, true, true);
+    text1.resize(n);
+
+    qDebug() << "LLamaDetokenize ... size=" << n << " perf=" << (QTime::currentTime().msec() - start.msec()) << "ms";
+    return QString(text1.data());
 }
 
 int getUsedVRAM(llama_context* ctx) 
@@ -807,7 +809,7 @@ LlamaCppChatData* LlamaCppService::createData(Chat* chat)
 {
     LlamaCppChatData& data = datas_[chat];
     data.chat_ = chat;
-    chat->setData(&data);
+    chat->setChatData(&data);
 
     return &data;
 }
