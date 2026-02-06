@@ -94,13 +94,28 @@ public:
      */
     Q_INVOKABLE void renameChat(int index, const QString& name);
 
+    // Chat Serialization
+    /**
+     * @brief Sauvegarde les chats dans un fichier
+     *
+     * Sérialise et sauvegarde l'état des chats sur le disque.
+     */
+    Q_INVOKABLE void saveChats(bool sync=false);
+
+    /**
+     * @brief Charge les chats depuis un fichier
+     *
+     * Charge et désérialise l'état des chats depuis le disque.
+     */
+    Q_INVOKABLE void loadChats();
+
     // Message Operations
     /**
      * @brief Envoie un message dans le chat courant
      * @param text Texte du message à envoyer
      */
     Q_INVOKABLE void sendMessage(const QString& text);
-    
+
     /**
      * @brief Arrête la génération de message en cours
      * 
@@ -194,21 +209,7 @@ signals:
 
     void pendingAssetsChanged();
 
-private:
-    /**
-     * @brief Sauvegarde les chats dans un fichier
-     * 
-     * Sérialise et sauvegarde l'état des chats sur le disque.
-     */
-    void saveChats();
-    
-    /**
-     * @brief Charge les chats depuis un fichier
-     * 
-     * Charge et désérialise l'état des chats depuis le disque.
-     */
-    void loadChats();
-    
+private:    
     /**
      * @brief Retourne le chemin du fichier de sauvegarde des chats
      * @return Chemin complet du fichier de sauvegarde
@@ -237,7 +238,8 @@ private:
 
     LLMServices* llmServices_;    ///< Service LLM pour les opérations de chat
     RAGService* ragService_;      ///< Service RAG pour la recherche augmentée
-    ChatStorage* localStore_;     ///< Stockage local (SQLite)    
+    ChatStorage* localStore_;     ///< Stockage local (SQLite)
+    ChatStorage* cloudStore_;     ///< Stockage cloud (Psql)
     QList<Chat*> chats_;          ///< Liste des chats gérés par le contrôleur
     Chat* currentChat_;           ///< Chat actuellement sélectionné
     int chatCounter_;             ///< Compteur pour générer des noms de chat uniques

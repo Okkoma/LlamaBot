@@ -166,6 +166,27 @@ Dialog {
                 ToolTip.visible: hovered
                 ToolTip.text: "Automatically double context size when full (up to 128k)"
             }
+
+            Rectangle {
+                Layout.fillWidth: true
+                height: 1
+                color: ThemeManager.color("border")
+            }
+
+            RowLayout {
+                Layout.fillWidth: true
+                Label {
+                    text: "Cloud Storage"
+                    font.bold: true
+                    Layout.fillWidth: true
+                }
+                Button {
+                    text: "🛸️ Sync Now!"
+                    onClicked: {
+                        if (ChatController) ChatController.saveChats(true)
+                    }
+                }
+            }
         }
     }
 

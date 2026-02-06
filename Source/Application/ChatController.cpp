@@ -5,6 +5,7 @@
 #include "LLMService.h"
 #include "ChatImpl.h"
 #include "ChatStorageLocal.h"
+#include "ChatStorageDistant.h"
 
 #include "ChatController.h"
 
@@ -29,10 +30,10 @@ void ChatController::initialize(LLMServices* llmservices)
 {
     llmServices_ = llmservices;
     ragService_ = new RAGService(llmservices, this);
-    localStore_ = new ChatStorageLocal(llmservices);
 
     // Try to load existing chats
     localStore_ = new ChatStorageLocal(llmservices);
+    cloudStore_ = new ChatStorageDistant(llmservices);
     loadChats();
 
     // specific case for first run
@@ -305,19 +306,25 @@ QString ChatController::getChatsFilePath() const
     return dir.filePath("chats.json");
 }
 
-void ChatController::saveChats()
+void ChatController::saveChats(bool sync)
 {
+    // TODO : sync delta ?
+
     bool ok = localStore_ && localStore_->save(chats_);
     if (!ok)
         qWarning() << "ChatLocalStore save failed !";
+    if (ok && sync)
+        cloudStore_->save(chats_);
 }
 
 void ChatController::loadChats()
 {
+    // TODO : sync delta ?
+
     chats_.clear();
 
     if (localStore_)
-        bool loaded = localStore_->load(chats_);
+        localStore_->load(chats_);
     
     qDebug() << "ChatController loadChats:" << chats_.size();
 
