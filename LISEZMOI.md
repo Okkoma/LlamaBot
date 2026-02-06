@@ -13,6 +13,8 @@ LlamaBot est un assistant conçu pour offrir une expérience de conversation flu
 Le projet nécessite certaines bibliothèques système qui ne sont pas incluses dans le dépôt :
 
 *   **Qt 6** : Core, Widgets, Network, Qml, Quick, QuickWidgets, QuickControls2.
+*   **OpenSSL** : necessaire pour l'encryption de bout en bout.
+*   **PostgreSQL** : le server de stockage des conversations utilise une base pg.
 
 ### Dépendances Incluses
 
@@ -67,8 +69,6 @@ Vous pouvez activer l'accélération GPU via les options CMake dans le fichier r
 
 ## En cours de développement
 
-*   Support des modèles multimodales.
-*   Etendre le choix des modèles disponibles : HuggingFace, et url manuel, OCI (voir projet Ramalama).
 *   Système de regroupement/classification des conversations.
 *   Tests système (Qml Squish).
 
