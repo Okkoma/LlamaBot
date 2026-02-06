@@ -5,12 +5,22 @@
 ErrorMessenger::ErrorMessenger(QObject* parent) :
     QObject(parent)
 {
+    if (ErrorSystem::instancePtr())
+        connect(ErrorSystem::instancePtr(), &ErrorSystem::errorAdded, this, &ErrorMessenger::notify);
+    else
+        qWarning() << "ErrorMessenger: no ErrorSystem";
 }
 
 void ErrorMessenger::log(int err, const QStringList& params)
 {
     ErrorSystem::instance().log(err, params);
-    QStringList list = ErrorSystem::instance().getErrors(-1, 1);
+    notify(-1);
+}
+
+void ErrorMessenger::notify(int msgIndex)
+{
+    qDebug() << "ErrorMessenger: notify:" << msgIndex;
+    QStringList list = ErrorSystem::instance().getErrors(msgIndex, 1);
     emit errorPopped(list.last());
 }
 

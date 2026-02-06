@@ -22,9 +22,16 @@ void ErrorSystem::clearHistory()
 
 void ErrorSystem::log(int err, const QStringList& params)
 {
-    QMutexLocker locker(&mutex_);
     if (err < errorTypes_.size())
+    {
+        QMutexLocker locker(&mutex_);
         loggedErrors_.emplace_back(err, QDateTime::currentDateTime(), params);
+    }
+
+    if (err < errorTypes_.size())
+        emit errorAdded(loggedErrors_.size()-1);
+    
+    qDebug() << "ErrorSystem: log: " << err << params;
 }
 
 QString ErrorSystem::formatError(const ErrorInfo& info) const
@@ -40,8 +47,6 @@ QString ErrorSystem::formatError(const ErrorInfo& info) const
 
 QStringList ErrorSystem::getErrors(int index, int count) const
 {
-    QMutexLocker locker(&mutex_);
-
     QStringList errors;
 
     if (loggedErrors_.isEmpty())

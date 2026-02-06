@@ -92,6 +92,9 @@ public:
     qsizetype getNumTypes() const { return errorTypes_.size(); }
     qsizetype size() const { return loggedErrors_.size(); }
 
+signals:
+    void errorAdded(int index);
+
 private:
     /**
      * @brief Constructeur privé du système d'erreurs.

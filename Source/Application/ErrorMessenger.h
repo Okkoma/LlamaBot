@@ -17,8 +17,11 @@ public:
     Q_INVOKABLE void log(int code, const QStringList& params = QStringList());
 
     Q_INVOKABLE QVariantList get(int count=-1) const;
-    
+
 signals:
     void errorPopped(QString msg);
+
+private slots:
+    void notify(int msgIndex);
 };
 

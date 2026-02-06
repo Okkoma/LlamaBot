@@ -26,6 +26,60 @@ ApplicationWindow {
         id: chatDrawer
     }
 
+    // Console
+    Drawer {
+        id: consoleDrawer
+        width: parent.width
+        height: 50
+        edge: Qt.BottomEdge
+        
+        background: Rectangle {
+            color: ThemeManager.color("window")
+        }        
+
+        ColumnLayout {
+            anchors.fill: parent
+            anchors.margins: 10
+            spacing: 10
+
+            // Message Error View
+            ListView {
+                id: messageErrorView
+                anchors.top: parent.top
+                anchors.left: parent.left
+                anchors.right: parent.right
+
+                delegate: Text {
+                    required property var modelData
+                    required property int index
+                    text: index !== -1 ? modelData : ""
+                    color: "red"
+                }
+
+                ScrollBar.vertical: ScrollBar {
+                    policy: ScrollBar.AlwaysOn
+                }
+            }
+        }
+
+        Timer {
+            id: consoleHideTimer
+            interval: 3000
+            repeat: false
+            running: false
+            onTriggered: consoleDrawer.visible = false
+        }
+
+        Connections {
+            target: ErrorMessenger
+            function onErrorPopped(error) {
+                messageErrorView.model = ErrorMessenger.get(10)
+                consoleDrawer.visible = true
+                consoleHideTimer.restart()
+            }
+        }
+    }
+
     ColumnLayout {
         anchors.fill: parent
         spacing: 0

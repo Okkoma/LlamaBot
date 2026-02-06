@@ -72,43 +72,12 @@ Item {
 
     InputArea {
         id: inputArea
-        anchors.bottom: messageErrorView.top
         anchors.left: parent.left
         anchors.right: parent.right
-        
+        anchors.bottom: parent.bottom
         onAccepted: (text) => {
             if (ChatController)
                 ChatController.sendMessage(text)
-        }
-    }
-
-    // Message Error View
-    ListView {
-        id: messageErrorView
-        anchors.bottom: parent.bottom
-        anchors.left: parent.left
-        anchors.right: parent.right
-
-        visible: false
-        height: visible ? 40 : 0
-
-        delegate: Text {
-            required property var modelData
-            required property int index
-            text: index !== -1 ? modelData : ""
-            color: ThemeManager.color("text")
-        }
-
-        ScrollBar.vertical: ScrollBar {
-            policy: ScrollBar.AlwaysOn
-        }
-    }
-
-    Connections {
-        target: ErrorMessenger
-        function onErrorPopped(error) {
-            messageErrorView.model = ErrorMessenger.get(10)
-            messageErrorView.visible = true
         }
     }    
 }
