@@ -24,12 +24,16 @@ static int ERRCODE_SQLDATABASE_NET_ERROR = ErrorSystem::instance().registerError
 static int ERRCODE_SQLDATABASE_INVALID_RESPONSE = ErrorSystem::instance().registerError("ERRCODE_SQLDATABASE_INVALID_RESPONSE");
 static int ERRCODE_SQLDATABASE_SYNC_ERROR = ErrorSystem::instance().registerError("ERRCODE_SQLDATABASE_SYNC_ERROR");
 
+// Test sans encryptage ni compression
+static const bool ChatStorageEncryption = false;
+static const bool ChatStorageCompression = false;
+
 ChatStorageDistant::ChatStorageDistant(LLMServices* llmservices, const QString& serverUrl, 
                                 const QString& userId, const QString& encryptionPassword) :
     ChatStorage(llmservices),
     networkManager_(new QNetworkAccessManager(this)),
-    serverUrl_(serverUrl),
-    userId_(userId),
+    serverUrl_(!serverUrl.isEmpty() ? serverUrl : "http://127.0.0.1:8080/"),
+    userId_(!userId.isEmpty() ? userId : "default"),
     encryptionPassword_(encryptionPassword),
     pendingLoadReply_(nullptr),
     pendingSaveReply_(nullptr),
@@ -82,7 +86,7 @@ std::optional<QJsonArray> ChatStorageDistant::loadJson()
         return std::nullopt;
     }
 
-    if (encryptionPassword_.isEmpty())
+    if (ChatStorageEncryption && encryptionPassword_.isEmpty())
     {
         ErrorSystem::instance().log(ERRCODE_SQLDATABASE_NO_ENCRYPTION_PASSWORD);
         return std::nullopt;
@@ -129,10 +133,6 @@ std::optional<QJsonArray> ChatStorageDistant::loadJson()
     return pendingLoadResult_;
 }
 
-// Test sans encryptage ni compression
-static const bool ChatStorageEncryption = false;
-static const bool ChatStorageCompression = false;
-
 bool ChatStorageDistant::saveJson(const QJsonArray& chats)
 {
     qDebug() << "ChatStorageDistant: saveJson";
@@ -149,7 +149,7 @@ bool ChatStorageDistant::saveJson(const QJsonArray& chats)
         return false;
     }
 
-    if (encryptionPassword_.isEmpty())
+    if (ChatStorageEncryption && encryptionPassword_.isEmpty())
     {
         ErrorSystem::instance().log(ERRCODE_SQLDATABASE_NO_ENCRYPTION_PASSWORD);
         return false;
@@ -194,7 +194,7 @@ bool ChatStorageDistant::saveJson(const QJsonArray& chats)
         QJsonObject conv;
         conv["id"] = id;
         conv["user_id"] = userId_;
-        conv["data"] = QString::fromUtf8(binaryData);
+        conv["data"] = QString::fromLatin1(binaryData.toBase64());
         preparedConversations.append(conv);
     }
 
@@ -303,14 +303,14 @@ void ChatStorageDistant::onLoadFinished()
         // Décompresser
         if (ChatStorageCompression)
         {
-            QByteArray compressedData = conv["data"].toString().toUtf8();
+            QByteArray compressedData = QByteArray::fromBase64(conv["data"].toString().toLatin1());
             if (compressedData.isEmpty())
                 continue;             
             data = qUncompress(compressedData);
         }
         else
         {
-            data = conv["data"].toString().toUtf8();
+            data = QByteArray::fromBase64(conv["data"].toString().toLatin1());
         }
         
         if (data.isEmpty())
