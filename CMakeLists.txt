@@ -70,6 +70,8 @@ else()
     option(BUILD_TEST "Build the tests" ON)
     option(BUILD_SERVER "Build the server" ON)
     option(BUILD_DOCS "Build the documentation" OFF)
+
+    option(ACTIVE_QML_DEBUG "Enable Qml Debug" ON)
 endif()
 
 # Recherche de Qt6 globale pour tout le projet (y compris les dépendances)
@@ -103,7 +105,7 @@ if (BUILD_TEST AND NOT ANDROID)
 endif()
 
 if (BUILD_APPLICATION)
-    add_subdirectory (Source/Application)  
+    add_subdirectory (Source/Application)
 endif()
 
 if (BUILD_SERVER)

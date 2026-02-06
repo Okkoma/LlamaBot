@@ -3,6 +3,10 @@ set(CMAKE_AUTOUIC ON)
 set(CMAKE_AUTOMOC ON)
 set(CMAKE_AUTORCC ON)
 
+if (ACTIVE_QML_DEBUG)
+    add_definitions("-DLLAMABOT_QML_DEBUG")
+endif()
+
 set(PROJECT_SOURCES
     main.cpp
     ApplicationServices.cpp ApplicationServices.h
