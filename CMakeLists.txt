@@ -8,13 +8,9 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 # clangd helper
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
-# Qt QML helper
-set(QT_QML_GENERATE_QMLLS_INI OFF)
+set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 
-# Qt objects generators
-set(CMAKE_AUTOMOC ON)
-set(CMAKE_AUTOUIC ON)
-set(CMAKE_AUTORCC ON)
+list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake/modules")
 
 # Configuration spécifique pour Android
 if(ANDROID)
@@ -24,8 +20,10 @@ if(ANDROID)
     option(GGML_CUDA "Disable CUDA on Android" OFF)
     option(GGML_METAL "Disable Metal on Android" OFF)
     option(GGML_SYCL "Disable SYCL on Android" OFF)
+    # TODO : resolve runtime dlopen error with libomp on android
+    option(GGML_OPENMP "Disable OpenMP on Android" OFF)
     
-    message(STATUS "Android: Vulkan=${GGML_VULKAN}, OpenCL=${GGML_OPENCL}, BLAS=${GGML_BLAS}")
+    message(STATUS "Android: Vulkan=${GGML_VULKAN}, OpenCL=${GGML_OPENCL}, BLAS=${GGML_BLAS}, OPENMP=${GGML_OPENMP}")
 else()
     # Configuration des backends GPU pour Desktop/Linux
     # Décommentez les lignes correspondant à votre GPU
@@ -65,14 +63,14 @@ else()
     if(GGML_BLAS)
         message(STATUS "BLAS acceleration enabled")
     endif()
-
-    option(BUILD_APPLICATION "Build the application" ON)
-    option(BUILD_TEST "Build the tests" ON)
-    option(BUILD_SERVER "Build the server" ON)
+    
+    option(BUILD_TEST "Build the tests" OFF)
+    option(BUILD_SERVER "Build the server" OFF)
     option(BUILD_DOCS "Build the documentation" OFF)
-
-    option(ACTIVE_QML_DEBUG "Enable Qml Debug" ON)
 endif()
+
+option(BUILD_APPLICATION "Build the application" ON)
+option(ACTIVE_QML_DEBUG "Enable Qml Debug" ON)
 
 # Recherche de Qt6 globale pour tout le projet (y compris les dépendances)
 if(DEFINED ENV{Qt6})
@@ -91,13 +89,30 @@ find_package(Qt6 REQUIRED COMPONENTS
     Gui
     Sql
 )
-find_package(OpenSSL REQUIRED)
+
+if (NOT ANDROID)
+    find_package(OpenSSL REQUIRED)
+else()
+    include(Source/ThirdParty/android_openssl/android_openssl.cmake)
+endif()
+
+add_subdirectory (Source/ThirdParty/zlib)
+add_library(ZLIB::ZLIB ALIAS zlib)
+
+# skip libpng install
+set(SKIP_INSTALL_ALL TRUE)
+add_subdirectory (Source/ThirdParty/libpng)
+add_library(PNG::PNG ALIAS png_shared)
+
+add_subdirectory (Source/ThirdParty/freetype)
+add_library(Freetype::Freetype ALIAS freetype)
+
+add_subdirectory (Source/ThirdParty/poppler)
 
 include_directories (Source/Common Source/Application Source/ThirdParty/llama.cpp/src Source/ThirdParty/poppler/qt6/src)
 
 add_subdirectory (Source/Common)
 add_subdirectory (Source/ThirdParty/llama.cpp)
-add_subdirectory (Source/ThirdParty/poppler)
 
 if (BUILD_TEST AND NOT ANDROID)
     enable_testing()

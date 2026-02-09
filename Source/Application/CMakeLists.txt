@@ -36,7 +36,7 @@ qt_add_executable(LlamaBot MANUAL_FINALIZATION ${PROJECT_SOURCES})
 qt_policy(SET QTP0001 NEW)
 qt_policy(SET QTP0004 NEW)
 
-#qt_add_library(LlamaBotQml STATIC)
+qt_add_library(LlamaBotQml STATIC)
 qt_add_qml_module(LlamaBotQml
     URI LlamaBotQml
     VERSION 1.0
@@ -58,7 +58,6 @@ qt_add_qml_module(LlamaBotQml
     SOURCES
         Application.h
         Application.cpp
-        Chat.h
         ChatController.h
         ChatController.cpp
         ThemeManager.h
@@ -69,18 +68,28 @@ qt_add_qml_module(LlamaBotQml
         ModelStore.h ModelStore.cpp
         HuggingFaceModelSource.h HuggingFaceModelSource.cpp
         OllamaModelSource.h OllamaModelSource.cpp
-        RAGService.h
         ErrorMessenger.h ErrorMessenger.cpp
 )  
 
 target_link_libraries(LlamaBotQml PRIVATE Qt6::Core Qt6::Widgets Qt6::Network Qt6::Qml Qt6::Quick Qt6::QuickWidgets Qt6::QuickControls2 Qt6::Sql)
+target_link_libraries(LlamaBotQml PRIVATE LlamaBotCommon)
 
-target_link_libraries(LlamaBot PRIVATE LlamaBotCommon)
-target_link_libraries(LlamaBot PRIVATE LlamaBotQml)
 target_link_libraries(LlamaBot PRIVATE Qt6::Core Qt6::Widgets Qt6::Network Qt6::Qml Qt6::Quick Qt6::QuickWidgets Qt6::QuickControls2 Qt6::Sql)
 target_link_libraries(LlamaBot PRIVATE llama)
 target_link_libraries(LlamaBot PRIVATE poppler-qt6)
-target_link_libraries(LlamaBot PRIVATE OpenSSL::SSL OpenSSL::Crypto)
+target_link_libraries(LlamaBot PRIVATE LlamaBotCommon)
+target_link_libraries(LlamaBot PRIVATE LlamaBotQml)
+
+if (ANDROID)
+    add_android_openssl_libraries(LlamaBot)
+    target_include_directories(LlamaBot PRIVATE ${CMAKE_SOURCE_DIR}/Source/ThirdParty/android_openssl/ssl_3/include)
+    target_link_libraries(LlamaBot PRIVATE 
+        ${CMAKE_SOURCE_DIR}/Source/ThirdParty/android_openssl/ssl_3/${CMAKE_ANDROID_ARCH_ABI}/libssl_3.so
+        ${CMAKE_SOURCE_DIR}/Source/ThirdParty/android_openssl/ssl_3/${CMAKE_ANDROID_ARCH_ABI}/libcrypto_3.so
+    )
+else()
+    target_link_libraries(LlamaBot PRIVATE OpenSSL::SSL OpenSSL::Crypto)
+endif()
 
 # Qt for iOS sets MACOSX_BUNDLE_GUI_IDENTIFIER automatically since Qt 6.1.
 # If you are developing for iOS or macOS you should consider setting an

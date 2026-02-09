@@ -62,7 +62,7 @@ echo
 
 # Compilation
 echo "Compilation en cours..."
-cmake --build $BUILD_DIR --target apk --config Release -j$(nproc)
+cmake --build $BUILD_DIR --target apk --config Debug -j$(nproc)
 
 if [ $? -ne 0 ]; then
     echo "! Erreur lors de la compilation"
@@ -78,11 +78,6 @@ find $BUILD_DIR -name "*.so" -o -name "*.a" | head -10
 
 echo
 echo "ChatBot compilé pour Android avec support OpenCL !"
-echo
-echo "Pour intégrer dans votre app Android:"
-echo "   1. Copiez les .so files dans app/src/main/jniLibs/"
-echo "   2. Ajoutez les headers dans votre projet"
-echo "   3. Utilisez JNI pour appeler les fonctions C++"
 echo
 echo "Configuration recommandée pour Android:"
 echo "   - Architecture: arm64-v8a (recommandé)"

@@ -48,6 +48,7 @@ $QT/android_arm64_v8a/bin/qt-cmake -S . -GNinja \
 	-DANDROID_SDK_ROOT=$ANDROID_SDK \
 	-DANDROID_NDK_ROOT=$ANDROID_NDK \
 	-DVulkan_GLSLC_EXECUTABLE=$ANDROID_NDK/shader-tools/linux-x86_64/glslc \
+    -DCMAKE_CXX_FLAGS="-I$ANDROID_NDK/sources/third_party/vulkan/src/include" \
 	-DGGML_VULKAN=ON \
 	-DGGML_OPENCL=OFF \
 	-DGGML_CUDA=OFF \
@@ -68,7 +69,7 @@ echo
 
 # Compilation
 echo "Compilation en cours..."
-cmake --build $BUILD_DIR --target apk --config Release -j$(nproc)
+cmake --build $BUILD_DIR --target apk --config Debug -j$(nproc)
 
 if [ $? -ne 0 ]; then
     echo "Erreur lors de la compilation"
@@ -84,11 +85,6 @@ find $BUILD_DIR -name "*.so" -o -name "*.a" | head -10
 
 echo
 echo "ChatBot compilé pour Android avec support Vulkan !"
-echo
-echo "Pour intégrer dans votre app Android:"
-echo "   1. Copiez les .so files dans app/src/main/jniLibs/"
-echo "   2. Ajoutez les headers dans votre projet"
-echo "   3. Utilisez JNI pour appeler les fonctions C++"
 echo
 echo "Configuration recommandée pour Android Vulkan:"
 echo "   - Architecture: arm64-v8a (recommandé)"

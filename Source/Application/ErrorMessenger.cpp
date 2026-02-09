@@ -1,4 +1,4 @@
-#include "../Common/ErrorSystem.h"
+#include "ErrorSystem.h"
 
 #include "ErrorMessenger.h"
 
@@ -19,8 +19,8 @@ void ErrorMessenger::log(int err, const QStringList& params)
 
 void ErrorMessenger::notify(int msgIndex)
 {
-    qDebug() << "ErrorMessenger: notify:" << msgIndex;
     QStringList list = ErrorSystem::instance().getErrors(msgIndex, 1);
+    qDebug() << "ErrorMessenger: notify: " << list.last();    
     emit errorPopped(list.last());
 }
 

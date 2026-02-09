@@ -59,7 +59,7 @@ echo
 
 # Compilation
 echo "Compilation en cours..."
-cmake --build $BUILD_DIR --target apk --config Release -j$(nproc)
+cmake --build $BUILD_DIR --target apk --config Debug -j$(nproc)
 
 if [ $? -ne 0 ]; then
     echo "! Erreur lors de la compilation"
