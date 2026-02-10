@@ -100,7 +100,7 @@ endif()
 # Qt for iOS sets MACOSX_BUNDLE_GUI_IDENTIFIER automatically since Qt 6.1.
 # If you are developing for iOS or macOS you should consider setting an
 # explicit, fixed bundle identifier manually though.
-set(BUNDLE_ID_OPTION MACOSX_BUNDLE_GUI_IDENTIFIER com.okkomastudio.LlamaBot)
+set(BUNDLE_ID_OPTION MACOSX_BUNDLE_GUI_IDENTIFIER com.okkomastudio.llamabot)
 
 set_target_properties(LlamaBot PROPERTIES
     RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin
@@ -116,6 +116,12 @@ set_target_properties(LlamaBot PROPERTIES
     MACOSX_BUNDLE_SHORT_VERSION_STRING ${PROJECT_VERSION_MAJOR}.${PROJECT_VERSION_MINOR}
     MACOSX_BUNDLE TRUE
     WIN32_EXECUTABLE TRUE
+    QT_ANDROID_PACKAGE_SOURCE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/android"
+    QT_ANDROID_PACKAGE_NAME "com.okkomastudio.llamabot"
+    QT_ANDROID_APP_NAME "LlamaBot"
+    QT_ANDROID_APP_ICON "@drawable/ic_launcher"
+    QT_ANDROID_VERSION_NAME "1.0"
+    QT_ANDROID_VERSION_CODE 10   
 )
 
 if (NOT ANDROID)
