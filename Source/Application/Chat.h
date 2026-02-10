@@ -118,14 +118,14 @@ public:
         return { {Role, "role"}, {Content, "content"}, {Assets, "assets"} };
     }
     
-    Q_INVOKABLE void addMessage(const QString &role, const QString &content, const QVariantList &assets = {}) 
+    Q_INVOKABLE void addMessage(const QString& role, const QString& content, const QVariantList& assets = {}) 
     {
         beginInsertRows(QModelIndex(), history_.size(), history_.size());
         history_.append({role, content, assets});
         endInsertRows();
     }
 
-    Q_INVOKABLE void modifyMessage(int row, const QString &role, const QString &content, const QVariantList &assets = {}) 
+    Q_INVOKABLE void modifyMessage(int row, const QString& role, const QString& content, const QVariantList& assets = {}) 
     {        
         history_[row] = {role, content, assets};
         QModelIndex idx = index(row);

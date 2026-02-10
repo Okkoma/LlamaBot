@@ -54,6 +54,12 @@ qt_add_qml_module(LlamaBotQml
         qml/ModelSelector.qml
         qml/ModelStoreDialog.qml
         qml/SettingsDialog.qml
+        qml/+android/ChatDrawer.qml
+        qml/+android/Main.qml
+        qml/+android/MessageDelegate.qml
+        qml/+android/ModelStoreDialog.qml
+        qml/+android/InputArea.qml
+        qml/+android/SettingsDialog.qml
         
     SOURCES
         Application.h

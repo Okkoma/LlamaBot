@@ -15,6 +15,12 @@
 
 #include "ThemeManager.h"
 
+#ifdef Q_OS_ANDROID
+QString DefaultStyle_ = "Material";
+#else
+QString DefaultStyle_ = "Basic";
+#endif
+
 QStringList quickStyles = 
 {
     "Basic",
@@ -72,7 +78,7 @@ ThemeManager::ThemeManager(QObject* parent) :
     if (!styles_.contains(currentStyle_))
     {
         // Set the fallback style
-        currentStyle_ = styles_.isEmpty() ? "Basic" : styles_.first();    
+        currentStyle_ = styles_.isEmpty() ? DefaultStyle_ : styles_.first();
         emit styleNotAvailableWarning(currentStyle_);
     }
     
