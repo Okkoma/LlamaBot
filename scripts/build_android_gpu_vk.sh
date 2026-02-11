@@ -47,8 +47,6 @@ echo "Configuration pour Android avec Vulkan..."
 $QT/android_arm64_v8a/bin/qt-cmake -S . -GNinja \
 	-DANDROID_SDK_ROOT=$ANDROID_SDK \
 	-DANDROID_NDK_ROOT=$ANDROID_NDK \
-	-DVulkan_GLSLC_EXECUTABLE=$ANDROID_NDK/shader-tools/linux-x86_64/glslc \
-    -DCMAKE_CXX_FLAGS="-I$ANDROID_NDK/sources/third_party/vulkan/src/include" \
 	-DGGML_VULKAN=ON \
 	-DGGML_OPENCL=OFF \
 	-DGGML_CUDA=OFF \

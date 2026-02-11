@@ -767,9 +767,30 @@ LlamaCppService::LlamaCppService(LLMServices* service, const QString& name) :
     qDebug().noquote() << getBackendInfo();
 }
 
+const char* GGML_LOG_LEVEL_STRINGS[] =
+{
+    "GGML_NONE:",
+    "GGML_DEBUG:",
+    "GGML_INFO:",
+    "GGML_WARN:",
+    "GGML_ERROR:"
+};
+
+void logGGMLtoQT(enum ggml_log_level level, const char * text, void * user_data)
+{
+    QString msg(text);
+    msg.resize(msg.length() - 1);
+    if (level < 5)
+        qDebug().noquote() << GGML_LOG_LEVEL_STRINGS[level] << msg;
+    else
+        qDebug().noquote() << msg;
+}
+
 LlamaCppService::LlamaCppService(LLMServices* service, const QVariantMap& params) :
     LLMService(service, params)
 {
+    ggml_log_set(&logGGMLtoQT, nullptr);
+
     // Default GPU configuration
     setDefaultUseGpu(true);
     setDefaultGpuLayers(99); // All layers on GPU
@@ -778,6 +799,14 @@ LlamaCppService::LlamaCppService(LLMServices* service, const QVariantMap& params
     // Enable threaded version by default
     setUseThreadedVersion(true);
 
+    bool check = checkGpuMemoryAvailable(0);
+
+    // load dynamic backends - IMPORTANT to enable GPU
+    ggml_backend_load_all();
+
+    // Display information about available backends
+    qDebug().noquote() << getBackendInfo();
+        
     // Display information about available backends
     qDebug() << "=== Configuration LlamaCpp ===";
     qDebug() << "GPU activé:" << isUsingGpu();

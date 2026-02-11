@@ -12,14 +12,29 @@ set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 
 list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake/modules")
 
+# Pour Vulkan (multi-GPU)
+option(GGML_VULKAN "Enable Vulkan backend" ON)
+if(GGML_VULKAN)
+    option(GGML_VULKAN_DEBUG "Enable VULKAN debug" ON)
+    message(STATUS "Vulkan backend enabled")
+endif()
+
+# BLAS pour accélération CPU
+option(GGML_BLAS "Enable BLAS acceleration" ON)
+if(GGML_BLAS)
+    message(STATUS "BLAS acceleration enabled")
+endif()
+
 # Configuration spécifique pour Android
 if(ANDROID)
     message(STATUS "Configuration Android détectée")
-        
+    
     # Désactiver les backends non supportés sur Android
     option(GGML_CUDA "Disable CUDA on Android" OFF)
     option(GGML_METAL "Disable Metal on Android" OFF)
     option(GGML_SYCL "Disable SYCL on Android" OFF)
+    option(GGML_OPENCL "DisableOPENCL on Android" OFF)
+
     # TODO : resolve runtime dlopen error with libomp on android
     option(GGML_OPENMP "Disable OpenMP on Android" OFF)
     
@@ -40,12 +55,6 @@ else()
         message(STATUS "OpenCL backend enabled")
     endif()
 
-    # Pour Vulkan (multi-GPU)
-    option(GGML_VULKAN "Enable Vulkan backend" OFF)
-    if(GGML_VULKAN)
-        message(STATUS "Vulkan backend enabled")
-    endif()
-
     # Pour Apple Silicon (Metal)
     option(GGML_METAL "Enable Metal backend" OFF)
     if(GGML_METAL)
@@ -58,11 +67,6 @@ else()
         message(STATUS "SYCL backend enabled")
     endif()
 
-    # BLAS pour accélération CPU
-    option(GGML_BLAS "Enable BLAS acceleration" ON)
-    if(GGML_BLAS)
-        message(STATUS "BLAS acceleration enabled")
-    endif()
     
     option(BUILD_TEST "Build the tests" OFF)
     option(BUILD_SERVER "Build the server" OFF)
@@ -112,6 +116,13 @@ add_subdirectory (Source/ThirdParty/poppler)
 include_directories (Source/Common Source/Application Source/ThirdParty/llama.cpp/src Source/ThirdParty/poppler/qt6/src)
 
 add_subdirectory (Source/Common)
+
+if (ANDROID AND GGML_VULKAN)
+    message("ANDROID_NDK=${ANDROID_NDK}")
+    include_directories(${ANDROID_NDK}/sources/third_party/vulkan/src/include)
+    set(Vulkan_GLSLC_EXECUTABLE ${ANDROID_NDK}/shader-tools/linux-x86_64/glslc)
+endif()
+
 add_subdirectory (Source/ThirdParty/llama.cpp)
 
 if (BUILD_TEST AND NOT ANDROID)

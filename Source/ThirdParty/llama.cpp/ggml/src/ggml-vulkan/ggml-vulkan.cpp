@@ -5228,8 +5228,9 @@ static void ggml_vk_instance_init() {
     if (debug_utils_ext) {
         extensions.push_back("VK_EXT_debug_utils");
     }
-    VkBool32 enable_best_practice = layer_settings;
+    
 #if defined(VK_EXT_layer_settings)
+    VkBool32 enable_best_practice = layer_settings;
     std::vector<vk::LayerSettingEXT> settings = {
         {
             "VK_LAYER_KHRONOS_validation",
@@ -14670,13 +14671,16 @@ ggml_backend_reg_t ggml_backend_vk_reg() {
         ggml_vk_instance_init();
         return &reg;
     } catch (const vk::SystemError& e) {
-        VK_LOG_DEBUG("ggml_backend_vk_reg() -> Error: System error: " << e.what());
+        GGML_LOG_ERROR("ggml_backend_vk_reg() -> Error: System error: %s", e.what());
+        //VK_LOG_DEBUG("ggml_backend_vk_reg() -> Error: System error: " << e.what());
         return nullptr;
     } catch (const std::exception &e) {
-        VK_LOG_DEBUG("ggml_backend_vk_reg() -> Error: " << e.what());
+        GGML_LOG_ERROR("ggml_backend_vk_reg() -> Error: %s", e.what());
+        //VK_LOG_DEBUG("ggml_backend_vk_reg() -> Error: " << e.what());
         return nullptr;
     } catch (...) {
-        VK_LOG_DEBUG("ggml_backend_vk_reg() -> Error: unknown exception during Vulkan init");
+        GGML_LOG_ERROR("ggml_backend_vk_reg() -> Error: unknown exception during Vulkan init");
+        //VK_LOG_DEBUG("ggml_backend_vk_reg() -> Error: unknown exception during Vulkan init");
         return nullptr;
     }
 }
