@@ -7,10 +7,7 @@
             "generator": "Ninja",
             "binaryDir": "${sourceDir}/build-${presetName}",
             "cacheVariables": {
-                "CMAKE_EXPORT_COMPILE_COMMANDS": "ON",
-                "GGML_CUDA": "ON",
-                "GGML_OPENCL": "ON",
-                "GGML_BLAS": "ON"
+                "CMAKE_EXPORT_COMPILE_COMMANDS": "ON"
             }
         },
         {
@@ -39,6 +36,13 @@
             "hidden": true,
             "cacheVariables": {
                 "GGML_STATIC": "ON"
+            }
+        },
+        {
+            "name": "cuda",
+            "hidden": true,
+            "cacheVariables": {
+                "GGML_CUDA": "ON"
             }
         },
         {
@@ -116,8 +120,7 @@
             "hidden": true,
             "cacheVariables": {
                 "CMAKE_C_COMPILER": "gcc",
-                "CMAKE_CXX_COMPILER": "g++",
-                "CMAKE_BUILD_PARALLEL_LEVEL": "8"
+                "CMAKE_CXX_COMPILER": "g++"
             }
         },
         {
@@ -129,11 +132,29 @@
             ]
         },
         {
+            "name": "x64-linux-gcc-debug-vk",
+            "inherits": [
+                "base",
+                "x64-linux-gcc",
+                "debug",
+                "vulkan"
+            ]
+        },
+        {
             "name": "x64-linux-gcc-release",
             "inherits": [
                 "base",
                 "x64-linux-gcc",
                 "release"
+            ]
+        },
+        {
+            "name": "x64-linux-gcc-release-vk",
+            "inherits": [
+                "base",
+                "x64-linux-gcc",
+                "release",
+                "vulkan"
             ]
         },
         {
@@ -304,6 +325,11 @@
             "configurePreset": "x64-linux-gcc-debug"
         },
         {
+            "name": "x64-linux-debug-vk",
+            "inherits": "base-build",
+            "configurePreset": "x64-linux-gcc-debug-vk"
+        },
+        {
             "name": "x64-linux-debug-test",
             "inherits": "base-build",
             "configurePreset": "x64-linux-gcc-debug-test"
@@ -312,6 +338,11 @@
             "name": "x64-linux-release",
             "inherits": "base-build",
             "configurePreset": "x64-linux-gcc-release"
+        },
+        {
+            "name": "x64-linux-release-vk",
+            "inherits": "base-build",
+            "configurePreset": "x64-linux-gcc-release-vk"
         },
         {
             "name": "x64-windows-debug",

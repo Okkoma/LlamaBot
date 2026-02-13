@@ -12,10 +12,16 @@ set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 
 list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake/modules")
 
+cmake_host_system_information(RESULT N_CORES QUERY NUMBER_OF_LOGICAL_CORES)
+if(NOT N_CORES OR N_CORES EQUAL 0)
+    set(N_CORES 2)
+endif()
+set(CMAKE_BUILD_PARALLEL_LEVEL ${N_CORES})
+
 # Pour Vulkan (multi-GPU)
-option(GGML_VULKAN "Enable Vulkan backend" ON)
+option(GGML_VULKAN "Enable Vulkan backend" OFF)
 if(GGML_VULKAN)
-    option(GGML_VULKAN_DEBUG "Enable VULKAN debug" ON)
+    option(GGML_VULKAN_DEBUG "Enable VULKAN debug" OFF)
     message(STATUS "Vulkan backend enabled")
 endif()
 
@@ -31,20 +37,21 @@ if(ANDROID)
     
     # Désactiver les backends non supportés sur Android
     option(GGML_CUDA "Disable CUDA on Android" OFF)
+    option(GGML_OPENCL "Disable OPENCL on Android" OFF)
+    option(GGML_SYCL "Disable SYCL on Android" OFF)    
     option(GGML_METAL "Disable Metal on Android" OFF)
-    option(GGML_SYCL "Disable SYCL on Android" OFF)
-    option(GGML_OPENCL "DisableOPENCL on Android" OFF)
-
     # TODO : resolve runtime dlopen error with libomp on android
     option(GGML_OPENMP "Disable OpenMP on Android" OFF)
-    
-    message(STATUS "Android: Vulkan=${GGML_VULKAN}, OpenCL=${GGML_OPENCL}, BLAS=${GGML_BLAS}, OPENMP=${GGML_OPENMP}")
+    # build blis instead of using blas
+    option(USE_BLIS_VENDOR "Build BLIS thirparty" ON)
+
+    message(STATUS "Android: Vulkan=${GGML_VULKAN} BLAS=${GGML_BLAS}")
 else()
     # Configuration des backends GPU pour Desktop/Linux
     # Décommentez les lignes correspondant à votre GPU
 
     # Pour NVIDIA GPU (CUDA)
-    option(GGML_CUDA "Enable CUDA backend" ON)
+    option(GGML_CUDA "Enable CUDA backend" OFF)
     if(GGML_CUDA)
         message(STATUS "CUDA backend enabled")
     endif()
@@ -54,20 +61,21 @@ else()
     if(GGML_OPENCL)
         message(STATUS "OpenCL backend enabled")
     endif()
-
-    # Pour Apple Silicon (Metal)
-    option(GGML_METAL "Enable Metal backend" OFF)
-    if(GGML_METAL)
-        message(STATUS "Metal backend enabled")
-    endif()
-
+    
     # Pour Intel GPU (SYCL)
     option(GGML_SYCL "Enable SYCL backend" OFF)
     if(GGML_SYCL)
         message(STATUS "SYCL backend enabled")
     endif()
 
+    # Pour Apple Silicon (Metal)
+    option(GGML_METAL "Enable Metal backend" OFF)
+    if(GGML_METAL)
+        message(STATUS "Metal backend enabled")
+    endif()
     
+    option(USE_BLIS_VENDOR "Build BLIS thirparty" ON)
+
     option(BUILD_TEST "Build the tests" OFF)
     option(BUILD_SERVER "Build the server" OFF)
     option(BUILD_DOCS "Build the documentation" OFF)
@@ -100,6 +108,12 @@ else()
     include(Source/ThirdParty/android_openssl/android_openssl.cmake)
 endif()
 
+if (GGML_BLAS AND USE_BLIS_VENDOR)
+    set(GGML_BLAS_VENDOR "FLAME")
+    add_subdirectory (Source/ThirdParty/blis)
+    add_library(BLAS ALIAS blis)
+endif()
+
 add_subdirectory (Source/ThirdParty/zlib)
 add_library(ZLIB::ZLIB ALIAS zlib)
 
@@ -118,7 +132,6 @@ include_directories (Source/Common Source/Application Source/ThirdParty/llama.cp
 add_subdirectory (Source/Common)
 
 if (ANDROID AND GGML_VULKAN)
-    message("ANDROID_NDK=${ANDROID_NDK}")
     include_directories(${ANDROID_NDK}/sources/third_party/vulkan/src/include)
     set(Vulkan_GLSLC_EXECUTABLE ${ANDROID_NDK}/shader-tools/linux-x86_64/glslc)
 endif()

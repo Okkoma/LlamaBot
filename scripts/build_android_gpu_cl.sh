@@ -6,9 +6,10 @@
 set -e
 
 BUILD_DIR=build-android-cl
-NDK_VERSION=26.1.10909125
-QT=$QT_ROOT/6.8.1
+NDK_VERSION=27.2.12479018
+QT=$QT_ROOT/6.10.2
 ANDROID_NDK=$ANDROID_NDK_ROOT
+ANDROID_SDK=$ANDROID_SDK_ROOT
 
 echo "=== Compilation ChatBot pour Android GPU avec backend OpenCL ==="
 echo

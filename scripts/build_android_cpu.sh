@@ -6,8 +6,8 @@
 set -e
 
 BUILD_DIR=build-android-cpu
-NDK_VERSION=26.1.10909125
-QT=$QT_ROOT/6.8.1
+NDK_VERSION=27.2.12479018
+QT=$QT_ROOT/6.10.2
 ANDROID_NDK=$ANDROID_NDK_ROOT
 ANDROID_SDK=$ANDROID_SDK_ROOT
 
@@ -22,8 +22,8 @@ if [ -z "$ANDROID_NDK" ]; then
     echo "Veuillez installer cette version de ndk"
     exit 1
 fi
-if [ -z "$QT_ROOT/6.8.1" ]; then
-    echo "! \$QT_ROOT/6.8.1 n'a pas été trouvé"
+if [ -z "$QT_ROOT/6.10.2" ]; then
+    echo "! \$QT_ROOT/6.10.2 n'a pas été trouvé"
     echo "Veuillez installer cette version de QT"
     exit 1
 fi
