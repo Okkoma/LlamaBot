@@ -74,7 +74,7 @@ else()
         message(STATUS "Metal backend enabled")
     endif()
     
-    option(USE_BLIS_VENDOR "Build BLIS thirparty" ON)
+    option(USE_BLIS_VENDOR "Build BLIS thirparty" OFF)
 
     option(BUILD_TEST "Build the tests" OFF)
     option(BUILD_SERVER "Build the server" OFF)

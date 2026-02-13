@@ -16,7 +16,7 @@ set(PROJECT_SOURCES
     LlamaCppService.h LlamaCppService.cpp
     OllamaService.h OllamaService.cpp
     Encryption.h Encryption.cpp
-    Chat.h ChatImpl.h ChatImpl.cpp ChatConverter.cpp
+    ChatImpl.h ChatImpl.cpp ChatConverter.cpp
     ChatStorage.h
     ChatStorageLocal.h ChatStorageLocal.cpp
     ChatStorageDistant.h ChatStorageDistant.cpp
@@ -64,6 +64,7 @@ qt_add_qml_module(LlamaBotQml
     SOURCES
         Application.h
         Application.cpp
+        Chat.h
         ChatController.h
         ChatController.cpp
         ThemeManager.h
