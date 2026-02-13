@@ -45,6 +45,9 @@ bool checkGpuMemoryAvailable(size_t requiredBytes)
                         .arg(devDesc)
                         .arg(freeMem / (1024 * 1024))
                         .arg(totalMem / (1024 * 1024));
+
+            if (devName.contains("BLAS"))
+                continue;
             
             if (requiredBytes)
             {
