@@ -35,6 +35,8 @@ Drawer {
             onClicked: {
                 if (ChatController)
                     ChatController.createChat()
+                chatListView.currentIndex = ChatController.currentChatIndex
+                chatListView.positionViewAtIndex(chatListView.currentIndex, ListView.Visible)
             }
         }
 
@@ -187,4 +189,6 @@ Drawer {
             }
         }
     }
+
+    onOpened: chatListView.positionViewAtIndex(ChatController.currentChatIndex, ListView.Visible)
 }
