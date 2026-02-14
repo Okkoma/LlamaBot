@@ -5,4 +5,7 @@
   <qresource prefix="icons">
     <file alias="icon1.png">../../bin/data/images/llamabot.png</file>
   </qresource>
+  <qresource prefix="themes">
+    <file alias="default.json">../../bin/data/ressources/themes/default.json</file>
+  </qresource>  
 </RCC> 

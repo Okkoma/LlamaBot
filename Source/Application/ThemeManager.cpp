@@ -195,10 +195,17 @@ void ThemeManager::loadThemes()
 
     if (!themesDir.exists())
     {
+        // Le préfixe ":" indique à Qt de chercher dans les ressources compilées
+        themesDirPath = ":/themes";
+        themesDir.setPath(themesDirPath);
+    }
+
+    if (!themesDir.exists())
+    {
         qWarning() << "Themes directory does not exist:" << themesDir.path();
         return;
     }
-
+    
     // Lister les fichiers JSON dans le dossier
     QStringList themeFiles = themesDir.entryList(QStringList() << "*.json", QDir::Files);
     qDebug() << "Fichiers JSON trouvés:" << themeFiles;
