@@ -16,8 +16,8 @@ ApplicationWindow {
     visible: true
     width: 1000
     height: 800
-    title: qsTr("ChatBot QML")
-    
+    title: qsTr("LlamaBot QML")
+
     Material.theme: ThemeManager.darkMode ? Material.Dark : Material.Light
     Universal.theme: ThemeManager.darkMode ? Universal.Dark : Universal.Light
 
@@ -32,10 +32,10 @@ ApplicationWindow {
         width: parent.width
         height: 50
         edge: Qt.BottomEdge
-        
+
         background: Rectangle {
             color: ThemeManager.color("window")
-        }        
+        }
 
         ColumnLayout {
             anchors.fill: parent
@@ -45,9 +45,8 @@ ApplicationWindow {
             // Message Error View
             ListView {
                 id: messageErrorView
-                anchors.top: parent.top
-                anchors.left: parent.left
-                anchors.right: parent.right
+                Layout.fillWidth: true
+                Layout.alignment: Qt.AlignTop
 
                 delegate: Text {
                     required property var modelData
@@ -73,9 +72,9 @@ ApplicationWindow {
         Connections {
             target: ErrorMessenger
             function onErrorPopped(error) {
-                messageErrorView.model = ErrorMessenger.get(10)
-                consoleDrawer.visible = true
-                consoleHideTimer.restart()
+                messageErrorView.model = ErrorMessenger.get(10);
+                consoleDrawer.visible = true;
+                consoleHideTimer.restart();
             }
         }
     }
@@ -88,10 +87,13 @@ ApplicationWindow {
         ToolBar {
             id: toolBar
             Layout.fillWidth: true
+            background: Rectangle {
+                color: ThemeManager.color("window")
+            }
             RowLayout {
                 anchors.fill: parent
                 spacing: 10
-                
+
                 ToolButton {
                     icon.name: "menu"
                     text: "☰"
@@ -99,39 +101,46 @@ ApplicationWindow {
                     ToolTip.visible: hovered
                     ToolTip.text: "Conversations"
                 }
-                
+
                 ToolButton {
                     text: "+"
-                    onClicked: { if (ChatController) ChatController.createChat() }
+                    onClicked: {
+                        if (ChatController)
+                            ChatController.createChat();
+                    }
                     ToolTip.visible: hovered
                     ToolTip.text: "New Chat"
                 }
 
-                Item { Layout.fillWidth: true }
+                Item {
+                    Layout.fillWidth: true
+                }
 
                 Label {
                     id: lbl_Api
                     text: "API:"
                     color: ThemeManager.color("text")
                 }
-                                
+
                 APISelector {
                     Layout.preferredWidth: 130
                 }
-                    
+
                 Label {
                     id: lbl_Model
                     text: "Model:"
                     color: ThemeManager.color("text")
                 }
-                    
-                ModelSelector {   
-                    Layout.preferredWidth: 300                 
+
+                ModelSelector {
+                    Layout.preferredWidth: 300
                     Layout.maximumWidth: 350
                 }
 
-                Item { Layout.fillWidth: true }
-                
+                Item {
+                    Layout.fillWidth: true
+                }
+
                 // RAG Status Indicator
                 ToolButton {
                     text: "📚"
@@ -141,16 +150,16 @@ ApplicationWindow {
                     ToolTip.text: "RAG Active: " + (ChatController && ChatController.ragService ? ChatController.ragService.collectionStatus : "N/A")
                     opacity: 0.7
                 }
-                
+
                 // Loading icon - avec gestion robuste des connexions
                 LoadingSpinner {
                     id: loadingSpinner
                     size: parent.height
-                    
+
                     // Connect to ChatController using safe method
                     Component.onCompleted: {
                         if (ChatController) {
-                            loadingSpinner.connectToController(ChatController)
+                            loadingSpinner.connectToController(ChatController);
                         }
                     }
                 }
@@ -160,10 +169,10 @@ ApplicationWindow {
                     ToolTip.visible: hovered
                     ToolTip.text: "Menu"
                     onClicked: menu.open()
-                    
+
                     Menu {
                         id: menu
-                        MenuItem { 
+                        MenuItem {
                             text: "Model Store"
                             onTriggered: modelStorePopup.open()
                         }
@@ -171,19 +180,21 @@ ApplicationWindow {
                         MenuItem {
                             text: ThemeManager.darkMode ? "☀ Light Theme" : "🌙 Dark Theme"
                             onTriggered: {
-                                ThemeManager.setDarkMode(!ThemeManager.darkMode)
+                                ThemeManager.setDarkMode(!ThemeManager.darkMode);
                             }
                         }
                         MenuItem {
                             text: "Settings"
                             onTriggered: settingsDialog.open()
                         }
-                        MenuItem { text: "About" }
+                        MenuItem {
+                            text: "About"
+                        }
                     }
                 }
             }
         }
-        
+
         // Chat View
         ChatView {
             Layout.fillWidth: true
@@ -192,29 +203,8 @@ ApplicationWindow {
     }
 
     // Model Store Dialog
-    Dialog {
+    ModelStoreDialog {
         id: modelStorePopup
-        title: "Model Store"
-        width: 800
-        height: 800
-        modal: true
-        anchors.centerIn: parent
-        padding: 0
-        
-        contentItem: Loader {
-            id: dialogLoader
-            active: modelStorePopup.opened
-            source: "ModelStoreDialog.qml"
-        }
-
-        Connections {
-            target: dialogLoader.item
-            // Use ignoreUnknownSignals because the linter can't know the exact type of the loaded item
-            ignoreUnknownSignals: true
-            function onCloseRequested() {
-                modelStorePopup.close()
-            }
-        }
     }
 
     // Settings Dialog
@@ -225,12 +215,12 @@ ApplicationWindow {
     // Wheel Handler
     Item {
         id: wheelHandler
-        anchors.fill: parent        
+        anchors.fill: parent
         WheelHandler {
             acceptedModifiers: Qt.ControlModifier
-            onWheel: (event)=> {
-                event.accepted = true
-                var sign = Math.sign(event.angleDelta.y)
+            onWheel: event => {
+                event.accepted = true;
+                var sign = Math.sign(event.angleDelta.y);
                 if (sign < 0 && ThemeManager.currentFontSize > 10 || sign > 0 && ThemeManager.currentFontSize < 40)
                     ThemeManager.currentFontSize += sign;
             }
@@ -242,10 +232,11 @@ ApplicationWindow {
         target: ThemeManager
         function onThemeChanged() {
             console.log("Theme changed in QML:", ThemeManager.currentTheme);
-        }        
-        function onDarkModeChanged() {
-            lbl_Model.color = ThemeManager.color("text")
-            lbl_Api.color = ThemeManager.color("text")
         }
-    }    
+        function onDarkModeChanged() {
+            lbl_Model.color = ThemeManager.color("text");
+            lbl_Api.color = ThemeManager.color("text");
+            toolBar.background.color = ThemeManager.color("window");
+        }
+    }
 }

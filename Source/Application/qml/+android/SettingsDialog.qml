@@ -12,8 +12,8 @@ Dialog {
 
     title: "Settings"
     modal: true
-    width: Screen.width * 0.75
-    height: Screen.height * 0.75
+    width: Screen.width * 0.85
+    height: Screen.height * 0.85
     anchors.centerIn: parent
 
     ScrollView {
@@ -27,10 +27,10 @@ Dialog {
         ColumnLayout {
             width: settingsScroll.availableWidth
             spacing: 20
-            
+
             // Margins to prevent content from touching edges or being covered by scrollbar
             Layout.leftMargin: 20
-            Layout.rightMargin: 25 
+            Layout.rightMargin: 25
             Layout.topMargin: 10
             Layout.bottomMargin: 10
 
@@ -45,7 +45,7 @@ Dialog {
                 Layout.fillWidth: true
                 from: 10
                 value: ThemeManager.currentFontSize
-                to: 40   
+                to: 40
                 onMoved: ThemeManager.currentFontSize = value
             }
 
@@ -65,7 +65,10 @@ Dialog {
                 id: ragToggle
                 text: "Enable RAG"
                 checked: ChatController ? ChatController.ragEnabled : false
-                onToggled: { if (ChatController) ChatController.ragEnabled = checked; }
+                onToggled: {
+                    if (ChatController)
+                        ChatController.ragEnabled = checked;
+                }
                 ToolTip.visible: hovered
                 ToolTip.text: "Retrieve context from indexed documents"
             }
@@ -86,7 +89,8 @@ Dialog {
                 Button {
                     text: "🗑️ Clear Index"
                     onClicked: {
-                        if (ChatController && ChatController.ragService) ChatController.ragService.clearCollection()
+                        if (ChatController && ChatController.ragService)
+                            ChatController.ragService.clearCollection();
                     }
                 }
             }
@@ -124,7 +128,10 @@ Dialog {
                     stepSize: 4096
                     editable: true
                     value: ChatController ? ChatController.defaultContextSize : 2048
-                    onValueModified: { if (ChatController) ChatController.defaultContextSize = value }
+                    onValueModified: {
+                        if (ChatController)
+                            ChatController.defaultContextSize = value;
+                    }
                 }
             }
 
@@ -132,7 +139,10 @@ Dialog {
                 id: autoExpandToggle
                 text: "Auto-expand Context"
                 checked: ChatController ? ChatController.autoExpandContext : true
-                onToggled: { if (ChatController) ChatController.autoExpandContext = checked }
+                onToggled: {
+                    if (ChatController)
+                        ChatController.autoExpandContext = checked;
+                }
                 ToolTip.visible: hovered
                 ToolTip.text: "Automatically double context size when full (up to 128k)"
             }
@@ -153,7 +163,8 @@ Dialog {
                 Button {
                     text: "🛸️ Sync Now!"
                     onClicked: {
-                        if (ChatController) ChatController.saveChats(true)
+                        if (ChatController)
+                            ChatController.saveChats(true);
                     }
                 }
             }
@@ -165,9 +176,9 @@ Dialog {
         title: "Select Documents Folder"
         onAccepted: {
             // Convert file:// URL to local path
-            var path = selectedFolder.toString()
-            path = path.replace(/^(file:\/{2})/,"")
-            ChatController.ragService.ingestDirectory(path)
+            var path = selectedFolder.toString();
+            path = path.replace(/^(file:\/{2})/, "");
+            ChatController.ragService.ingestDirectory(path);
         }
     }
 }

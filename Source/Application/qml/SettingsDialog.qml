@@ -27,10 +27,10 @@ Dialog {
         ColumnLayout {
             width: settingsScroll.availableWidth
             spacing: 20
-            
+
             // Margins to prevent content from touching edges or being covered by scrollbar
             Layout.leftMargin: 20
-            Layout.rightMargin: 25 
+            Layout.rightMargin: 25
             Layout.topMargin: 10
             Layout.bottomMargin: 10
 
@@ -45,7 +45,7 @@ Dialog {
                 Layout.fillWidth: true
                 model: ThemeManager.availableStyles()
                 Component.onCompleted: {
-                    currentIndex = find(ThemeManager.currentStyle)
+                    currentIndex = find(ThemeManager.currentStyle);
                 }
             }
 
@@ -60,8 +60,8 @@ Dialog {
                 Layout.fillWidth: true
                 model: ThemeManager.availableThemes()
                 Component.onCompleted: {
-                    currentIndex = find(ThemeManager.currentTheme)
-                }            
+                    currentIndex = find(ThemeManager.currentTheme);
+                }
             }
 
             // FontSize Selection
@@ -75,7 +75,7 @@ Dialog {
                 Layout.fillWidth: true
                 from: 10
                 value: ThemeManager.currentFontSize
-                to: 40   
+                to: 40
                 onMoved: ThemeManager.currentFontSize = value
             }
 
@@ -95,7 +95,10 @@ Dialog {
                 id: ragToggle
                 text: "Enable RAG"
                 checked: ChatController ? ChatController.ragEnabled : false
-                onToggled: { if (ChatController) ChatController.ragEnabled = checked; }
+                onToggled: {
+                    if (ChatController)
+                        ChatController.ragEnabled = checked;
+                }
                 ToolTip.visible: hovered
                 ToolTip.text: "Retrieve context from indexed documents"
             }
@@ -116,7 +119,8 @@ Dialog {
                 Button {
                     text: "🗑️ Clear Index"
                     onClicked: {
-                        if (ChatController && ChatController.ragService) ChatController.ragService.clearCollection()
+                        if (ChatController && ChatController.ragService)
+                            ChatController.ragService.clearCollection();
                     }
                 }
             }
@@ -154,7 +158,10 @@ Dialog {
                     stepSize: 4096
                     editable: true
                     value: ChatController ? ChatController.defaultContextSize : 2048
-                    onValueModified: { if (ChatController) ChatController.defaultContextSize = value }
+                    onValueModified: {
+                        if (ChatController)
+                            ChatController.defaultContextSize = value;
+                    }
                 }
             }
 
@@ -162,7 +169,10 @@ Dialog {
                 id: autoExpandToggle
                 text: "Auto-expand Context"
                 checked: ChatController ? ChatController.autoExpandContext : true
-                onToggled: { if (ChatController) ChatController.autoExpandContext = checked }
+                onToggled: {
+                    if (ChatController)
+                        ChatController.autoExpandContext = checked;
+                }
                 ToolTip.visible: hovered
                 ToolTip.text: "Automatically double context size when full (up to 128k)"
             }
@@ -183,7 +193,8 @@ Dialog {
                 Button {
                     text: "🛸️ Sync Now!"
                     onClicked: {
-                        if (ChatController) ChatController.saveChats(true)
+                        if (ChatController)
+                            ChatController.saveChats(true);
                     }
                 }
             }
@@ -191,25 +202,24 @@ Dialog {
     }
 
     footer: DialogButtonBox {
-        padding: 10        
+        padding: 10
         alignment: Qt.AlignRight
-        
+
         Button {
             text: "Apply"
             anchors.bottomMargin: 50
             DialogButtonBox.buttonRole: DialogButtonBox.AcceptRole
             onClicked: {
-                ThemeManager.setTheme(themeSelector.model[themeSelector.currentIndex == -1 ? 0 : themeSelector.currentIndex]);                
+                ThemeManager.setTheme(themeSelector.model[themeSelector.currentIndex == -1 ? 0 : themeSelector.currentIndex]);
                 ThemeManager.setFontSize(fontSizeSelector.value);
                 if (ThemeManager.currentStyle != styleSelector.model[styleSelector.currentIndex]) {
                     ThemeManager.setStyle(styleSelector.model[styleSelector.currentIndex]);
                     validateDialog.open();
-                }
-                else
+                } else
                     root.close();
             }
         }
-        
+
         Button {
             text: "Cancel"
             anchors.bottomMargin: 50
@@ -238,9 +248,9 @@ Dialog {
         title: "Select Documents Folder"
         onAccepted: {
             // Convert file:// URL to local path
-            var path = selectedFolder.toString()
-            path = path.replace(/^(file:\/{2})/,"")
-            ChatController.ragService.ingestDirectory(path)
+            var path = selectedFolder.toString();
+            path = path.replace(/^(file:\/{2})/, "");
+            ChatController.ragService.ingestDirectory(path);
         }
     }
 }

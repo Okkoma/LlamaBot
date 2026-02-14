@@ -8,346 +8,557 @@ import QtQuick.Layouts
 
 import LlamaBotQml
 
-Rectangle {
-    id: root
+Dialog {
+    id: rootdlg
+    title: "Model Store"
 
-    signal closeRequested()
+    modal: true
+    width: Screen.width
+    height: Screen.height
+    anchors.centerIn: parent
 
-    property bool isDownloading: ModelStore.isDownloading
-    property string statusMessage: ModelStore.statusMessage
+    padding: 0
+    topPadding: 0
+    spacing: 0
 
-    ColumnLayout {
+    background: Rectangle {
+        radius: 0
+        border.width: 0
+    }
+
+    header: Pane {
+
+        padding: 0
+
+        background: Rectangle {
+            color: "#FF4081"
+        }
+        contentItem: RowLayout {
+            Label {
+                text: rootdlg.title
+                font.pixelSize: 24
+                elide: Label.ElideRight
+                Layout.fillWidth: true
+                Layout.leftMargin: 10
+            }
+
+            Button {
+                Layout.alignment: Qt.AlignTop | Qt.AlignRight
+                text: "Close"
+                onClicked: rootdlg.close()
+            }
+        }
+    }
+
+    Rectangle {
+        id: root
+        radius: 0
         anchors.fill: parent
-        anchors.margins: 15
-        spacing: 10
+        color: ThemeManager.color("window")
 
-        // Toolbar: Source Selection and Filters
-        RowLayout {
-            Layout.fillWidth: true
+        property bool isDownloading: ModelStore.isDownloading
+        property string statusMessage: ModelStore.statusMessage
+
+        ColumnLayout {
+            anchors.fill: parent
+            anchors.margins: 10
             spacing: 5
 
-            // Source Selector
-            ColumnLayout {
+            // Toolbar: Source Selection and Filter by size
+            RowLayout {
+                Layout.fillWidth: true
                 spacing: 5
-                Label { 
-                    text: "Source"
-                    font.bold: true
-                }
-                ComboBox {
-                    id: sourceCombo
-                    model: ModelStore.availableSources
-                    Layout.preferredWidth: 150
-                    
-                    onCurrentTextChanged: {
-                        if (currentText !== "") {
-                            ModelStore.currentSource = currentText
-                            ModelStore.fetchModels()
+
+                // Source Selector
+                ColumnLayout {
+                    spacing: 5
+                    Label {
+                        id: sourceComboLbl
+                        text: "Source"
+                        font.bold: true
+                        color: ThemeManager.color("text")
+                    }
+                    ComboBox {
+                        id: sourceCombo
+                        model: ModelStore.availableSources
+                        Layout.preferredWidth: 150
+
+                        palette {
+                            buttonText: ThemeManager.color("buttonText")
+                            button: ThemeManager.color("button")
+                            window: ThemeManager.color("window")
+                            text: ThemeManager.color("text")
+                        }
+
+                        onCurrentTextChanged: {
+                            if (currentText !== "") {
+                                ModelStore.currentSource = currentText;
+                                ModelStore.fetchModels();
+                            }
+                        }
+
+                        Component.onCompleted: {
+                            // Set initial selection
+                            currentIndex = find(ModelStore.currentSource);
                         }
                     }
-                    
-                    Component.onCompleted: {
-                        // Set initial selection
-                        currentIndex = find(ModelStore.currentSource)
+                }
+
+                // Sort Order
+                ColumnLayout {
+                    spacing: 5
+                    Label {
+                        id: sortComboLbl
+                        text: "Sort By"
+                        font.bold: true
+                        color: ThemeManager.color("text")
+                    }
+                    ComboBox {
+                        id: sortCombo
+                        model: ["Trending", "Likes", "Date"]
+                        palette {
+                            buttonText: ThemeManager.color("buttonText")
+                            button: ThemeManager.color("button")
+                            window: ThemeManager.color("window")
+                            text: ThemeManager.color("text")
+                        }
+                        onCurrentTextChanged: ModelStore.setSort(currentText)
+                    }
+                }
+
+                // Size Filter
+                ColumnLayout {
+                    spacing: 5
+                    Label {
+                        id: sizeFilterLbl
+                        text: "By size"
+                        font.bold: true
+                        color: ThemeManager.color("text")
+                    }
+                    ComboBox {
+                        id: sizeFilter
+                        model: ["All", "2B", "4B", "8B", "20B"]
+                        Layout.preferredWidth: 85
+                        palette {
+                            buttonText: ThemeManager.color("buttonText")
+                            button: ThemeManager.color("button")
+                            window: ThemeManager.color("window")
+                            text: ThemeManager.color("text")
+                        }
+                        onCurrentTextChanged: ModelStore.setSizeFilter(currentText)
                     }
                 }
             }
 
-            // Sort Order
-            ColumnLayout {
+            // Toolbar: Filter by Text
+            RowLayout {
+                Layout.fillWidth: true
                 spacing: 5
-                Label { 
-                    text: "Sort By"
-                    font.bold: true
-                }
-                ComboBox {
-                    id: sortCombo
-                    model: ["Trending", "Likes", "Date"]
-                    Layout.preferredWidth: 140
-                    onCurrentTextChanged: ModelStore.setSort(currentText)
+                // Name Filter
+                ColumnLayout {
+                    spacing: 5
+                    Label {
+                        id: mustContainsFieldLbl
+                        text: "By name"
+                        font.bold: true
+                        color: ThemeManager.color("text")
+                    }
+                    RowLayout {
+                        Layout.alignment: Qt.AlignVCenter
+                        TextField {
+                            id: mustContainsField
+                            text: ModelStore.searchName
+                            Layout.preferredWidth: 250
+                            Layout.fillWidth: true
+                            palette {
+                                text: ThemeManager.color("text")
+                                base: ThemeManager.color("windowDarker")
+                            }
+                            onEditingFinished: ModelStore.searchName = text
+                        }
+                        Button {
+                            id: refreshBtn
+                            text: "Refresh"
+                            palette {
+                                buttonText: ThemeManager.color("buttonText")
+                                button: ThemeManager.color("button")
+                            }
+                            onClicked: ModelStore.fetchModels()
+                        }
+                    }
                 }
             }
-            
-            // Size Filter
-            ColumnLayout {
+
+            // Models List
+            ListView {
+                id: modelListView
+                Layout.fillWidth: true
+                Layout.fillHeight: true
+                clip: true
                 spacing: 5
-                Label { 
-                    text: "Size Filter"
-                    font.bold: true
+
+                model: ListModel {
+                    id: modelsModel
                 }
-                ComboBox {
-                    id: sizeFilter
-                    model: ["All", "2B", "4B", "8B", "20B"]
-                    Layout.preferredWidth: 100
-                    onCurrentTextChanged: ModelStore.setSizeFilter(currentText)
+
+                // Fermer detailsPanel lors du défilement
+                onMovementStarted: {
+                    currentIndex = -1;
+                }
+
+                delegate: ItemDelegate {
+                    id: modelDelegate
+                    width: modelListView.width
+                    height: 60
+
+                    required property var modelData
+                    required property int index
+
+                    background: Rectangle {
+                        id: delegateBackground
+                        color: modelListView.currentIndex === modelDelegate.index ? ThemeManager.color("windowDarker") : (modelDelegate.hovered ? ThemeManager.color("windowDarker2") : "transparent")
+                        border.color: modelListView.currentIndex === modelDelegate.index ? ThemeManager.color("button") : "transparent"
+                        border.width: 1
+                    }
+
+                    contentItem: ColumnLayout {
+                        spacing: 2
+
+                        RowLayout {
+                            Layout.fillWidth: true
+                            spacing: 10
+
+                            Label {
+                                id: nameLbl
+                                Layout.fillWidth: true
+                                Layout.preferredWidth: 100
+                                font.bold: true
+                                font.pixelSize: 16
+                                wrapMode: Text.Wrap
+                                maximumLineCount: 2
+                                elide: Text.ElideRight
+                                text: modelDelegate.modelData.name || ""
+                                color: ThemeManager.color("text")
+                            }
+
+                            Label {
+                                id: sizeLbl
+                                Layout.alignment: Qt.AlignTop | Qt.AlignRight
+                                font.pixelSize: 14
+                                text: modelDelegate.modelData.size ? (modelDelegate.modelData.size / 1024 / 1024 / 1024).toFixed(2) + " GB" : "Unknown"
+                                color: ThemeManager.color("text")
+                            }
+                        }
+
+                        Label {
+                            id: descLbl
+                            Layout.fillWidth: true
+                            opacity: 0.7
+                            font.pixelSize: 12
+                            elide: Text.ElideRight
+                            text: modelDelegate.modelData.description || ""
+                            color: ThemeManager.color("text")
+                        }
+                    }
+
+                    onClicked: {
+                        modelListView.currentIndex = index;
+                        detailsPanel.manifest = modelsModel.get(index);
+                        detailsPanel.details = ({});
+                        ModelStore.fetchModelDetails(modelData.name || modelData.tag);
+                    }
+
+                    Connections {
+                        target: ThemeManager
+                        function onDarkModeChanged() {
+                            delegateBackground.color = "transparent";
+                            delegateBackground.border.color = ThemeManager.color("button");
+                            nameLbl.color = sizeLbl.color = descLbl.color = ThemeManager.color("text");
+                        }
+                    }
                 }
             }
 
-            // Name Filter
-            ColumnLayout {
-                spacing: 5
-                Label { 
-                    text: "Name Filter"
-                    font.bold: true
-                }
-                TextField {
-                    id: mustContainsField
-                    text: ModelStore.searchName
-                    Layout.preferredWidth: 250
-                    onEditingFinished: ModelStore.searchName = text
-                }
-            }            
+            // Model Details Panel
+            Rectangle {
+                id: detailsPanel
+                Layout.fillWidth: true
+                Layout.preferredHeight: 300
 
-            Item { Layout.fillWidth: true } // Spacer
-            
-            Button {
-                text: "Refresh"
-                onClicked: ModelStore.fetchModels()
-            }            
-        }
-        // Models List
-        ListView {
-            id: modelListView
-            Layout.fillWidth: true
-            Layout.fillHeight: true
-            clip: true
-            spacing: 5
-            
-            model: ListModel { id: modelsModel }
+                visible: modelListView.currentIndex >= 0
+                color: ThemeManager.color("windowDarker")
+                border.color: ThemeManager.color("button")
+                border.width: 1
+                radius: 16
 
-            // Fermer detailsPanel lors du défilement
-            onMovementStarted: {
-                currentIndex = -1
-            }
+                // Property to hold current manifest, details
+                property var manifest: ({})
+                property var details: ({})
 
-            delegate: ItemDelegate {
-                id: modelDelegate
-                width: modelListView.width
-                height: 60
+                ColumnLayout {
+                    anchors.fill: parent
+                    anchors.horizontalCenter: parent.horizontalCenter
+                    anchors.margins: 10
+                    spacing: 5
 
-                required property var modelData
-                required property int index
-
-                background: Rectangle {
-                    border.width: 1
-                }
-                
-                contentItem: ColumnLayout {
-                    spacing: 2
-                    
                     RowLayout {
                         Layout.fillWidth: true
+                        spacing: 10
+
                         Label {
-                            text: modelDelegate.modelData.name || ""
-                            font.bold: true
-                            font.pixelSize: 16
+                            id: detailsPanelNameLbl
                             Layout.fillWidth: true
+                            Layout.preferredWidth: 100
+                            font.bold: true
+                            font.pixelSize: 18
+                            wrapMode: Text.Wrap
+                            maximumLineCount: 2
+                            elide: Text.ElideRight
+                            text: detailsPanel.manifest && detailsPanel.manifest.name || "Select a model"
+                            color: ThemeManager.color("text")
                         }
-                        Label {
-                            text: modelDelegate.modelData.size ? (modelDelegate.modelData.size / 1024 / 1024 / 1024).toFixed(2) + " GB" : "Unknown"
-                            font.pixelSize: 14
+                        Button {
+                            text: "Close"
+                            Layout.alignment: Qt.AlignTop | Qt.AlignRight
+                            palette {
+                                buttonText: ThemeManager.color("buttonText")
+                                button: ThemeManager.color("button")
+                            }
+                            onClicked: {
+                                modelListView.currentIndex = -1;
+                            }
                         }
                     }
-                    
+
+                    RowLayout {
+                        Layout.alignment: Qt.AlignLeft
+                        Label {
+                            text: (detailsPanel.manifest && detailsPanel.manifest.trending) ? "🔥" : " "
+                            font.family: ThemeManager.colorEmojiFont
+                            font.pixelSize: 18
+                        }
+                        Label {
+                            id: detailsPanelTrendingLbl
+                            text: (detailsPanel.manifest && detailsPanel.manifest.trending) ? detailsPanel.manifest.trending : " "
+                            font.pixelSize: 14
+                            color: ThemeManager.color("text")
+                        }
+                        Label {
+                            text: (detailsPanel.manifest && detailsPanel.manifest.likes) ? "⭐" : " "
+                            font.family: ThemeManager.colorEmojiFont
+                            font.pixelSize: 18
+                        }
+                        Label {
+                            id: detailsPanelLikesLbl
+                            text: (detailsPanel.manifest && detailsPanel.manifest.likes) ? detailsPanel.manifest.likes : " "
+                            font.pixelSize: 14
+                            color: ThemeManager.color("text")
+                        }
+                        Label {
+                            text: (detailsPanel.manifest && detailsPanel.manifest.downloads) ? "📥" : " "
+                            font.family: ThemeManager.colorEmojiFont
+                            font.pixelSize: 18
+                        }
+                        Label {
+                            id: detailsPanelDownloadsLbl
+                            text: (detailsPanel.manifest && detailsPanel.manifest.downloads) ? detailsPanel.manifest.downloads : " "
+                            font.pixelSize: 14
+                            color: ThemeManager.color("text")
+                        }
+                    }
+
                     Label {
-                        text: modelDelegate.modelData.description || ""
-                        opacity: 0.7
-                        font.pixelSize: 12
-                        elide: Text.ElideRight
+                        id: detailsPanelDescriptionLbl
                         Layout.fillWidth: true
+                        Layout.preferredWidth: Screen.width * 0.8
+                        Layout.alignment: Qt.AlignHCenter
+                        wrapMode: Text.Wrap
+                        maximumLineCount: 3
+                        elide: Text.ElideRight
+                        text: detailsPanel.manifest && detailsPanel.manifest.desc || "Loading description ..."
+                        color: ThemeManager.color("text")
+                    }
+
+                    ComboBox {
+                        id: filesCombo
+                        Layout.preferredWidth: Screen.width * 0.8
+                        Layout.alignment: Qt.AlignHCenter
+                        model: detailsPanel.details.files
+                        textRole: "name"
+                        palette {
+                            buttonText: ThemeManager.color("buttonText")
+                            button: ThemeManager.color("button")
+                            window: ThemeManager.color("window")
+                            text: ThemeManager.color("text")
+                        }
+                        popup.height: 200
+                    }
+
+                    RowLayout {
+                        Layout.fillWidth: true
+                        Layout.alignment: Qt.AlignHCenter
+
+                        Button {
+                            text: "Download File"
+                            enabled: !root.isDownloading
+                            palette {
+                                buttonText: ThemeManager.color("buttonText")
+                                button: ThemeManager.color("button")
+                            }
+                            onClicked: {
+                                ModelStore.downloadFile(detailsPanel.details.name, detailsPanel.details.files[filesCombo.currentIndex]);
+                            }
+                        }
+
+                        Button {
+                            text: "Download All Files"
+                            enabled: !root.isDownloading
+                            palette {
+                                buttonText: ThemeManager.color("buttonText")
+                                button: ThemeManager.color("button")
+                            }
+                            onClicked: {
+                                ModelStore.downloadAllFiles(detailsPanel.details.name, detailsPanel.details.files);
+                            }
+                        }
                     }
                 }
-                
-                onClicked: {
-                    modelListView.currentIndex = index
-                    detailsPanel.manifest = modelsModel.get(index)
-                    detailsPanel.details = ({})
-                    filesCombo.visible = false
-                    ModelStore.fetchModelDetails(modelData.name || modelData.tag)
-                }                
-            }                   
-        }
+            }
 
-        // Model Details Panel
-        Rectangle {
-            id: detailsPanel
-            Layout.fillWidth: true
-            Layout.preferredHeight: 250
-            visible: modelListView.currentIndex >= 0
-            border.width: 1
-            radius: 4
-            
-            // Property to hold current manifest, details
-            property var manifest: ({})
-            property var details: ({})
-
+            // Status Bar
             ColumnLayout {
-                anchors.fill: parent
-                anchors.margins: 10
-                spacing: 5
-                
-                RowLayout {
-                    Layout.alignment: Qt.AlignRight
-                    Label {
-                        text: detailsPanel.manifest && detailsPanel.manifest.name || "Select a model"
-                        font.bold: true
-                        font.pixelSize: 18
-                    }
-                    Item { Layout.fillWidth: true }
-                    Label {
-                        text: (detailsPanel.manifest && detailsPanel.manifest.trending) ? "🔥" : " " 
-                        font.family: ThemeManager.colorEmojiFont
-                        font.pixelSize: 18
-                    }
-                    Label {
-                        text: (detailsPanel.manifest && detailsPanel.manifest.trending) ? detailsPanel.manifest.trending : " "
-                        font.pixelSize: 14
-                    }
-                    Label {
-                        text: (detailsPanel.manifest && detailsPanel.manifest.likes) ? "⭐" : " "
-                        font.family: ThemeManager.colorEmojiFont
-                        font.pixelSize: 18
-                    }
-                    Label {
-                        text: (detailsPanel.manifest && detailsPanel.manifest.likes) ? detailsPanel.manifest.likes : " "
-                        font.pixelSize: 14
-                    }
-                    Label {
-                        text: (detailsPanel.manifest && detailsPanel.manifest.downloads) ? "📥" : " "
-                        font.family: ThemeManager.colorEmojiFont
-                        font.pixelSize: 18
-                    }
-                    Label {
-                        text: (detailsPanel.manifest && detailsPanel.manifest.downloads) ? detailsPanel.manifest.downloads : " "
-                        font.pixelSize: 14
-                    }
-                    
-                    Item { Layout.fillWidth: true } // SPACER
+                Layout.fillWidth: true
+
+                visible: root.statusMessage.length > 0
+
+                Rectangle {
+                    id: downloadPanel
+                    Layout.fillWidth: true
+                    Layout.preferredHeight: 30
+                    visible: root.isDownloading
 
                     Button {
-                        text: "Close"
-                        Layout.alignment: Qt.AlignRight
-                        onClicked: { 
-                            modelListView.currentIndex = -1 
+                        anchors.top: parent.top
+                        anchors.right: parent.right
+                        text: "Cancel"
+                        palette {
+                            buttonText: ThemeManager.color("buttonText")
+                            button: ThemeManager.color("button")
                         }
-                    }                    
-                }
-                
-                Label {
-                    text: detailsPanel.manifest && detailsPanel.manifest.desc || "Loading description ..."
-                }
-                
-                ComboBox {
-                    id: filesCombo                    
-                    model: detailsPanel.details.files
-                    textRole: "name"
-                    Layout.preferredWidth: 400
-                    popup.height: 200
-                }
-
-                Item { Layout.fillHeight: true }
-                
-                RowLayout {
-                    Layout.fillWidth: true
-                    
+                        onClicked: {
+                            ModelStore.cancelDownload();
+                        }
+                    }
                     ProgressBar {
                         id: downloadBar
-                        visible: root.isDownloading
+                        anchors.bottom: parent.bottom
+                        anchors.left: parent.left
+                        width: parent.width * 0.75
                         value: ModelStore.downloadProgress
-                        Layout.fillWidth: true
                     }
+                }
 
-                    Button {
-                        text: "Download File"
-                        visible: !root.isDownloading
-                        onClicked: {
-                            ModelStore.downloadFile(detailsPanel.details.name, detailsPanel.details.files[filesCombo.currentIndex]);
-                        }
+                ScrollView {
+                    Layout.fillWidth: true
+                    Layout.preferredHeight: 30
+                    clip: true
+                    ScrollBar.horizontal.policy: ScrollBar.AsNeeded
+                    ScrollBar.vertical.policy: ScrollBar.AlwaysOff
+
+                    Text {
+                        id: downPanelMessage
+                        width: implicitWidth
+                        text: root.statusMessage
+                        font.italic: true
+                        color: ThemeManager.color("text")
                     }
-
-                    Button {
-                        text: "Download All Files"
-                        visible: !root.isDownloading
-                        onClicked: {
-                            ModelStore.downloadAllFiles(detailsPanel.details.name, detailsPanel.details.files);                            
-                        }
-                    }
-
-                    Button {
-                        text: "Cancel"
-                        visible: root.isDownloading
-                        onClicked: {
-                            ModelStore.cancelDownload()
-                        }
-                    }                    
                 }
             }
-        }
-        
-        // Status Bar        
-        RowLayout {
-            ScrollView {
+
+            // reserve the place for the android bottom nav bar
+            Rectangle {
                 Layout.fillWidth: true
-                Layout.preferredHeight: 20
-                clip: true
-                ScrollBar.horizontal.policy: ScrollBar.AsNeeded
-                ScrollBar.vertical.policy: ScrollBar.AlwaysOff
-                
-                Text {
-                    text: root.statusMessage
-                    font.italic: true
-                    width: implicitWidth
+                Layout.preferredHeight: 70
+                Layout.alignment: Qt.AlignBottom
+            }
+        }
+
+        Connections {
+            target: ModelStore
+
+            function onModelsListChanged(models) {
+                modelsModel.clear();
+                for (var i = 0; i < models.length; i++) {
+                    modelsModel.append(models[i]);
+                }
+                // Clear selection
+                modelListView.currentIndex = -1;
+                detailsPanel.manifest = ({});
+                detailsPanel.details = ({});
+            }
+
+            function onModelDetailsChanged(details) {
+                detailsPanel.manifest.size = details.maxSize;
+                detailsPanel.details = details;
+                if (detailsPanel.details.files && detailsPanel.details.files.length > 0) {
+                    filesCombo.visible = true;
                 }
             }
 
-            Item { Layout.fillWidth: true }
+            function onErrorOccurred(error) {
+                // Can show a popup or just status
+                console.error(error);
+            }
 
-            Button {
-                text: "Close"
-                Layout.alignment: Qt.AlignRight
-                onClicked: root.closeRequested()
+            function onDownloadFinished(success) {
+                if (success && ChatController) {
+                    // Rafraîchir la liste des modèles disponibles après un téléchargement réussi
+                    ChatController.refreshModels();
+                }
             }
         }
-    }
-    
-    Connections {
-        target: ModelStore
-        
-        function onModelsListChanged(models) {
-            modelsModel.clear()
-            for (var i = 0; i < models.length; i++) {
-                modelsModel.append(models[i])
+
+        Connections {
+            target: ThemeManager
+            function onDarkModeChanged() {
+                root.color = ThemeManager.color("window");
+                sourceComboLbl.color = ThemeManager.color("text");
+                sourceCombo.palette.buttonText = ThemeManager.color("buttonText");
+                sourceCombo.palette.button = ThemeManager.color("button");
+                sourceCombo.palette.window = ThemeManager.color("window");
+                sourceCombo.palette.text = ThemeManager.color("text");
+                sortComboLbl.color = ThemeManager.color("text");
+                sortCombo.palette.buttonText = ThemeManager.color("buttonText");
+                sortCombo.palette.button = ThemeManager.color("button");
+                sortCombo.palette.window = ThemeManager.color("window");
+                sortCombo.palette.text = ThemeManager.color("text");
+                sizeFilterLbl.color = ThemeManager.color("text");
+                sizeFilter.palette.buttonText = ThemeManager.color("buttonText");
+                sizeFilter.palette.button = ThemeManager.color("button");
+                sizeFilter.palette.window = ThemeManager.color("window");
+                sizeFilter.palette.text = ThemeManager.color("text");
+                mustContainsFieldLbl.color = ThemeManager.color("text");
+                mustContainsField.palette.text = ThemeManager.color("text");
+                mustContainsField.palette.base = ThemeManager.color("windowDarker");
+                detailsPanel.color = ThemeManager.color("windowDarker");
+                detailsPanel.border.color = ThemeManager.color("button");
+                detailsPanelNameLbl.color = ThemeManager.color("text");
+                detailsPanelTrendingLbl.color = ThemeManager.color("text");
+                detailsPanelLikesLbl.color = ThemeManager.color("text");
+                detailsPanelDownloadsLbl.color = ThemeManager.color("text");
+                detailsPanelDescriptionLbl.color = ThemeManager.color("text");
+                filesCombo.palette.buttonText = ThemeManager.color("buttonText");
+                filesCombo.palette.button = ThemeManager.color("button");
+                filesCombo.palette.window = ThemeManager.color("window");
+                filesCombo.palette.text = ThemeManager.color("text");
+                downPanelMessage.color = ThemeManager.color("text");
             }
-            // Clear selection
-            modelListView.currentIndex = -1
-            detailsPanel.manifest = ({})
-            detailsPanel.details = ({})
         }
-        
-        function onModelDetailsChanged(details) {
-        
-            detailsPanel.manifest.size = details.maxSize
-            detailsPanel.details = details
-            if (detailsPanel.details.files && detailsPanel.details.files.length > 0) {
-                filesCombo.visible = true
-            }
+
+        // Initial fetch
+        Component.onCompleted: {
+            ModelStore.fetchModels(); // Triggered by sourceCombo initial set or manually?
+            // Let sourceCombo trigger it via bindings
         }
-        
-        function onErrorOccurred(error) {
-            // Can show a popup or just status
-            console.error(error)
-        }
-        
-        function onDownloadFinished(success) {
-            if (success && ChatController) {
-                // Rafraîchir la liste des modèles disponibles après un téléchargement réussi
-                ChatController.refreshModels()
-            }
-        }
-    }
-    
-    // Initial fetch
-    Component.onCompleted: {
-        ModelStore.fetchModels() // Triggered by sourceCombo initial set or manually?
-        // Let sourceCombo trigger it via bindings
     }
 }

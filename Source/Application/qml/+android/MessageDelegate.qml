@@ -31,10 +31,13 @@ Item {
         anchors.horizontalCenter: root.horizontalCenter
         layoutDirection: root.isUser ? Qt.RightToLeft : Qt.LeftToRight
         spacing: 10
-        
+
         Rectangle {
             id: userframe
-            width: 40; height: 40; radius: 20
+            width: 40
+            height: 40
+            radius: 20
+            color: root.isUser ? ThemeManager.color("windowDarker") : ThemeManager.color("windowDarker2")
             opacity: root.isThought ? 0.6 : 1.0
             Layout.alignment: Qt.AlignTop
             Label {
@@ -44,16 +47,17 @@ Item {
                 opacity: root.isThought ? 0.7 : 1.0
             }
         }
-        
+
         Rectangle {
             id: bubble
             Layout.maximumWidth: root.width * 0.95
             Layout.preferredWidth: root.bubbleWidth()
             Layout.preferredHeight: msgText.contentHeight + 20
+            color: root.isUser ? ThemeManager.color("windowDarker") : ThemeManager.color("windowDarker2")
             border.width: 0
             opacity: root.isThought ? 0.8 : 1.0
             radius: 10
-            
+
             Flickable {
                 id: flick
                 anchors.fill: bubble
@@ -62,25 +66,25 @@ Item {
                 contentHeight: msgText.contentHeight
                 clip: true
 
-                ScrollBar.horizontal : ScrollBar {
+                ScrollBar.horizontal: ScrollBar {
                     policy: ScrollBar.AsNeeded
                 }
 
-                function ensureVisible(r)
-                {
+                function ensureVisible(r) {
                     if (contentX >= r.x)
                         contentX = r.x;
-                    else if (contentX+width <= r.x+r.width)
-                        contentX = r.x+r.width-width;
+                    else if (contentX + width <= r.x + r.width)
+                        contentX = r.x + r.width - width;
                     if (contentY >= r.y)
                         contentY = r.y;
-                    else if (contentY+height <= r.y+r.height)
-                        contentY = r.y+r.height-height;
+                    else if (contentY + height <= r.y + r.height)
+                        contentY = r.y + r.height - height;
                 }
-     
+
                 TextEdit {
                     id: msgText
                     text: root.modelData ? root.modelData.content : ""
+                    color: root.isThought ? ThemeManager.color("buttonText") : ThemeManager.color("text")
                     font.family: ThemeManager.currentFont
                     font.pixelSize: root.isThought ? ThemeManager.currentFontSize * 0.8 : ThemeManager.currentFontSize
                     font.italic: root.isThought
@@ -90,20 +94,27 @@ Item {
                     readOnly: true
                     width: flick.width
                     focus: true
-                    onCursorRectangleChanged: flick.ensureVisible(cursorRectangle)                    
+                    onCursorRectangleChanged: flick.ensureVisible(cursorRectangle)
                 }
             }
         }
-        
-        Item { Layout.fillWidth: true } // Spacer
+
+        Item {
+            Layout.fillWidth: true
+        } // Spacer
     }
 
     // Add connection to themeManager to listen for theme changes
     Connections {
         target: ThemeManager
+        function onDarkModeChanged() {
+            userframe.color = root.isUser ? ThemeManager.color("windowDarker") : ThemeManager.color("windowDarker2");
+            bubble.color = root.isUser ? ThemeManager.color("windowDarker") : ThemeManager.color("windowDarker2");
+            msgText.color = root.isThought ? ThemeManager.color("buttonText") : ThemeManager.color("text");
+        }
         function onFontChanged() {
-            msgText.font.family = ThemeManager.currentFont
-            msgText.font.pixelSize = root.isThought ? ThemeManager.currentFontSize * 0.8 : ThemeManager.currentFontSize
+            msgText.font.family = ThemeManager.currentFont;
+            msgText.font.pixelSize = root.isThought ? ThemeManager.currentFontSize * 0.8 : ThemeManager.currentFontSize;
         }
     }
 }
