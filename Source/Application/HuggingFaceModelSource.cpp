@@ -7,6 +7,22 @@
 
 #include "HuggingFaceModelSource.h"
 
+const QString rx = "[ ,:\\-]";
+const QStringList sizeFilterTagsStr[] =
+{
+    {""},
+
+    {rx+"0.5b", rx+"1b", rx+"2b"},
+
+    {rx+"0.5b", rx+"1b", rx+"2b", rx+"3b", rx+"4b"},
+
+    {rx+"0.5b", rx+"1b", rx+"2b", rx+"3b", rx+"4b",rx+"5b", rx+"6b", rx+"7b", rx+"8b"},
+
+    {rx+"0.5b", rx+"1b", rx+"2b", rx+"3b", rx+"4b",rx+"5b", rx+"6b", rx+"7b", rx+"8b",
+         rx+"10b", rx+"12b", rx+"14b", rx+"16b",rx+"18b", rx+"20b"}
+
+};
+
 HuggingFaceModelSource::HuggingFaceModelSource(QObject* parent) :
     ModelSource(parent)
 {
@@ -53,6 +69,7 @@ void HuggingFaceModelSource::fetchModels(SortOrder sort, SizeFilter sizeFilter, 
     query.addQueryItem("private", "false");
 
     url.setQuery(query);
+    qDebug() << "HuggingFaceModelSource::fetchModels:" << url.toString();
 
     QNetworkRequest request(url);
     request.setRawHeader("Accept", "application/json");
@@ -91,22 +108,24 @@ void HuggingFaceModelSource::fetchModels(SortOrder sort, SizeFilter sizeFilter, 
 
                 ModelManifest manifest;
                 manifest.name = modelObj["id"].toString();
-                manifest.date = modelObj["lastModified"].toString();
+                QString creationDate = modelObj["createdAt"].toString().split('T').first();
+                QString modificationDate = modelObj["lastModified"].toString().split('T').first();
+                manifest.date = modificationDate.isEmpty() ? creationDate : modificationDate;
                 manifest.trending = modelObj["trendingScore"].toVariant().toInt();
                 manifest.likes = modelObj["likes"].toVariant().toInt();
                 manifest.downloads = modelObj["downloads"].toVariant().toInt();
-                QString pipeline = modelObj["pipeline_tag"].toString();
-                if (!pipeline.isEmpty())
-                    manifest.desc += "\npipeline: " + pipeline;
-                manifest.desc += "\ncreated: " + modelObj["createdAt"].toString() + 
-                                 " - updated: " + modelObj["lastModified"].toString();
+                manifest.pipeline = modelObj["pipeline_tag"].toString();
+                QJsonArray tags = modelObj["tags"].toArray();
+                for (const QJsonValue& tag : tags)
+                    manifest.tags += tag.toString() + " ";
+                manifest.desc = manifest.tags;
                 manifest.size = 0;
                 modelManifests.append(manifest);
             }
 
             // Apply size filter
             if (sizeFilter != SizeFilter::All)
-                modelManifests = filterBySize(modelManifests, sizeFilter);
+                modelManifests = filterByTag(modelManifests, sizeFilterTagsStr[(int)sizeFilter]);
 
             callback(true, modelManifests, "");
             reply->deleteLater();
@@ -147,9 +166,9 @@ void HuggingFaceModelSource::fetchModelDetails(const QString& modelId,
             QJsonObject modelInfo = doc.object();
 
             ModelDetails modelDetails;
-            modelDetails.createdDate = modelInfo["createdAt"].toString();
-            modelDetails.updatedDate = modelInfo["lastModified"].toString();
-            modelDetails.digest= modelInfo["sha"].toString();
+            modelDetails.createdDate = modelInfo["createdAt"].toString().split('T').first();
+            modelDetails.updatedDate = modelInfo["lastModified"].toString().split('T').first();
+            modelDetails.digest = modelInfo["sha"].toString();
 
             QJsonObject cardData = modelInfo["cardData"].toObject();
             modelDetails.license = cardData["license"].toString();

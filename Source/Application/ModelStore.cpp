@@ -134,10 +134,10 @@ ModelSource::SortOrder ModelStore::parseSortOrder(const QString& sort)
 
 ModelSource::SizeFilter ModelStore::parseSizeFilter(const QString& size)
 {
-    if (size == "2B") return ModelSource::SizeFilter::Size2B;
-    if (size == "4B") return ModelSource::SizeFilter::Size4B;
-    if (size == "8B") return ModelSource::SizeFilter::Size8B;
-    if (size == "20B") return ModelSource::SizeFilter::Size20B;
+    if (size == "<2B") return ModelSource::SizeFilter::Size2B;
+    if (size == "<4B") return ModelSource::SizeFilter::Size4B;
+    if (size == "<8B") return ModelSource::SizeFilter::Size8B;
+    if (size == "<20B") return ModelSource::SizeFilter::Size20B;
     return ModelSource::SizeFilter::All;
 }
 
@@ -196,6 +196,7 @@ QVariantMap ModelStore::modelToVariant(const ModelManifest& model)
     map["likes"] = model.likes != -1 ? QString().setNum(model.likes) : "";
     map["downloads"] = model.downloads != -1 ? QString().setNum(model.downloads) : "";
     map["desc"] = model.desc;
+    map["pipeline"] = model.pipeline;
     map["tags"] = model.tags;    
     map["size"] = model.size != 0 ? QString().setNum(model.size) : "";
     return map;

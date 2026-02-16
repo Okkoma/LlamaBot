@@ -43,6 +43,26 @@ QVector<ModelManifest> ModelSource::filterBySize(const QVector<ModelManifest>& m
     return filtered;
 }
 
+QVector<ModelManifest> ModelSource::filterByTag(const QVector<ModelManifest>& models, const QStringList& tags)
+{
+    QVector<ModelManifest> filtered;
+    for (const ModelManifest& model : models)
+    {
+        for (const QString& tag : tags)
+        {
+            QRegularExpression rx(tag, QRegularExpression::CaseInsensitiveOption);
+            if (rx.globalMatch(model.name).hasNext() || 
+                rx.globalMatch(model.tags).hasNext())
+            {
+                filtered.append(model);
+                break; 
+            }
+        }
+    }
+
+    return filtered;
+}
+
 QVector<ModelManifest> ModelSource::filterByGGUF(const QVector<ModelManifest>& models)
 {
     QVector<ModelManifest> filtered;

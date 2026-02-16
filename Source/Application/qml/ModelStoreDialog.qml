@@ -129,13 +129,13 @@ Dialog {
                     spacing: 5
                     Label {
                         id: sizeFilterLbl
-                        text: "By size"
+                        text: "By param"
                         font.bold: true
                         color: ThemeManager.color("text")
                     }
                     ComboBox {
                         id: sizeFilter
-                        model: ["All", "2B", "4B", "8B", "20B"]
+                        model: ["All", "<2B", "<4B", "<8B", "<20B"]
                         Layout.preferredWidth: 100
                         palette {
                             buttonText: ThemeManager.color("buttonText")
@@ -152,7 +152,7 @@ Dialog {
                     spacing: 5
                     Label {
                         id: mustContainsFieldLbl
-                        text: "By name"
+                        text: "By tag"
                         font.bold: true
                         color: ThemeManager.color("text")
                     }
@@ -265,7 +265,7 @@ Dialog {
                                 id: sizeLbl
                                 Layout.alignment: Qt.AlignTop | Qt.AlignRight
                                 font.pixelSize: 14
-                                text: modelDelegate.modelData.size ? (modelDelegate.modelData.size / 1024 / 1024 / 1024).toFixed(2) + " GB" : "Unknown"
+                                text: modelDelegate.modelData.size ? (modelDelegate.modelData.size / 1024 / 1024 / 1024).toFixed(2) + " GB" : ""
 
                                 color: ThemeManager.color("text")
                             }
@@ -353,37 +353,52 @@ Dialog {
 
                     RowLayout {
                         Layout.alignment: Qt.AlignLeft
-
+                        
                         Label {
-                            text: (detailsPanel.manifest && detailsPanel.manifest.trending) ? "🔥" : " "
+                            id: detailsPanelDateLbl
+                            text: (detailsPanel.manifest && detailsPanel.manifest.date) ? "lastUpdate: " + detailsPanel.manifest.date : ""
+                            font.pixelSize: 14
+                            color: ThemeManager.color("text")
+                        }
+                        Label {
+                            id: detailsPanelPipelineLbl
+                            text: (detailsPanel.manifest && detailsPanel.manifest.pipeline) ? "- pipeline: " + detailsPanel.manifest.pipeline : ""
+                            font.pixelSize: 14
+                            color: ThemeManager.color("text")
+                        }                        
+                        Item { // Spacer
+                            Layout.fillWidth: true
+                        }
+                        Label {
+                            text: (detailsPanel.manifest && detailsPanel.manifest.trending) ? "🔥" : ""
                             font.family: ThemeManager.colorEmojiFont
                             font.pixelSize: 18
                         }
                         Label {
                             id: detailsPanelTrendingLbl
-                            text: (detailsPanel.manifest && detailsPanel.manifest.trending) ? detailsPanel.manifest.trending : " "
+                            text: (detailsPanel.manifest && detailsPanel.manifest.trending) ? detailsPanel.manifest.trending : ""
                             font.pixelSize: 14
                             color: ThemeManager.color("text")
                         }
                         Label {
-                            text: (detailsPanel.manifest && detailsPanel.manifest.likes) ? "⭐" : " "
+                            text: (detailsPanel.manifest && detailsPanel.manifest.likes) ? "⭐" : ""
                             font.family: ThemeManager.colorEmojiFont
                             font.pixelSize: 18
                         }
                         Label {
                             id: detailsPanelLikesLbl
-                            text: (detailsPanel.manifest && detailsPanel.manifest.likes) ? detailsPanel.manifest.likes : " "
+                            text: (detailsPanel.manifest && detailsPanel.manifest.likes) ? detailsPanel.manifest.likes : ""
                             font.pixelSize: 14
                             color: ThemeManager.color("text")
                         }
                         Label {
-                            text: (detailsPanel.manifest && detailsPanel.manifest.downloads) ? "📥" : " "
+                            text: (detailsPanel.manifest && detailsPanel.manifest.downloads) ? "📥" : ""
                             font.family: ThemeManager.colorEmojiFont
                             font.pixelSize: 18
                         }
                         Label {
                             id: detailsPanelDownloadsLbl
-                            text: (detailsPanel.manifest && detailsPanel.manifest.downloads) ? detailsPanel.manifest.downloads : " "
+                            text: (detailsPanel.manifest && detailsPanel.manifest.downloads) ? detailsPanel.manifest.downloads : ""
                             font.pixelSize: 14
                             color: ThemeManager.color("text")
                         }
@@ -395,7 +410,7 @@ Dialog {
                         Layout.preferredWidth: parent.width * 0.8
                         Layout.alignment: Qt.AlignHCenter
                         wrapMode: Text.Wrap
-                        maximumLineCount: 3
+                        maximumLineCount: 5
                         elide: Text.ElideRight
                         text: detailsPanel.manifest && detailsPanel.manifest.desc || "Loading description ..."
                         color: ThemeManager.color("text")
@@ -458,6 +473,7 @@ Dialog {
                     Layout.fillWidth: true
                     Layout.preferredHeight: 30
                     visible: root.isDownloading
+                    color: ThemeManager.color("window")
 
                     Button {
                         anchors.top: parent.top
@@ -475,7 +491,7 @@ Dialog {
                         id: downloadBar
                         anchors.bottom: parent.bottom
                         anchors.left: parent.left
-                        width: parent.width * 0.75
+                        width: parent.width * 0.85
                         value: ModelStore.downloadProgress
                     }
                 }
@@ -561,11 +577,14 @@ Dialog {
                 detailsPanelTrendingLbl.color = ThemeManager.color("text");
                 detailsPanelLikesLbl.color = ThemeManager.color("text");
                 detailsPanelDownloadsLbl.color = ThemeManager.color("text");
+                detailsPanelPipelineLbl.color = ThemeManager.color("text");
+                detailsPanelDateLbl.color = ThemeManager.color("text");
                 detailsPanelDescriptionLbl.color = ThemeManager.color("text");
                 filesCombo.palette.buttonText = ThemeManager.color("buttonText");
                 filesCombo.palette.button = ThemeManager.color("button");
                 filesCombo.palette.window = ThemeManager.color("window");
                 filesCombo.palette.text = ThemeManager.color("text");
+                downloadPanel.color = ThemeManager.color("window");
                 downPanelMessage.color = ThemeManager.color("text");
             }
         }

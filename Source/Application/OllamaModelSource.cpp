@@ -8,6 +8,22 @@
 
 #include "OllamaModelSource.h"
 
+const QString rx = "[ ,:\\-]";
+const QStringList sizeFilterTagsStr[] =
+{
+    {""},
+
+    {rx+"0.5b", rx+"1b", rx+"2b"},
+
+    {rx+"0.5b", rx+"1b", rx+"2b", rx+"3b", rx+"4b"},
+
+    {rx+"0.5b", rx+"1b", rx+"2b", rx+"3b", rx+"4b",rx+"5b", rx+"6b", rx+"7b", rx+"8b"},
+
+    {rx+"0.5b", rx+"1b", rx+"2b", rx+"3b", rx+"4b",rx+"5b", rx+"6b", rx+"7b", rx+"8b",
+         rx+"10b", rx+"12b", rx+"14b", rx+"16b",rx+"18b", rx+"20b"}
+
+};
+
 OllamaModelSource::OllamaModelSource(QObject* parent) : 
     ModelSource(parent)
 {
@@ -78,15 +94,13 @@ void OllamaModelSource::fetchModels(SortOrder sort, SizeFilter sizeFilter, const
                 m.name = modelObj["name"].toString();
                 m.date = modelObj["modified_at"].toString().left(10);
                 m.tags = modelObj["digest"].toString();
-                m.desc = QString("%1 (%2) %3").arg(m.name)
-                                                 .arg(modelObj["modified_at"].toString().left(10))
-                                                 .arg(m.tags);
+                m.desc = m.tags;
                 models.append(m);
             }
-
-            // Apply filters
-            if (sizeFilter != SizeFilter::All)            
-                models = filterBySize(models, sizeFilter);            
+           
+            // Apply size filter
+            if (sizeFilter != SizeFilter::All)
+                models = filterByTag(models, sizeFilterTagsStr[(int)sizeFilter]);
 
             // Note: Ollama API doesn't support custom sorting, so we use client-side sorting
             sortModels(models, sort);

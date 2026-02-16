@@ -14,6 +14,7 @@ struct ModelManifest
     int downloads{-1};
     QString desc;
     QString tags;
+    QString pipeline;
     quint64 size;
 };
 
@@ -146,6 +147,13 @@ protected:
      * @return Filtered list of models
      */
     static QVector<ModelManifest> filterBySize(const QVector<ModelManifest>& models, SizeFilter sizeFilter);
+
+    /**
+     * @brief Helper function to filter models by tag
+     * @param models List of models to filter
+     * @return Filtered list containing only models with tags
+     */
+     static QVector<ModelManifest> filterByTag(const QVector<ModelManifest>& models, const QStringList& tags);
 
     /**
      * @brief Helper function to filter models by GGUF format
