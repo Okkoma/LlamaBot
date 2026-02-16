@@ -166,6 +166,19 @@ Item {
                     ChatController.stopGeneration()
                 }
             }
+            
+            LoadingSpinner {
+                anchors.fill: parent
+                id: loadingSpinner
+                size: parent.height
+
+                Component.onCompleted: {
+                    if (ChatController) {
+                        loadingSpinner.connectToController(ChatController);
+                    }
+                }
+            }
+            
             Connections {
                 target: root.currentChat
                 function onProcessingStarted() {

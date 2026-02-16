@@ -127,19 +127,6 @@ ApplicationWindow {
                     opacity: 0.7
                 }
 
-                // Loading icon - avec gestion robuste des connexions
-                LoadingSpinner {
-                    id: loadingSpinner
-                    size: parent.height
-
-                    // Connect to ChatController using safe method
-                    Component.onCompleted: {
-                        if (ChatController) {
-                            loadingSpinner.connectToController(ChatController);
-                        }
-                    }
-                }
-
                 ToolButton {
                     text: "⚙️"
                     font.pixelSize: 24
