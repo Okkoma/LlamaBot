@@ -9,6 +9,7 @@ on:
 
 env:
   QT_VERSION: '6.10.2'
+  QT_INSTALL_DIR: ${{ github.workspace }}/Qt  
   BUILD_TYPE: Release
 
 jobs:
@@ -39,20 +40,31 @@ jobs:
         uses: jurplel/install-qt-action@v4
         with:
           version: ${{ env.QT_VERSION }}
-          # Basic modules are usually included (Core, Gui, Widgets). 
-          # We add others if needed by the project.
+          host: linux
           modules: 'qtmultimedia qt5compat qtshadertools'
           cache: true
+          dir: ${{ env.QT_INSTALL_DIR }}
 
       - name: Install Linux Dependencies
         if: runner.os == 'Linux'
         run: |
           sudo apt-get update
-          sudo apt-get install -y build-essential libgl1-mesa-dev libvulkan-dev libssl-dev
+          sudo apt-get install -y build-essential libgl1-mesa-dev libvulkan-dev libssl-dev libfontconfig1-dev libjpeg-dev libopenjp2-7-dev libblas-dev
+
+      - name: Install Windows Dependencies
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: |
+          vcpkg install libjpeg-turbo openjpeg openblas --triplet x64-windows
 
       - name: Configure CMake
+        shell: bash
         run: |
-          cmake -B build -G "${{ matrix.cmake_generator }}" -DCMAKE_BUILD_TYPE=${{ env.BUILD_TYPE }} -DBUILD_TEST=ON
+          CMAKE_ARGS=""
+          if [ "${{ runner.os }}" == "Windows" ]; then
+            CMAKE_ARGS="-DCMAKE_TOOLCHAIN_FILE=$VCPKG_INSTALLATION_ROOT/scripts/buildsystems/vcpkg.cmake"
+          fi
+          cmake -B build -G "${{ matrix.cmake_generator }}" -DCMAKE_BUILD_TYPE=${{ env.BUILD_TYPE }} -DBUILD_TEST=ON $CMAKE_ARGS
 
       - name: Build
         run: cmake --build build --config ${{ env.BUILD_TYPE }}
@@ -103,21 +115,27 @@ jobs:
         uses: jurplel/install-qt-action@v4
         with:
           version: ${{ env.QT_VERSION }}
+          host: linux
           target: android
           arch: android_arm64_v8a
           cache: true
+          dir: ${{ env.QT_INSTALL_DIR }}
+
+      - name: Install Ninja
+        run: sudo apt-get update && sudo apt-get install -y ninja-build
 
       - name: Build Android APK
         env:
           ANDROID_KEYSTORE_PASS: ${{ secrets.ANDROID_KEYSTORE_PASS }} # Optional if signing
         run: |
-          # Use qt-cmake or define toolchain manually. jurplel action sets Qt6_DIR.
-          # We use the arguments from the project's build script but adapted for CI.
-          cmake -B build-android -GNinja \
+          # Use qt-cmake from PATH (added by install-qt-action) which handles toolchain setup
+          # Ensure ANDROID_NDK_ROOT is set (GitHub runners usually default to ANDROID_NDK_HOME)
+          export ANDROID_NDK_ROOT=${ANDROID_NDK_ROOT:-$ANDROID_NDK_HOME}
+          
+          qt-cmake -B build-android -GNinja \
             -DCMAKE_BUILD_TYPE=Release \
             -DANDROID_SDK_ROOT=$ANDROID_SDK_ROOT \
             -DANDROID_NDK_ROOT=$ANDROID_NDK_ROOT \
-            -DCMAKE_TOOLCHAIN_FILE=${{ env.Qt6_DIR }}/lib/cmake/Qt6/qt.toolchain.cmake \
             -DQT_CHAINLOAD_TOOLCHAIN_FILE=$ANDROID_NDK_ROOT/build/cmake/android.toolchain.cmake \
             -DANDROID_ABI=arm64-v8a \
             -DANDROID_STL=c++_shared \
