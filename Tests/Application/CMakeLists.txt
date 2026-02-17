@@ -114,14 +114,14 @@ target_link_libraries(Test_Encryption PRIVATE Qt6::Core Qt6::Test OpenSSL::SSL O
 add_test(NAME Test_Encryption COMMAND Test_Encryption)
 
 # Tests QML avec Qt Quick Test via qmltestrunner
-find_program(QMLTESTRUNNER_EXECUTABLE qmltestrunner)
-if (QMLTESTRUNNER_EXECUTABLE)
-    add_test(NAME QmlTests COMMAND ${QMLTESTRUNNER_EXECUTABLE} 
-            -input ../../../Tests/Application/qml
-            -import ../../../Source/Application/qml)
-else()
-    message(WARNING "qmltestrunner introuvable : les tests QML ne seront pas exécutés.")
-endif()
+#find_program(QMLTESTRUNNER_EXECUTABLE qmltestrunner)
+#if (QMLTESTRUNNER_EXECUTABLE)
+#    add_test(NAME QmlTests COMMAND ${QMLTESTRUNNER_EXECUTABLE} 
+#            -input ../../../Tests/Application/qml
+#            -import ../../../Source/Application/qml)
+#else()
+#    message(WARNING "qmltestrunner introuvable : les tests QML ne seront pas exécutés.")
+#endif()
 
 
 

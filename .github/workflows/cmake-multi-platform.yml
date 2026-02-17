@@ -1,0 +1,152 @@
+name: Build, Test, and Release
+
+on:
+  push:
+    branches: [ "master", "main" ]
+    tags: [ 'v*' ]
+  pull_request:
+    branches: [ "master", "main" ]
+
+env:
+  QT_VERSION: '6.10.2'
+  BUILD_TYPE: Release
+
+jobs:
+  build-desktop:
+    name: ${{ matrix.name }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: ubuntu-latest
+            name: Linux
+            cmake_generator: "Unix Makefiles"
+            executable_path: "./build/LlamaBot"
+            artifact_name: "LlamaBot-Linux.tar.gz"
+          - os: windows-latest
+            name: Windows
+            cmake_generator: "Visual Studio 17 2022"
+            executable_path: "./build/Release/LlamaBot.exe"
+            artifact_name: "LlamaBot-Windows.zip"
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - name: Install Qt
+        uses: jurplel/install-qt-action@v4
+        with:
+          version: ${{ env.QT_VERSION }}
+          # Basic modules are usually included (Core, Gui, Widgets). 
+          # We add others if needed by the project.
+          modules: 'qtmultimedia qt5compat qtshadertools'
+          cache: true
+
+      - name: Install Linux Dependencies
+        if: runner.os == 'Linux'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y build-essential libgl1-mesa-dev libvulkan-dev libssl-dev
+
+      - name: Configure CMake
+        run: |
+          cmake -B build -G "${{ matrix.cmake_generator }}" -DCMAKE_BUILD_TYPE=${{ env.BUILD_TYPE }} -DBUILD_TEST=ON
+
+      - name: Build
+        run: cmake --build build --config ${{ env.BUILD_TYPE }}
+
+      - name: Test
+        run: ctest --test-dir build --build-config ${{ env.BUILD_TYPE }} --output-on-failure
+        env:
+          QT_QPA_PLATFORM: offscreen
+
+      - name: Prepare Package (Windows)
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: |
+          # Run windeployqt to copy dependencies
+          $windeployqt = (Get-Command windeployqt).Source
+          & $windeployqt --release --compiler-runtime --no-translations ${{ matrix.executable_path }}
+          
+          # Compress
+          Compress-Archive -Path ./build/Release/* -DestinationPath ${{ matrix.artifact_name }}
+
+      - name: Prepare Package (Linux)
+        if: runner.os == 'Linux'
+        run: |
+          # For Linux, we just tar the binary for now as a full deployment (AppImage) is complex
+          tar -czvf ${{ matrix.artifact_name }} -C build LlamaBot
+
+      - name: Upload Artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.name }}-Artifacts
+          path: ${{ matrix.artifact_name }}
+
+  build-android:
+    name: Android
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - name: Set up JDK
+        uses: actions/setup-java@v4
+        with:
+          java-version: '17'
+          distribution: 'temurin'
+
+      - name: Install Qt Android
+        uses: jurplel/install-qt-action@v4
+        with:
+          version: ${{ env.QT_VERSION }}
+          target: android
+          arch: android_arm64_v8a
+          cache: true
+
+      - name: Build Android APK
+        env:
+          ANDROID_KEYSTORE_PASS: ${{ secrets.ANDROID_KEYSTORE_PASS }} # Optional if signing
+        run: |
+          # Use qt-cmake or define toolchain manually. jurplel action sets Qt6_DIR.
+          # We use the arguments from the project's build script but adapted for CI.
+          cmake -B build-android -GNinja \
+            -DCMAKE_BUILD_TYPE=Release \
+            -DANDROID_SDK_ROOT=$ANDROID_SDK_ROOT \
+            -DANDROID_NDK_ROOT=$ANDROID_NDK_ROOT \
+            -DCMAKE_TOOLCHAIN_FILE=${{ env.Qt6_DIR }}/lib/cmake/Qt6/qt.toolchain.cmake \
+            -DQT_CHAINLOAD_TOOLCHAIN_FILE=$ANDROID_NDK_ROOT/build/cmake/android.toolchain.cmake \
+            -DANDROID_ABI=arm64-v8a \
+            -DANDROID_STL=c++_shared \
+            -DGGML_VULKAN=OFF \
+            -DBUILD_TEST=OFF 
+          
+          cmake --build build-android --config Release --target apk
+
+      - name: Upload APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: Android-APK
+          path: build-android/android-build/*.apk
+
+  release:
+    name: Create Release
+    needs: [build-desktop, build-android]
+    if: startsWith(github.ref, 'refs/tags/')
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/download-artifact@v4
+      
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v1
+        with:
+          files: |
+            Linux-Artifacts/LlamaBot-Linux.tar.gz
+            Windows-Artifacts/LlamaBot-Windows.zip
+            Android-APK/*.apk
+          generate_release_notes: true
