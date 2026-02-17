@@ -11,6 +11,8 @@ import LlamaBotQml
 Drawer {
     id: root
 
+    signal chatChanged()
+
     width: 280
     height: parent.height
     edge: Qt.LeftEdge
@@ -41,10 +43,10 @@ Drawer {
             }
             Layout.fillWidth: true
             onClicked: {
-                if (ChatController)
-                    ChatController.createChat();
-                chatListView.currentIndex = ChatController.currentChatIndex;
-                chatListView.positionViewAtIndex(chatListView.currentIndex, ListView.Visible);
+                if (ChatController) {
+                    ChatController.createChat(ChatController.currentChat.currentApi, ChatController.currentChat.currentModel);
+                    root.aboutToShow();
+                }
             }
         }
 
@@ -138,8 +140,10 @@ Drawer {
                 }
 
                 onClicked: {
-                    if (ChatController)
+                    if (ChatController) {
                         ChatController.switchToChat(modelData.index);
+                        root.chatChanged();
+                    }
                     root.close();
                 }
 
@@ -152,8 +156,11 @@ Drawer {
                         text: "Delete"
                         enabled: (typeof ChatController !== "undefined" && ChatController) ? (ChatController.chatList.length > 1) : false
                         onTriggered: {
-                            if (ChatController)
+                            if (ChatController) {
                                 ChatController.deleteChat(chatDelegate.modelData.index);
+                                chatListView.currentIndex = ChatController.currentChatIndex;
+                                root.aboutToShow();
+                            }
                         }
                     }
                     Menu {
@@ -242,5 +249,5 @@ Drawer {
         }
     }
 
-    onOpened: chatListView.positionViewAtIndex(ChatController.currentChatIndex, ListView.Visible)
+    onAboutToShow: chatListView.positionViewAtIndex(ChatController.currentChatIndex, ListView.Visible)
 }

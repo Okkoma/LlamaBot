@@ -7,77 +7,47 @@ import QtQuick.Controls
 
 import LlamaBotQml
 
-Item {
+ListView {
     id: root
 
-    // Use QtObject to satisfy Connections target requirement and qmllint check
-    // Use var to avoid qmllint being unable to resolve Chat -> QObject inheritance
-    readonly property var currentChat: ChatController.currentChat
+    clip: true
+    spacing: 10
 
-    ListView {
-        id: messageList
-        anchors.top: parent.top
-        anchors.bottom: inputArea.top
-        anchors.left: parent.left
-        anchors.right: parent.right
-        clip: true
-        spacing: 10
-        
-        model: ChatController.currentChat
-        
-        delegate: MessageDelegate {
-        }
-        
-        // Visible scrollbar
-        ScrollBar.vertical: ScrollBar {
-            policy: ScrollBar.AsNeeded
-        }
+    model: ChatController.currentChat
 
-        // Propriété interne pour savoir si on doit auto-scroller
-        property bool autoScroll: true
+    delegate: MessageDelegate {}
 
-        onMovementEnded: {
-            // Si l'utilisateur arrête de scroller et qu'il est en bas, on réactive l'auto-scroll
-            // Sinon (s'il est remonté), on le désactive.
-            autoScroll = atYEnd
-            smartScroll()
-        }
+    // Visible scrollbar
+    ScrollBar.vertical: ScrollBar {
+        policy: ScrollBar.AsNeeded
+    }
 
-        // Helper function to conditionally scroll only if user is at the bottom
-        function smartScroll() {
-            if (autoScroll) {
-                // On utilise Qt.callLater pour s'assurer que la ListView a fini 
-                // de calculer la hauteur du nouvel élément avant de scroller.                
-                Qt.callLater(messageList.positionViewAtEnd)
-            }
-        }
+    // Propriété interne pour savoir si on doit auto-scroller
+    property bool autoScroll: true
 
-        Connections {
-            target: root.currentChat
-            // Only handle signals if target is valid
-            enabled: root.currentChat !== null
-            function onMessagesChanged() {
-                // Smart auto-scroll during streaming updates
-                messageList.smartScroll()
-            }
+    onMovementEnded: {
+        // Si l'utilisateur arrête de scroller et qu'il est en bas, on réactive l'auto-scroll
+        // Sinon (s'il est remonté), on le désactive.
+        autoScroll = atYEnd;
+        smartScroll();
+    }
+
+    // Helper function to conditionally scroll only if user is at the bottom
+    function smartScroll() {
+        if (autoScroll) {
+            // On utilise Qt.callLater pour s'assurer que la ListView a fini
+            // de calculer la hauteur du nouvel élément avant de scroller.
+            Qt.callLater(root.positionViewAtEnd);
         }
     }
 
-    AssetContent {
-        id: assetContent
-        anchors.bottom: inputArea.top
-        anchors.left: parent.left
-        anchors.right: parent.right
-    }
-
-    InputArea {
-        id: inputArea
-        anchors.left: parent.left
-        anchors.right: parent.right
-        anchors.bottom: parent.bottom
-        onAccepted: (text) => {
-            if (ChatController)
-                ChatController.sendMessage(text)
+    Connections {
+        target: ChatController.currentChat
+        // Only handle signals if target is valid
+        enabled: ChatController.currentChat !== null
+        function onMessagesChanged() {
+            // Smart auto-scroll during streaming updates
+            root.smartScroll();
         }
-    }    
+    }
 }

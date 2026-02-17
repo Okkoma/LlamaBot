@@ -13,14 +13,12 @@ ComboBox {
     model: ChatController ? ChatController.getAvailableModels() : []
     textRole: "name"
 
-    displayText: ChatController && ChatController.currentChat ? ChatController.currentChat.currentModel : "No Model"
+    displayText: ChatController && ChatController.currentChat ? ChatController.currentChat.currentModel : "none"
 
     onActivated: index => {
-        if (ChatController && currentValue) {
-            ChatController.setModel(currentValue.name);
-        }
+        displayText = currentValue.name;
     }
-
+    
     palette {
         buttonText: ThemeManager.color("buttonText")
         button: ThemeManager.color("button")
@@ -32,7 +30,7 @@ ComboBox {
         id: modelDelegate
 
         required property int index
-        property var modelData: root.model[index]
+        required property var modelData
 
         width: root.width
 
@@ -65,8 +63,15 @@ ComboBox {
     Connections {
         target: ChatController || null
         function onAvailableModelsChanged() {
-            if (ChatController)
+            if (ChatController) {                
                 root.model = ChatController.getAvailableModels();
+
+                var index = root.find(root.displayText);
+                if (index !== -1) {
+                    root.currentIndex = index;
+                }
+                root.displayText = root.currentValue.name;
+            }
         }
     }
 

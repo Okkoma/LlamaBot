@@ -71,15 +71,15 @@ public:
      * @param parent Objet parent Qt (optionnel)
      */
     Chat(LLMServices* llmservices, const QString& name = "new_chat", const QString& initialContext = "",
-            bool streamed = true, QObject* parent = nullptr) :
+            bool streamed = true, const QString& apiName = "none", const QString& modelName = "none", QObject* parent = nullptr) :
         QAbstractListModel(parent),
         llmservices_(llmservices),
         streamed_(streamed),
         processing_(false),
         id_(QUuid::createUuid().toString(QUuid::WithoutBraces)),
         name_(name),
-        currentApi_("none"),
-        currentModel_("none"),
+        currentApi_(apiName),
+        currentModel_(modelName),
         initialContext_(initialContext) {}
     
     enum MessageRole { Role = Qt::UserRole + 1, Content, Assets };

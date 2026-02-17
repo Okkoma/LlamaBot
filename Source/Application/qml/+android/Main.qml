@@ -10,7 +10,7 @@ import QtQuick.Layouts
 import LlamaBotQml
 
 ApplicationWindow {
-    id: root
+    id: main
 
     visible: true
     width: Screen.width
@@ -108,8 +108,15 @@ ApplicationWindow {
                 }
 
                 ModelSelector {
+                    id: modelSelector
                     Layout.preferredWidth: Screen.width * 0.6
                     Layout.maximumWidth: Screen.width * 0.8
+                    Connections {
+                        target: chatDrawer
+                        function onChatChanged() {
+                            modelSelector.displayText = ChatController.currentChat.currentModel;
+                        }
+                    }                    
                 }
 
                 Item {
@@ -159,10 +166,38 @@ ApplicationWindow {
             }
         }
 
-        // Chat View
-        ChatView {
+        // Chat container
+        Item {
             Layout.fillWidth: true
             Layout.fillHeight: true
+
+            ChatView {
+                id: messageView
+                anchors.bottom: inputArea.top
+                anchors.top: parent.top
+                anchors.left: parent.left
+                anchors.right: parent.right
+            }
+
+            AssetContent {
+                id: assetContent
+                anchors.bottom: inputArea.top
+                anchors.left: parent.left
+                anchors.right: parent.right
+            }
+
+            InputArea {
+                id: inputArea
+                anchors.left: parent.left
+                anchors.right: parent.right
+                anchors.bottom: parent.bottom
+                onAccepted: (text) => {
+                    if (ChatController) {
+                        ChatController.setModel(modelSelector.currentValue.name);
+                        ChatController.sendMessage(text);
+                    }
+                }
+            }
         }
     }
 

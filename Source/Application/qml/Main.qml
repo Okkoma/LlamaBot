@@ -11,7 +11,7 @@ import QtQuick.Layouts
 import LlamaBotQml
 
 ApplicationWindow {
-    id: root
+    id: main
 
     visible: true
     width: 1000
@@ -103,10 +103,20 @@ ApplicationWindow {
                 }
 
                 ToolButton {
+                    id: newChat
                     text: "+"
                     onClicked: {
                         if (ChatController)
-                            ChatController.createChat();
+                        {
+                            var backup = modelSelector.displayText;
+                            ChatController.createChat(ChatController.currentChat.currentApi, ChatController.currentChat.currentModel);
+                            var index = modelSelector.find(backup);
+                            if (index !== -1) {
+                                modelSelector.currentIndex = index;
+                            }
+                            modelSelector.displayText = modelSelector.currentValue.name;
+                            chatDrawer.aboutToShow();
+                        }
                     }
                     ToolTip.visible: hovered
                     ToolTip.text: "New Chat"
@@ -123,6 +133,7 @@ ApplicationWindow {
                 }
 
                 APISelector {
+                    id: apiSelector
                     Layout.preferredWidth: 130
                 }
 
@@ -133,8 +144,18 @@ ApplicationWindow {
                 }
 
                 ModelSelector {
+                    id: modelSelector
                     Layout.preferredWidth: 300
                     Layout.maximumWidth: 350
+
+                    Connections {
+                        target: chatDrawer
+                        function onChatChanged() {
+                            console.log("onChatChanged:");
+                            ChatController.setAPI(ChatController.currentChat.currentApi);
+                            modelSelector.displayText = ChatController.currentChat.currentModel;
+                        }
+                    }
                 }
 
                 Item {
@@ -195,10 +216,39 @@ ApplicationWindow {
             }
         }
 
-        // Chat View
-        ChatView {
+        // Chat container
+        Item {
             Layout.fillWidth: true
             Layout.fillHeight: true
+
+            ChatView {
+                id: messageView
+                anchors.bottom: inputArea.top
+                anchors.top: parent.top
+                anchors.left: parent.left
+                anchors.right: parent.right
+            }
+
+            AssetContent {
+                id: assetContent
+                anchors.bottom: inputArea.top
+                anchors.left: parent.left
+                anchors.right: parent.right
+            }
+
+            InputArea {
+                id: inputArea
+                anchors.left: parent.left
+                anchors.right: parent.right
+                anchors.bottom: parent.bottom
+                onAccepted: (text) => {
+                    if (ChatController) {
+                        ChatController.setAPI(apiSelector.currentValue.name);
+                        ChatController.setModel(modelSelector.currentValue.name);
+                        ChatController.sendMessage(text);
+                    }
+                }
+            }
         }
     }
 

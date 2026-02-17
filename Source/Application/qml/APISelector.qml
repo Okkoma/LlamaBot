@@ -13,7 +13,7 @@ ComboBox {
     model: ChatController.getAvailableAPIs()
     textRole: "name"
 
-    displayText: ChatController.currentChat ? ChatController.currentChat.currentApi : "No API"
+    displayText: ChatController.currentChat ? ChatController.currentChat.currentApi : "none"
 
     onActivated: index => {
         if (currentValue) {

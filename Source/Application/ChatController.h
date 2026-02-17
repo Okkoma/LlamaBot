@@ -73,7 +73,7 @@ public:
      * 
      * Crée un nouveau chat vide et le sélectionne comme chat courant.
      */
-    Q_INVOKABLE void createChat();
+    Q_INVOKABLE void createChat(const QString& api, const QString& model);
     
     /**
      * @brief Change de chat courant

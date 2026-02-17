@@ -10,8 +10,8 @@ const char* rawHumanPrompt = "";
 const char* rawAiPrompt = "";
 const char* rawDefaultInitialPrompt = "";
 
-ChatImpl::ChatImpl(LLMServices* llmservices, const QString& name, const QString& initialPrompt, bool streamed, QObject* parent) :
-    Chat(llmservices, name, initialPrompt, streamed, parent),
+ChatImpl::ChatImpl(LLMServices* llmservices, const QString& name, const QString& initialPrompt, bool streamed, const QString& apiName, const QString& modelName, QObject* parent) :
+    Chat(llmservices, name, initialPrompt, streamed, apiName, modelName, parent),
     lastBotIndex_(-1),
     aiPrompt_("🤖 >")
 {
@@ -19,19 +19,46 @@ ChatImpl::ChatImpl(LLMServices* llmservices, const QString& name, const QString&
         getData()->n_ctx_ = llmservices->getDefaultContextSize();
 
     setObjectName(name);
-    initialize();
+    initialize(apiName, modelName);
 }
 
-void ChatImpl::initialize()
+void ChatImpl::initialize(const QString& apiName, const QString& modelName)
 {
-    const auto& availableAPIs = llmservices_->getAvailableAPIs();
+    const std::vector<LLMService*>& availableAPIs = llmservices_->getAvailableAPIs();
     if (!availableAPIs.empty())
     {
-        LLMService* defaultApi = availableAPIs.front();
-        if (defaultApi)
+        LLMService* api = nullptr;
+        // search for a required api
+        if (!apiName.isEmpty()  && apiName != "none")
         {
-            currentApi_ = defaultApi->name_;
-            std::vector<LLMModel> models = defaultApi->getAvailableModels();
+            auto it = std::find_if(availableAPIs.begin(), availableAPIs.end(), [apiName](LLMService* service) {
+                return service->name_ == apiName;
+            });
+            if (it != availableAPIs.end()) 
+            {                
+                api = *it;
+                currentApi_ = apiName;
+            }
+        }
+        // by default, set api with the first available
+        if (!api)
+        {
+            api = availableAPIs.front();
+            currentApi_ = api ? api->name_ : "none";
+        }
+        // search for a required model
+        if (api && !modelName.isEmpty() && modelName != "none")
+        {
+            std::vector<LLMModel> models = api->getAvailableModels();
+            auto it = std::find_if(models.begin(), models.end(), [modelName](LLMModel& llmModel) {
+                return llmModel.toString() == modelName;
+            });             
+            currentModel_ = it != models.end() ? modelName : "none";
+        }
+        // by default, set model with the first available
+        if (api && currentModel_ == "none")
+        {
+            std::vector<LLMModel> models = api->getAvailableModels();
             if (models.size())
                 currentModel_ = models.front().toString();
         }
@@ -122,7 +149,11 @@ void ChatImpl::finalizeStream()
         if (history_.isEmpty() || history_.last().role_ != currentAIRole_ || history_.last().content_ != currentAIStream_)
         {
             qWarning() << "ChatImpl::finalizeStream: history was not updated during streaming, adding now";
-            addMessage(currentAIRole_, currentAIStream_);
+            if (lastBotIndex_ >= messages_.size())
+                addMessage(currentAIRole_, currentAIStream_);
+            else
+                modifyMessage(lastBotIndex_, currentAIRole_, currentAIStream_);
+            
             emit messagesChanged();
         }
 
@@ -216,7 +247,7 @@ void ChatImpl::updateCurrentAIStream(const QString& text)
             currentIndex = currentContent.length();
         }
     }
-
+    
     // where to write the messages found ?
     // at the begin of the ai response, a new message is appended in messages_
     int msgindex = lastBotIndex_;
@@ -225,7 +256,7 @@ void ChatImpl::updateCurrentAIStream(const QString& text)
         if (msgindex < messages_.size())
         {
             // reduit la modification des messages tous les 'accCharBeforeUpdate' caractères
-        #ifdef Q_OS_ANDROID
+        #if defined(Q_OS_ANDROID) || defined(TEST)
             const int accCharBeforeUpdate = 1;
         #else
             const int accCharBeforeUpdate = 15;

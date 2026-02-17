@@ -17,9 +17,9 @@ public:
      * @brief Factory de ChatImpl
      */
     static Chat* Create(LLMServices* service, const QString& name = "new_chat", const QString& initialContext = "",
-                            bool streamed = true, QObject* parent = nullptr)
+                            bool streamed = true, const QString& apiName = "none", const QString& modelName = "none", QObject* parent = nullptr)
     {
-        return new ChatImpl(service, name, initialContext, streamed, parent);
+        return new ChatImpl(service, name, initialContext, streamed, apiName, modelName, parent);
     }
     /**
      * @brief Constructeur de ChatImpl
@@ -30,7 +30,7 @@ public:
      * @param parent Objet parent Qt (optionnel)
      */
     explicit ChatImpl(LLMServices* service, const QString& name = "new_chat", const QString& initialContext = "",
-        bool streamed = true, QObject* parent = nullptr);
+        bool streamed = true, const QString& apiName = "none", const QString& modelName = "none", QObject* parent = nullptr);
     
     /**
      * @brief Définit l'API LLM à utiliser
@@ -116,7 +116,7 @@ private:
      * 
      * Configure l'état initial du chat et les connexions.
      */
-    void initialize();
+    void initialize(const QString& api, const QString& model);
 
     /**
      * @brief Ajoute du contenu à l'historique

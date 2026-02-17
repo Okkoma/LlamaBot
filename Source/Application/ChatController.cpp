@@ -38,7 +38,7 @@ void ChatController::initialize(LLMServices* llmservices)
 
     // specific case for first run
     if (chats_.isEmpty())
-        createChat();
+        createChat("none", "none");
 
     const std::vector<LLMService*>& apiList = llmServices_->getAPIs();
     if (apiList.size() && apiList.front())
@@ -115,11 +115,11 @@ void ChatController::connectAPIsSignals()
     }
 }
 
-void ChatController::createChat()
+void ChatController::createChat(const QString& api, const QString& model)
 {
     chatCounter_++;
     QString chatName = QString("Chat %1").arg(chatCounter_);
-    Chat* chat = new ChatImpl(llmServices_, chatName, "", true, this);
+    Chat* chat = new ChatImpl(llmServices_, chatName, "", true, api, model, this);
     chats_.append(chat);
     currentChat_ = chat;
 
@@ -271,8 +271,13 @@ void ChatController::setModel(const QString& modelName)
     {
         qDebug() << "ChatController::setModel" << modelName;
 
+        QString currenModelName = currentChat_->getCurrentModel();
         currentChat_->setModel(modelName);
-        emit currentChatChanged(); // Notify to update UI
+        if (currenModelName != modelName)
+        {
+            emit currentChatChanged(); // Notify to update UI
+            emit chatListChanged();
+        }
     }
 }
 

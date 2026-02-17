@@ -70,7 +70,7 @@ Item {
 
             TextArea {
                 id: inputField
-                placeholderText: "Type a message..."
+                placeholderText: "your message..."
                 color: ThemeManager.color("text")
                 font.family: ThemeManager.currentFont
                 font.pixelSize: ThemeManager.currentFontSize * 1.2
