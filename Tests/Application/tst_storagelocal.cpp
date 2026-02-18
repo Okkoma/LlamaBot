@@ -42,7 +42,6 @@ private slots:
     void test_construction();
     void test_database_initialization();
     void test_database_path();
-    void test_json_file_path();
 
     // Tests de sauvegarde/chargement SQLite
     void test_save_and_load_single_chat_db();
@@ -52,6 +51,7 @@ private slots:
     void test_save_with_special_characters_db();
 
     // Tests de sauvegarde/chargement JSON
+    void test_json_file_path();    
     void test_save_and_load_json_file();
     void test_load_invalid_json_file();
     void test_migration_json_to_db();
@@ -69,6 +69,7 @@ private slots:
 private:
     QString testDataPath() const;
     void clearTestData();
+    void delete_local_db_and_jsonfile();
     void createTestJsonFile(const QJsonArray& chats);
     void createTestDatabase(const QJsonArray& chats);
     QJsonArray createTestChatJson(int count = 1);
@@ -122,6 +123,16 @@ void ChatStorageLocalTest::clearTestData()
     
     // Recréer le répertoire
     dir.mkpath(".");
+
+    delete_local_db_and_jsonfile();
+}
+
+void ChatStorageLocalTest::delete_local_db_and_jsonfile()
+{
+    QString dbPath = QStandardPaths::writableLocation(QStandardPaths::AppDataLocation) + "/chat.db";
+    QString jsonPath = QStandardPaths::writableLocation(QStandardPaths::AppDataLocation) + "/chats.json";
+    QFile::remove(dbPath);
+    QFile::remove(jsonPath);
 }
 
 void ChatStorageLocalTest::createTestJsonFile(const QJsonArray& chats)
@@ -263,29 +274,6 @@ void ChatStorageLocalTest::test_database_path()
     QVERIFY(QFile::exists(expectedPath));
 }
 
-void ChatStorageLocalTest::test_json_file_path()
-{
-    qDebug() << "ChatStorageLocalTest::test_json_file_path()";
-    
-    LLMServices llmservices(nullptr);
-    ChatStorageLocal storage(&llmservices);
-    
-    // Le chemin devrait être dans AppDataLocation
-    QString expectedPath = QStandardPaths::writableLocation(QStandardPaths::AppDataLocation) + "/chats.json";
-    
-    // Créer un fichier JSON de test
-    QJsonArray testChats = createTestChatJson(1);
-    QFile file(expectedPath);
-    if (file.open(QIODevice::WriteOnly))
-    {
-        QJsonDocument doc(testChats);
-        file.write(doc.toJson());
-        file.close();
-    }
-    
-    QVERIFY(QFile::exists(expectedPath));
-}
-
 void ChatStorageLocalTest::test_save_and_load_single_chat_db()
 {
     qDebug() << "ChatStorageLocalTest::test_save_and_load_single_chat_db()";
@@ -385,12 +373,14 @@ void ChatStorageLocalTest::test_save_empty_list_db()
     
     LLMServices llmservices(nullptr);
     ChatStorageLocal storage(&llmservices);
-    
-    QList<Chat*> emptyList;
-    
+        
     // Sauvegarder une liste vide devrait réussir
+    QList<Chat*> emptyList;
     QVERIFY(storage.save(emptyList));
-    
+
+    qDebug() << "ChatStorageLocalTest::test_save_empty_list_db(): size:" << storage.size();
+    QVERIFY(storage.size() == 0);
+
     // Charger devrait retourner une liste vide
     QList<Chat*> loadedChats;
     storage.load(loadedChats);
@@ -403,12 +393,6 @@ void ChatStorageLocalTest::test_load_nonexistent_db()
     
     LLMServices llmservices(nullptr);
     ChatStorageLocal storage(&llmservices);
-    
-    // S'assurer qu'aucune base de données n'existe
-    QString dbPath = QStandardPaths::writableLocation(QStandardPaths::AppDataLocation) + "/chat.db";
-    QString jsonPath = QStandardPaths::writableLocation(QStandardPaths::AppDataLocation) + "/chats.json";
-    QFile::remove(dbPath);
-    QFile::remove(jsonPath);
     
     QList<Chat*> loadedChats;
     bool result = storage.load(loadedChats);
@@ -454,6 +438,29 @@ void ChatStorageLocalTest::test_save_with_special_characters_db()
     // Nettoyer
     delete chat;
     qDeleteAll(loadedChats);
+}
+
+void ChatStorageLocalTest::test_json_file_path()
+{
+    qDebug() << "ChatStorageLocalTest::test_json_file_path()";
+    
+    LLMServices llmservices(nullptr);
+    ChatStorageLocal storage(&llmservices);
+    
+    // Le chemin devrait être dans AppDataLocation
+    QString expectedPath = QStandardPaths::writableLocation(QStandardPaths::AppDataLocation) + "/chats.json";
+    
+    // Créer un fichier JSON de test
+    QJsonArray testChats = createTestChatJson(1);
+    QFile file(expectedPath);
+    if (file.open(QIODevice::WriteOnly))
+    {
+        QJsonDocument doc(testChats);
+        file.write(doc.toJson());
+        file.close();
+    }
+    
+    QVERIFY(QFile::exists(expectedPath));
 }
 
 void ChatStorageLocalTest::test_save_and_load_json_file()

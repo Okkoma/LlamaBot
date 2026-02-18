@@ -78,6 +78,13 @@ bool ChatStorageDistant::save(const QList<Chat*>& chats)
     return saveJson(jsonArray);
 }
 
+
+unsigned ChatStorageDistant::size()
+{
+    qDebug() << "ChatStorageDistant::size(): TO IMPLEMENT";
+    return 0U;
+}
+
 std::optional<QJsonArray> ChatStorageDistant::loadJson()
 {
     if (serverUrl_.isEmpty())

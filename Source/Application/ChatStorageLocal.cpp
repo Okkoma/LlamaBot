@@ -131,6 +131,31 @@ bool ChatStorageLocal::save(const QList<Chat*>& chats)
     return true;
 }
 
+unsigned ChatStorageLocal::size()
+{
+    if (!QFile::exists(dbPath()) || !openDatabase())
+    {
+        ErrorSystem::instance().log(ERRCODE_SQLDATABASE_FAILED_OPEN, QStringList(dbPath()));
+        qDebug() << "ChatStorageLocal::loadJsonDb() ... ERRCODE_SQLDATABASE_FAILED_OPEN !";
+        return 0u;
+    }
+
+     QSqlQuery query(db_);
+    if (!query.exec("SELECT COUNT(*) FROM conversations;"))
+    {
+        ErrorSystem::instance().log(ERRCODE_SQLDATABASE_FAILED_READ, QStringList(query.lastError().text()));
+        qDebug() << "ChatStorageLocal::loadJsonDb() ... ERRCODE_SQLDATABASE_FAILED_READ !";
+        return 0u;
+    }
+
+    // On se place sur la première ligne du résultat
+    // On récupère la valeur de la première colonne (index 0)
+    if (query.next()) 
+        return query.value(0).toUInt();
+
+    return 0U;
+}
+
 std::optional<QJsonArray> ChatStorageLocal::loadJsonDb()
 {
     qDebug() << "ChatStorageLocal::loadJsonDb() ...";

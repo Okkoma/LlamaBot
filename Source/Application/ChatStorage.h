@@ -20,6 +20,7 @@ public:
     
     virtual bool load(QList<Chat*>& chats) = 0;
     virtual bool save(const QList<Chat*>& chats) = 0;
+    virtual unsigned size() = 0;
 
 protected:
     LLMServices* llmServices_;

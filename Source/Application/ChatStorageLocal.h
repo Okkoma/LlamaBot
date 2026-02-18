@@ -17,6 +17,8 @@ public:
     bool load(QList<Chat*>& chats) override;
     bool save(const QList<Chat*>& chats) override;
 
+    unsigned size() override;
+
 private:
     QString dbPath() const;
     QString jsonfilePath() const;
