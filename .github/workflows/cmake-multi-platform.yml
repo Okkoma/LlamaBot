@@ -23,12 +23,12 @@ jobs:
           - os: ubuntu-latest
             name: Linux
             cmake_generator: "Unix Makefiles"
-            executable_path: "./build/LlamaBot"
+            executable_path: "./build/bin/LlamaBot"
             artifact_name: "LlamaBot-Linux.tar.gz"
           - os: windows-latest
             name: Windows
             cmake_generator: "Visual Studio 17 2022"
-            executable_path: "./build/Release/LlamaBot.exe"
+            executable_path: "./build/bin/LlamaBot.exe"
             artifact_name: "LlamaBot-Windows.zip"
 
     steps:
@@ -67,7 +67,7 @@ jobs:
           cmake -B build -G "${{ matrix.cmake_generator }}" -DCMAKE_BUILD_TYPE=${{ env.BUILD_TYPE }} -DBUILD_TEST=ON $CMAKE_ARGS
 
       - name: Build
-        run: cmake --build build --config ${{ env.BUILD_TYPE }}
+        run: cmake --build build --config ${{ env.BUILD_TYPE }} --parallel
 
       - name: Test
         run: ctest --test-dir build --build-config ${{ env.BUILD_TYPE }} --output-on-failure
@@ -83,15 +83,15 @@ jobs:
           & $windeployqt --release --compiler-runtime --no-translations ${{ matrix.executable_path }}
           
           # Compress
-          Compress-Archive -Path ./build/Release/* -DestinationPath ${{ matrix.artifact_name }}
+          Compress-Archive -Path ./build/bin/* -DestinationPath ${{ matrix.artifact_name }}
 
       - name: Prepare Package (Linux)
         if: runner.os == 'Linux'
         run: |
-          # For Linux, we just tar the binary for now as a full deployment (AppImage) is complex
-          tar -czvf ${{ matrix.artifact_name }} -C build LlamaBot
+          tar -czvf ${{ matrix.artifact_name }} ${{ matrix.executable_path }}
 
       - name: Upload Artifacts
+        if: ${{ github.actor != 'nektos/act' }}
         uses: actions/upload-artifact@v4
         with:
           name: ${{ matrix.name }}-Artifacts
@@ -142,7 +142,7 @@ jobs:
             -DGGML_VULKAN=OFF \
             -DBUILD_TEST=OFF 
           
-          cmake --build build-android --config Release --target apk
+          cmake --build build-android --config Release --target apk --parallel
 
       - name: Upload APK
         uses: actions/upload-artifact@v4
@@ -153,7 +153,7 @@ jobs:
   release:
     name: Create Release
     needs: [build-desktop, build-android]
-    if: startsWith(github.ref, 'refs/tags/')
+    if: ${{ startsWith(github.ref, 'refs/tags/') && github.actor != 'nektos/act' }}
     runs-on: ubuntu-latest
     permissions:
       contents: write
