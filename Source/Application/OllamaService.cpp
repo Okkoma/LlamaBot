@@ -192,6 +192,9 @@ bool OllamaService::isProcessStarted() const
 // TODO: remove QEventLoop in this function
 bool OllamaService::isUrlAccessible() const
 {
+    if (!networkManager_)
+        return false;
+
     if (!url_.isEmpty())
     {
         qDebug() << "OllamaService::isUrlAccessible() ..." << url_;
@@ -250,6 +253,12 @@ bool OllamaService::isAPIAccessible() const
 
 void OllamaService::postInternal(Chat* chat, const QString& content, bool streamed)
 {
+    if (!networkManager_)
+    {
+        qDebug() << "OllamaService::postInternal: no network !";
+        return;
+    }
+
     // Use api/chat if available or configured
     bool useChatApi = api_generate_.contains("chat");
 
@@ -261,6 +270,8 @@ void OllamaService::postInternal(Chat* chat, const QString& content, bool stream
     if (chat)
         chat->setProcessing(true);
 
+    qDebug() << "OllamaService::postInternal: useChatApi:" << useChatApi;
+    
     // post the request
     QJsonObject payload = chat->getInfo();
 
@@ -355,7 +366,8 @@ void OllamaService::postInternal(Chat* chat, const QString& content, bool stream
                 llmservices_->disconnect(reply, &QNetworkReply::finished, llmservices_, nullptr);
                 llmservices_->disconnect(this, &LLMService::stopStreamRequested, llmservices_, nullptr);
             });
-        llmservices_->connect(this, &LLMService::stopStreamRequested, llmservices_, [this, chat, reply]()
+        llmservices_->connect(this, &LLMService::stopStreamRequested, llmservices_, 
+            [this, chat, reply]()
             {
                 qDebug() << "OllamaService::postInternal streamed: stopStreamRequested";
                 reply->abort();

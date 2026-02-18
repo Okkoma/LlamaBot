@@ -39,7 +39,9 @@ void OllamaTest::test_ollama_service()
     LLMServices services(this);
     LLMService* service = services.get("Ollama");
     
-    QVERIFY(service != nullptr);
+    if (!service)
+        QSKIP("OllamaTest::test_ollama_service() no ollama service (maybe no ollama server) ... skipped");
+
     QCOMPARE(service->name_, QString("Ollama"));
 }
 
@@ -48,6 +50,9 @@ void OllamaTest::test_ollama_parsing()
     qDebug() << "OllamaTest::test_ollama_parsing()";
     LLMServices services(this);
     LLMService* service = services.get("Ollama");
+
+    if (!service)
+        QSKIP("OllamaTest::test_ollama_service() no ollama service (maybe no ollama server) ... skipped");
 
     ChatImpl chat(&services);
     chat.setApi("Ollama");
@@ -69,11 +74,19 @@ void OllamaTest::test_ollama_streaming()
     LLMServices services(this);
     LLMService* service = services.get("Ollama");
     
+    if (!service)
+        QSKIP("OllamaTest::test_ollama_streaming() no ollama service (maybe no ollama server) ... skipped");    
+
     service->start();
 
     // Wait for service to be ready
     QTest::qWait(3000);
     QVERIFY(service->isReady() == true);
+
+    // Check if the service is ready
+    // if not, skip the test
+    if (!service->getAvailableModels().size())
+        QSKIP("OllamaTest::test_ollama_streaming() no model ... skipped");
 
     ChatImpl chat(&services);
     chat.setApi("Ollama");
