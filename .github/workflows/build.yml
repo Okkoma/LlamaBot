@@ -28,13 +28,9 @@ jobs:
           - os: ubuntu-latest
             name: Linux
             cmake_generator: "Unix Makefiles"
-            executable_path: "./build/bin/LlamaBot"
-            artifact_name: "LlamaBot-Linux.tar.gz"
           - os: windows-latest
             name: Windows
             cmake_generator: "Visual Studio 17 2022"
-            executable_path: "./build/bin/LlamaBot.exe"
-            artifact_name: "LlamaBot-Windows.zip"
 
     steps:
       - uses: actions/checkout@v4
@@ -78,28 +74,23 @@ jobs:
         if: (runner.os == 'Windows' && github.actor != 'nektos/act') || runner.os == 'Linux'
         run: cmake --build build --config ${{ env.BUILD_TYPE }} --parallel 2
 
-      - name: Prepare Package (Windows)
-        if: runner.os == 'Windows' && github.actor != 'nektos/act'
-        shell: pwsh
-        run: |
-          # Run windeployqt to copy dependencies
-          $windeployqt = (Get-Command windeployqt).Source
-          & $windeployqt --release --compiler-runtime --no-translations ${{ matrix.executable_path }}
-          
-          # Compress
-          Compress-Archive -Path ./build/bin/* -DestinationPath ${{ matrix.artifact_name }}
+      - name: Install
+        if: (runner.os == 'Windows' && github.actor != 'nektos/act') || runner.os == 'Linux'
+        run: cmake --install build
 
-      - name: Prepare Package (Linux)
-        if: runner.os == 'Linux' && github.actor != 'nektos/act'
+      - name: Package
+        if: (runner.os == 'Windows' && github.actor != 'nektos/act') || runner.os == 'Linux'
+        shell: bash
         run: |
-          tar -czvf ${{ matrix.artifact_name }} ${{ matrix.executable_path }}
+          cd build
+          cpack .
 
       - name: Upload Artifacts
         if: github.actor != 'nektos/act'
         uses: actions/upload-artifact@v4
         with:
           name: ${{ matrix.name }}-Artifacts
-          path: ${{ matrix.artifact_name }}
+          path: ./build/LlamaBot*.zip
 
   build-android:
     if: ${{ github.event.workflow_run.conclusion == 'success' || github.event_name == 'workflow_dispatch' || github.actor == 'nektos/act' }}
@@ -156,5 +147,5 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: Android-Artifacts
-          path: build-android/android-build/*.apk
+          path: build-android/Source/Application/android-build/build/output/apk/release/*.apk
 
