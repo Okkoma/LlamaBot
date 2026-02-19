@@ -1,0 +1,45 @@
+name: Release
+
+name: Release
+
+on:
+  workflow_run:
+    workflows: ["Build"]
+    types: [completed]
+
+jobs:
+  release:
+    # On ne lance la release QUE si :
+    # 1. Le build est un succès
+    # 2. Le nom de la branche/tag commence par 'v'
+    # 3. Et que si le workflow est executé sur github (exclusion de act en local) 
+    if: >
+      github.event.workflow_run.conclusion == 'success' && 
+      startsWith(github.event.workflow_run.head_branch, 'v') &&
+      github.actor != 'nektos/act'
+
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+      - name: Download all artifacts
+        uses: actions/download-artifact@v4
+        with:
+          run-id: ${{ github.event.workflow_run.id }}
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+      
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v1
+        with:
+          # On utilise le nom du tag capturé par le workflow précédent
+          tag_name: ${{ github.event.workflow_run.head_branch }}
+          files: |
+            Linux-Artifacts/LlamaBot-Linux.tar.gz
+            Windows-Artifacts/LlamaBot-Windows.zip
+            Android-Artifacts/*.apk
+          generate_release_notes: true
+
+
+          
+        

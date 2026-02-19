@@ -1,0 +1,67 @@
+name: Tests
+
+on:
+  push:
+    branches: [ "main", "master", "CI-test", "dev" ]
+    tags: [ "v*" ] # Ajouté pour que le tag déclenche aussi les tests
+  pull_request:
+    branches: [ "main", "master"]
+
+env:
+  QT_VERSION: '6.10.2'
+  QT_INSTALL_DIR: ${{ github.workspace }}/Qt
+  BUILD_TYPE: Release
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - name: Cache CMake
+        uses: actions/cache@v4
+        with:
+          path: build
+          key: test-cmake-${{ env.QT_VERSION }}-${{ hashFiles('CMakeLists.txt', '**/*.cmake') }}
+          restore-keys: |
+            test-cmake-${{ env.QT_VERSION }}-
+
+      - name: Install Qt
+        uses: jurplel/install-qt-action@v4
+        with:
+          version: ${{ env.QT_VERSION }}
+          host: linux
+          modules: 'qtmultimedia qt5compat qtshadertools'
+          cache: true
+          dir: ${{ env.QT_INSTALL_DIR }}
+
+      - name: Install Dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y build-essential libgl1-mesa-dev libvulkan-dev libssl-dev libfontconfig1-dev libjpeg-dev libopenjp2-7-dev libblas-dev
+
+      - name: Configure
+        run: |
+          cmake -B build -GNinja \
+            -DCMAKE_BUILD_TYPE=${{ env.BUILD_TYPE }} \
+            -DBUILD_TEST=ON \
+            -DBUILD_APPLICATION=OFF \
+
+      - name: Build
+        run: cmake --build build --parallel 2
+
+      - name: Run Tests
+        run: |
+          ctest --test-dir build \
+                --build-config ${{ env.BUILD_TYPE }} \
+                --verbose \
+                --output-on-failure \
+                --timeout 300 \
+                -j 1
+        env:
+          QT_QPA_PLATFORM: offscreen
+
