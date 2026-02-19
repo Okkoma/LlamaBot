@@ -58,6 +58,11 @@ if(NOT EXISTS ${CMAKE_BINARY_DIR}/bin/libblis.so)
         message(FATAL_ERROR "Échec de la configuration de BLIS")
     endif()
 
+    cmake_host_system_information(RESULT N_CORES QUERY NUMBER_OF_LOGICAL_CORES)
+    if(NOT N_CORES OR N_CORES EQUAL 0)
+        set(N_CORES 2)
+    endif()
+
     message(STATUS "Compilation de BLIS sur ${N_CORES} threads...")
     execute_process(
         COMMAND make -j${N_CORES} install
@@ -92,3 +97,4 @@ set_target_properties(blis PROPERTIES
     IMPORTED_LOCATION ${CMAKE_BINARY_DIR}/bin/libblis.so
     INTERFACE_INCLUDE_DIRECTORIES ${BLIS_INSTALL_DIR}/include
 )
+install (TARGETS blis LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR})

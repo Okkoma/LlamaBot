@@ -141,8 +141,11 @@ install(TARGETS LlamaBot
 
 # Install desktop file and icon for Linux
 if(UNIX AND NOT APPLE)
-    install(FILES ${CMAKE_SOURCE_DIR}/bin/data/resources/llamabot.desktop DESTINATION share/applications/)
-    install(FILES ${CMAKE_SOURCE_DIR}/bin/data/images/icon1.png DESTINATION share/icons/hicolor/512x512/apps/ RENAME llamabot.png)
+    install(FILES ${CMAKE_SOURCE_DIR}/bin/data/ressources/llamabot.desktop DESTINATION share/applications/)
+    install(FILES ${CMAKE_SOURCE_DIR}/bin/data/images/icon128.png DESTINATION share/icons/hicolor/128x128/apps RENAME llamabot.png)
+    install(FILES ${CMAKE_SOURCE_DIR}/bin/data/images/icon256.png DESTINATION share/icons/hicolor/256x256/apps RENAME llamabot.png)
+    install(FILES ${CMAKE_SOURCE_DIR}/bin/data/images/icon512.png DESTINATION share/icons/hicolor/512x512/apps RENAME llamabot.png)
+    install(FILES ${CMAKE_SOURCE_DIR}/bin/data/images/icon1024.png DESTINATION share/icons/hicolor/1024x1024/apps RENAME llamabot.png)
 endif()
 
 qt_import_qml_plugins(LlamaBot)

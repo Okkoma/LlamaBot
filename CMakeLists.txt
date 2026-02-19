@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.19)
 
-project(LlamaBot VERSION 0.1 LANGUAGES CXX)
+project(LlamaBot VERSION 0.1.1 LANGUAGES CXX)
 
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
@@ -10,13 +10,17 @@ set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
 set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 
-list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake/modules")
+# Default installation folder	
+set_property (CACHE CMAKE_INSTALL_PREFIX PROPERTY VALUE ${CMAKE_SOURCE_DIR}/exe)
+set(CMAKE_INSTALL_BINDIR bin)
+set(CMAKE_INSTALL_LIBDIR lib)
 
-cmake_host_system_information(RESULT N_CORES QUERY NUMBER_OF_LOGICAL_CORES)
-if(NOT N_CORES OR N_CORES EQUAL 0)
-    set(N_CORES 2)
-endif()
-set(CMAKE_BUILD_PARALLEL_LEVEL ${N_CORES})
+# On ne supprime pas le RPATH lors de l'installation
+# On définit le chemin relatif (ici, le dossier 'lib' à côté de l'exécutable)
+set(CMAKE_INSTALL_RPATH_USE_LINK_PATH TRUE)
+set(CMAKE_INSTALL_RPATH "$ORIGIN/../lib;$ORIGIN")
+
+list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake/modules")
 
 # Pour Vulkan (multi-GPU)
 option(GGML_VULKAN "Enable Vulkan backend" OFF)
@@ -118,11 +122,12 @@ if (GGML_BLAS)
     endif()
 endif()
 
+# skip zlib and libpng install
+set(SKIP_INSTALL_ALL TRUE)
+
 add_subdirectory (Source/ThirdParty/zlib)
 add_library(ZLIB::ZLIB ALIAS zlib)
 
-# skip libpng install
-set(SKIP_INSTALL_ALL TRUE)
 add_subdirectory (Source/ThirdParty/libpng)
 add_library(PNG::PNG ALIAS png_shared)
 
@@ -176,3 +181,27 @@ if (BUILD_DOCS)
         message(WARNING "Doxygen non trouvé - la cible de documentation ne sera pas disponible")
     endif()
 endif()
+
+# Install and Package
+if (NOT ANDROID)
+    install (TARGETS zlib png_shared freetype llama LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR})
+
+    install (FILES ${CMAKE_SOURCE_DIR}/LICENSE DESTINATION .)
+    install (FILES ${CMAKE_SOURCE_DIR}/README.md DESTINATION .)
+    install (FILES ${CMAKE_SOURCE_DIR}/LISEZMOI.md DESTINATION .)
+    install (DIRECTORY ${CMAKE_SOURCE_DIR}/bin/ DESTINATION ./bin)
+
+    # CPack
+    set (CPACK_PACKAGE_DESCRIPTION_SUMMARY "Llamabot - AI chatbot using llama.cpp")
+    set (CPACK_PACKAGE_VENDOR "https://github.com/Okkoma")
+    set (CPACK_PACKAGE_CONTACT "okkoman0xx0@gmail.com")
+    set (CPACK_PACKAGE_VERSION ${PROJECT_VERSION})
+    set (CPACK_PACKAGE_VERSION_MAJOR ${PROJECT_VERSION_MAJOR})
+    set (CPACK_PACKAGE_VERSION_MINOR ${PROJECT_VERSION_MINOR})
+    set (CPACK_PACKAGE_VERSION_PATCH ${PROJECT_VERSION_PATCH})
+    set (CPACK_RESOURCE_FILE_LICENSE ${CMAKE_SOURCE_DIR}/LICENSE)
+    set (CPACK_SYSTEM_NAME ${CMAKE_SYSTEM_NAME})
+    set (CPACK_PACKAGE_FILE_NAME "Llamabot-${CMAKE_SYSTEM_NAME}-${CPACK_PACKAGE_VERSION}")
+    set (CPACK_GENERATOR ZIP)
+    include (CPack)
+endif ()

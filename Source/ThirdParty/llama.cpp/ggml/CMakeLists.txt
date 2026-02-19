@@ -326,10 +326,15 @@ set(GGML_PUBLIC_HEADERS
     include/ggml-zendnn.h
     include/gguf.h)
 
-set_target_properties(ggml PROPERTIES PUBLIC_HEADER "${GGML_PUBLIC_HEADERS}")
+# C.VILLE: add SKIP_INSTALL_ALL
+if(NOT SKIP_INSTALL_ALL)
+    set_target_properties(ggml PROPERTIES PUBLIC_HEADER "${GGML_PUBLIC_HEADERS}")
+endif()
+
 #if (GGML_METAL)
 #    set_target_properties(ggml PROPERTIES RESOURCE "${CMAKE_CURRENT_SOURCE_DIR}/src/ggml-metal.metal")
 #endif()
+
 install(TARGETS ggml LIBRARY PUBLIC_HEADER)
 install(TARGETS ggml-base LIBRARY)
 
@@ -379,13 +384,15 @@ set(GGML_INCLUDE_INSTALL_DIR ${CMAKE_INSTALL_INCLUDEDIR} CACHE PATH "Location of
 set(GGML_LIB_INSTALL_DIR     ${CMAKE_INSTALL_LIBDIR}     CACHE PATH "Location of library files")
 set(GGML_BIN_INSTALL_DIR     ${CMAKE_INSTALL_BINDIR}     CACHE PATH "Location of binary  files")
 
-configure_package_config_file(
-        ${CMAKE_CURRENT_SOURCE_DIR}/cmake/ggml-config.cmake.in
-        ${CMAKE_CURRENT_BINARY_DIR}/ggml-config.cmake
-    INSTALL_DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/ggml
-    PATH_VARS GGML_INCLUDE_INSTALL_DIR
-              GGML_LIB_INSTALL_DIR
-              GGML_BIN_INSTALL_DIR)
+if(NOT SKIP_INSTALL_ALL)
+    configure_package_config_file(
+            ${CMAKE_CURRENT_SOURCE_DIR}/cmake/ggml-config.cmake.in
+            ${CMAKE_CURRENT_BINARY_DIR}/ggml-config.cmake
+        INSTALL_DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/ggml
+        PATH_VARS GGML_INCLUDE_INSTALL_DIR
+                GGML_LIB_INSTALL_DIR
+                GGML_BIN_INSTALL_DIR)
+endif()
 
 write_basic_package_version_file(
         ${CMAKE_CURRENT_BINARY_DIR}/ggml-version.cmake
@@ -399,9 +406,11 @@ target_compile_definitions(ggml-base PRIVATE
 message(STATUS "ggml version: ${GGML_INSTALL_VERSION}")
 message(STATUS "ggml commit:  ${GGML_BUILD_COMMIT}")
 
-install(FILES ${CMAKE_CURRENT_BINARY_DIR}/ggml-config.cmake
-              ${CMAKE_CURRENT_BINARY_DIR}/ggml-version.cmake
-        DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/ggml)
+if(NOT SKIP_INSTALL_ALL)
+    install(FILES ${CMAKE_CURRENT_BINARY_DIR}/ggml-config.cmake
+                ${CMAKE_CURRENT_BINARY_DIR}/ggml-version.cmake
+            DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/ggml)
+endif()
 
 if (MSVC)
     set(MSVC_WARNING_FLAGS

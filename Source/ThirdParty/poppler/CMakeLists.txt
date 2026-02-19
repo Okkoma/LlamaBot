@@ -772,14 +772,17 @@ if(ENABLE_UNSTABLE_API_ABI_HEADERS)
   endif()
 
   if (${CMAKE_VERSION} VERSION_LESS "3.23.0")
-    install(FILES
-        ${poppler_poppler_installed_headers}
-        ${CMAKE_CURRENT_BINARY_DIR}/poppler/poppler-config.h
-        ${CMAKE_CURRENT_BINARY_DIR}/poppler_private_export.h
-        DESTINATION include/poppler)
-    install(FILES ${poppler_goo_installed_headers} DESTINATION include/poppler/goo)
-    install(FILES ${poppler_fofi_installed_headers} DESTINATION include/poppler/fofi)
-    install(FILES ${poppler_splash_installed_headers} DESTINATION include/poppler/splash)
+    # C.VILLE: add SKIP_INSTALL_ALL
+    if(NOT SKIP_INSTALL_ALL)
+      install(FILES
+          ${poppler_poppler_installed_headers}
+          ${CMAKE_CURRENT_BINARY_DIR}/poppler/poppler-config.h
+          ${CMAKE_CURRENT_BINARY_DIR}/poppler_private_export.h
+          DESTINATION include/poppler)
+      install(FILES ${poppler_goo_installed_headers} DESTINATION include/poppler/goo)
+      install(FILES ${poppler_fofi_installed_headers} DESTINATION include/poppler/fofi)
+      install(FILES ${poppler_splash_installed_headers} DESTINATION include/poppler/splash)
+    endif()
   else()
     target_sources(poppler
       PUBLIC FILE_SET poppler_poppler
@@ -808,12 +811,15 @@ if(ENABLE_UNSTABLE_API_ABI_HEADERS)
         ${poppler_fofi_installed_headers}
         ${poppler_splash_installed_headers}
     )
-    install(TARGETS poppler
-        FILE_SET poppler_poppler DESTINATION include/poppler
-        FILE_SET poppler_export DESTINATION include/poppler
-        FILE_SET poppler_poppler_config DESTINATION include/poppler
-        FILE_SET poppler_goo_fofi_splash DESTINATION include/poppler
-    )
+    # C.VILLE: add SKIP_INSTALL_ALL
+    if(NOT SKIP_INSTALL_ALL)
+      install(TARGETS poppler
+          FILE_SET poppler_poppler DESTINATION include/poppler
+          FILE_SET poppler_export DESTINATION include/poppler
+          FILE_SET poppler_poppler_config DESTINATION include/poppler
+          FILE_SET poppler_goo_fofi_splash DESTINATION include/poppler
+      )
+    endif()
   endif()
 endif()
 function(VERIFY_PUBLIC_HEADERS target subfolder)
@@ -854,17 +860,20 @@ if(ENABLE_CPP)
   add_subdirectory(cpp)
 endif()
 
-# Install .pc files for packagers
-if(PKG_CONFIG_EXECUTABLE)
-  poppler_create_install_pkgconfig(poppler.pc ${CMAKE_INSTALL_LIBDIR}/pkgconfig)
-  if(ENABLE_QT6)
-    poppler_create_install_pkgconfig(poppler-qt6.pc ${CMAKE_INSTALL_LIBDIR}/pkgconfig)
+# C.VILLE: add SKIP_INSTALL_ALL
+if(NOT SKIP_INSTALL_ALL)
+  # Install .pc files for packagers
+  if(PKG_CONFIG_EXECUTABLE)
+    poppler_create_install_pkgconfig(poppler.pc ${CMAKE_INSTALL_LIBDIR}/pkgconfig)
+    if(ENABLE_QT6)
+      poppler_create_install_pkgconfig(poppler-qt6.pc ${CMAKE_INSTALL_LIBDIR}/pkgconfig)
+    endif()
+    if(ENABLE_CPP)
+      poppler_create_install_pkgconfig(poppler-cpp.pc ${CMAKE_INSTALL_LIBDIR}/pkgconfig)
+    endif()
+  else()
+    MESSAGE(STATUS ".pc files will not be installed becasue of missing 'pkg-config'!")
   endif()
-  if(ENABLE_CPP)
-    poppler_create_install_pkgconfig(poppler-cpp.pc ${CMAKE_INSTALL_LIBDIR}/pkgconfig)
-  endif()
-else()
-  MESSAGE(STATUS ".pc files will not be installed becasue of missing 'pkg-config'!")
 endif()
 
 # Summarize build options & display warnings for user

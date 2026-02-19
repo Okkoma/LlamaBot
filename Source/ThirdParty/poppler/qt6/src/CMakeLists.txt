@@ -62,7 +62,10 @@ set(poppler_qt6_all_install_headers
   ${CMAKE_CURRENT_BINARY_DIR}/poppler-version.h
 )
 if (${CMAKE_VERSION} VERSION_LESS "3.23.0")
-  install(FILES ${poppler_qt6_all_install_headers} DESTINATION include/poppler/qt6)
+  # C.VILLE: add SKIP_INSTALL_ALL
+  if(NOT SKIP_INSTALL_ALL)
+    install(FILES ${poppler_qt6_all_install_headers} DESTINATION include/poppler/qt6)
+  endif()
 else()
   target_sources(poppler-qt6
     PUBLIC
@@ -70,5 +73,8 @@ else()
     BASE_DIRS ${CMAKE_CURRENT_SOURCE_DIR};${CMAKE_CURRENT_BINARY_DIR}
     FILES ${poppler_qt6_all_install_headers}
   )
-  install(TARGETS poppler-qt6 FILE_SET HEADERS DESTINATION include/poppler/qt6)
+  # C.VILLE: add SKIP_INSTALL_ALL
+  if(NOT SKIP_INSTALL_ALL)  
+    install(TARGETS poppler-qt6 FILE_SET HEADERS DESTINATION include/poppler/qt6)
+  endif()
 endif()
