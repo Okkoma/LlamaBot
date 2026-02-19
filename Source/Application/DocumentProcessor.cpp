@@ -52,6 +52,7 @@ std::vector<DocumentChunk> DocumentProcessor::processFile(const QString& filePat
     }
     else if (extension == "txt" || extension == "md")
     {
+        qDebug() << "DocumentProcessor::processFile()" << filePath;
         fullText = extractTextFromTxt(filePath);
     }
     else
@@ -109,6 +110,8 @@ QString DocumentProcessor::extractTextFromTxt(const QString& path)
 
 std::vector<QString> DocumentProcessor::chunkText(const QString& text, int size, int overlap)
 {
+    qDebug() << "DocumentProcessor::chunkText()" << text << text.size() << size << overlap;
+
     std::vector<QString> result;
     if (text.isEmpty())
         return result;
@@ -149,18 +152,15 @@ std::vector<QString> DocumentProcessor::chunkText(const QString& text, int size,
         }
 
         // Start next chunk, considering overlap
-        // If we reached the end, we break
         if (end == totalLen)
             break;
 
-        start = end - overlap;
-
-        // Ensure we advance at least by 1 to prevent Infinite Loop if overlap >= chunk size (bad config)
-        if (start <= (end - size))
-            start = end - size + 1;
-        // More robust: ensure start is strictly greater than previous start
-        // previous start was 'start' from start of loop. Let's start next one.
+        int nextStart = end - overlap;
+        if (nextStart <= start)
+            nextStart = start + 1; // Force progress if overlap is too large
+        
+        start = nextStart;
     }
-
+    qDebug() << "DocumentProcessor::chunkText() ... finish " << result;
     return result;
 }
