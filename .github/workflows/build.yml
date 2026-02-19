@@ -43,7 +43,7 @@ jobs:
           submodules: recursive
 
       - name: Install Qt
-        if: runner.os == 'Windows' && github.actor != 'nektos/act'
+        if: (runner.os == 'Windows' && github.actor != 'nektos/act') || runner.os == 'Linux'
         uses: jurplel/install-qt-action@v4
         with:
           version: ${{ env.QT_VERSION }}
@@ -102,6 +102,8 @@ jobs:
           path: ${{ matrix.artifact_name }}
 
   build-android:
+    if: ${{ github.event.workflow_run.conclusion == 'success' || github.event_name == 'workflow_dispatch' || github.actor == 'nektos/act' }}
+    timeout-minutes: 40  
     name: Android
     runs-on: ubuntu-latest
 
