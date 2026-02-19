@@ -192,8 +192,8 @@ if (NOT ANDROID)
     install (DIRECTORY ${CMAKE_SOURCE_DIR}/bin/ DESTINATION ./bin)
 
     # CPack
-    set (CPACK_PACKAGE_NAME "Llamabot")
-    set (CPACK_PACKAGE_DESCRIPTION_SUMMARY "Llamabot - AI chatbot using llama.cpp")
+    set (CPACK_PACKAGE_NAME "LlamaBot")
+    set (CPACK_PACKAGE_DESCRIPTION_SUMMARY "LlamaBot - AI chatbot using llama.cpp")
     set (CPACK_PACKAGE_VENDOR "https://github.com/Okkoma")
     set (CPACK_PACKAGE_CONTACT "okkoman0xx0@gmail.com")
     set (CPACK_PACKAGE_VERSION ${PROJECT_VERSION})
