@@ -147,5 +147,5 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: Android-Artifacts
-          path: ./build-android/Source/Application/android-build/build/output/apk/release/*.apk
+          path: ./build-android/Source/Application/android-build/build/outputs/apk/release/*.apk
 
