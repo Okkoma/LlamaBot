@@ -11,7 +11,7 @@ set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 
 # Default installation folder	
-set_property (CACHE CMAKE_INSTALL_PREFIX PROPERTY VALUE ${CMAKE_SOURCE_DIR}/exe)
+set_property(CACHE CMAKE_INSTALL_PREFIX PROPERTY VALUE ${CMAKE_SOURCE_DIR}/exe)
 set(CMAKE_INSTALL_BINDIR bin)
 set(CMAKE_INSTALL_LIBDIR lib)
 
@@ -23,20 +23,20 @@ set(CMAKE_INSTALL_RPATH "$ORIGIN/../lib;$ORIGIN")
 list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake/modules")
 
 # Pour Vulkan (multi-GPU)
-option(GGML_VULKAN "Enable Vulkan backend" OFF)
-if(GGML_VULKAN)
+option(GGML_VULKAN "Enable Vulkan backend" ON)
+if (GGML_VULKAN)
     option(GGML_VULKAN_DEBUG "Enable VULKAN debug" OFF)
     message(STATUS "Vulkan backend enabled")
 endif()
 
 # BLAS pour accélération CPU
 option(GGML_BLAS "Enable BLAS acceleration" ON)
-if(GGML_BLAS)
+if (GGML_BLAS)
     message(STATUS "BLAS acceleration enabled")
 endif()
 
 # Configuration spécifique pour Android
-if(ANDROID)
+if (ANDROID)
     message(STATUS "Configuration Android détectée")
     
     # Désactiver les backends non supportés sur Android
@@ -55,26 +55,26 @@ else()
     # Décommentez les lignes correspondant à votre GPU
 
     # Pour NVIDIA GPU (CUDA)
-    option(GGML_CUDA "Enable CUDA backend" OFF)
-    if(GGML_CUDA)
+    option(GGML_CUDA "Enable CUDA backend" ON)
+    if (GGML_CUDA)
         message(STATUS "CUDA backend enabled")
     endif()
 
     # Pour AMD GPU (OpenCL)
     option(GGML_OPENCL "Enable OpenCL backend" OFF)
-    if(GGML_OPENCL)
+    if (GGML_OPENCL)
         message(STATUS "OpenCL backend enabled")
     endif()
     
     # Pour Intel GPU (SYCL)
     option(GGML_SYCL "Enable SYCL backend" OFF)
-    if(GGML_SYCL)
+    if (GGML_SYCL)
         message(STATUS "SYCL backend enabled")
     endif()
 
     # Pour Apple Silicon (Metal)
     option(GGML_METAL "Enable Metal backend" OFF)
-    if(GGML_METAL)
+    if (GGML_METAL)
         message(STATUS "Metal backend enabled")
     endif()
     
@@ -89,7 +89,7 @@ option(BUILD_APPLICATION "Build the application" ON)
 option(ACTIVE_QML_DEBUG "Enable Qml Debug" ON)
 
 # Recherche de Qt6 globale pour tout le projet (y compris les dépendances)
-if(DEFINED ENV{Qt6})
+if (DEFINED ENV{Qt6})
     list(APPEND CMAKE_PREFIX_PATH "$ENV{Qt6}")
 endif()
 
@@ -115,7 +115,7 @@ endif()
 if (GGML_BLAS)
     if (USE_BLIS_VENDOR)
         set(GGML_BLAS_VENDOR FLAME)
-        add_subdirectory (Source/ThirdParty/blis)
+        add_subdirectory(Source/ThirdParty/blis)
         add_library(BLAS ALIAS blis)
     elseif (WINDOWS)
         set(GGML_BLAS_VENDOR OpenBLAS)
@@ -125,46 +125,48 @@ endif()
 # skip zlib and libpng install
 set(SKIP_INSTALL_ALL TRUE)
 
-add_subdirectory (Source/ThirdParty/zlib)
+add_subdirectory(Source/ThirdParty/zlib)
 add_library(ZLIB::ZLIB ALIAS zlib)
 
-add_subdirectory (Source/ThirdParty/libpng)
+add_subdirectory(Source/ThirdParty/libpng)
 add_library(PNG::PNG ALIAS png_shared)
 
-add_subdirectory (Source/ThirdParty/freetype)
+add_subdirectory(Source/ThirdParty/freetype)
 add_library(Freetype::Freetype ALIAS freetype)
 
-add_subdirectory (Source/ThirdParty/poppler)
+add_subdirectory(Source/ThirdParty/poppler)
 
-include_directories (Source/Common Source/Application Source/ThirdParty/llama.cpp/src Source/ThirdParty/poppler/qt6/src)
+include_directories(Source/Common Source/Application Source/ThirdParty/llama.cpp/src Source/ThirdParty/poppler/qt6/src)
 
-add_subdirectory (Source/Common)
+add_subdirectory(Source/Common)
 
-if (ANDROID AND GGML_VULKAN)
-    include_directories(${ANDROID_NDK}/sources/third_party/vulkan/src/include)
-    set(Vulkan_GLSLC_EXECUTABLE ${ANDROID_NDK}/shader-tools/linux-x86_64/glslc)
+if (GGML_VULKAN)
+    include_directories(Source/ThirdParty/vulkan/include)
+    if (ANDROID)
+        set(Vulkan_GLSLC_EXECUTABLE ${ANDROID_NDK}/shader-tools/linux-x86_64/glslc)
+    endif()
 endif()
 
-add_subdirectory (Source/ThirdParty/llama.cpp)
+add_subdirectory(Source/ThirdParty/llama.cpp)
 
 if (BUILD_TEST AND NOT ANDROID)
     enable_testing()
-    add_subdirectory (Tests)
+    add_subdirectory(Tests)
 endif()
 
 if (BUILD_APPLICATION)
-    add_subdirectory (Source/Application)
+    add_subdirectory(Source/Application)
 endif()
 
 if (BUILD_SERVER)
-    #add_subdirectory (Source/ServerGrpcChatStore)
-    add_subdirectory (Source/ServerHttpRestChatStore)
+    #add_subdirectory(Source/ServerGrpcChatStore)
+    add_subdirectory(Source/ServerHttpRestChatStore)
 endif()
 
 # Configuration Doxygen pour la génération de documentation
 if (BUILD_DOCS)
     find_package(Doxygen)
-    if(DOXYGEN_FOUND)
+    if (DOXYGEN_FOUND)
         message(STATUS "Doxygen trouvé - configuration de la génération de documentation")
         
         # Configuration de la cible de documentation
@@ -184,24 +186,24 @@ endif()
 
 # Install and Package
 if (NOT ANDROID)
-    install (TARGETS zlib png_shared freetype llama LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR})
+    install(TARGETS zlib png_shared freetype llama LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR})
 
-    install (FILES ${CMAKE_SOURCE_DIR}/LICENSE DESTINATION .)
-    install (FILES ${CMAKE_SOURCE_DIR}/README.md DESTINATION .)
-    install (FILES ${CMAKE_SOURCE_DIR}/LISEZMOI.md DESTINATION .)
-    install (DIRECTORY ${CMAKE_SOURCE_DIR}/bin/ DESTINATION ./bin)
+    install(FILES ${CMAKE_SOURCE_DIR}/LICENSE DESTINATION .)
+    install(FILES ${CMAKE_SOURCE_DIR}/README.md DESTINATION .)
+    install(FILES ${CMAKE_SOURCE_DIR}/LISEZMOI.md DESTINATION .)
+    install(DIRECTORY ${CMAKE_SOURCE_DIR}/bin/ DESTINATION ./bin)
 
     # CPack
-    set (CPACK_PACKAGE_NAME "LlamaBot")
-    set (CPACK_PACKAGE_DESCRIPTION_SUMMARY "LlamaBot - AI chatbot using llama.cpp")
-    set (CPACK_PACKAGE_VENDOR "https://github.com/Okkoma")
-    set (CPACK_PACKAGE_CONTACT "okkoman0xx0@gmail.com")
-    set (CPACK_PACKAGE_VERSION ${PROJECT_VERSION})
-    set (CPACK_PACKAGE_VERSION_MAJOR ${PROJECT_VERSION_MAJOR})
-    set (CPACK_PACKAGE_VERSION_MINOR ${PROJECT_VERSION_MINOR})
-    set (CPACK_PACKAGE_VERSION_PATCH ${PROJECT_VERSION_PATCH})
-    set (CPACK_RESOURCE_FILE_LICENSE ${CMAKE_SOURCE_DIR}/LICENSE)
-    set (CPACK_SYSTEM_NAME ${CMAKE_SYSTEM_NAME})
-    set (CPACK_GENERATOR ZIP)
-    include (CPack)
+    set(CPACK_PACKAGE_NAME "LlamaBot")
+    set(CPACK_PACKAGE_DESCRIPTION_SUMMARY "LlamaBot - AI chatbot using llama.cpp")
+    set(CPACK_PACKAGE_VENDOR "https://github.com/Okkoma")
+    set(CPACK_PACKAGE_CONTACT "okkoman0xx0@gmail.com")
+    set(CPACK_PACKAGE_VERSION ${PROJECT_VERSION})
+    set(CPACK_PACKAGE_VERSION_MAJOR ${PROJECT_VERSION_MAJOR})
+    set(CPACK_PACKAGE_VERSION_MINOR ${PROJECT_VERSION_MINOR})
+    set(CPACK_PACKAGE_VERSION_PATCH ${PROJECT_VERSION_PATCH})
+    set(CPACK_RESOURCE_FILE_LICENSE ${CMAKE_SOURCE_DIR}/LICENSE)
+    set(CPACK_SYSTEM_NAME ${CMAKE_SYSTEM_NAME})
+    set(CPACK_GENERATOR ZIP)
+    include(CPack)
 endif ()
