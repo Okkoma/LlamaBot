@@ -12,6 +12,7 @@ Drawer {
     id: root
 
     signal chatChanged()
+    signal newChat()
 
     width: 280
     height: parent.height
@@ -37,16 +38,14 @@ Drawer {
         Button {
             id: chatBtn
             text: "+ New Chat"
+            Layout.fillWidth: true
             palette {
                 buttonText: ThemeManager.color("buttonText")
                 button: ThemeManager.color("button")
             }
-            Layout.fillWidth: true
             onClicked: {
-                if (ChatController) {
-                    ChatController.createChat(ChatController.currentChat.currentApi, ChatController.currentChat.currentModel);
-                    root.aboutToShow();
-                }
+                root.newChat();
+                root.aboutToShow();
             }
         }
 

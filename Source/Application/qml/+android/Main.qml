@@ -144,8 +144,12 @@ ApplicationWindow {
                     Menu {
                         id: menu
                         MenuItem {
+                            text: "Local Models"
+                            onTriggered: modelLocalDialog.open()
+                        }                        
+                        MenuItem {
                             text: "Model Store"
-                            onTriggered: modelStorePopup.open()
+                            onTriggered: modelStoreDialog.open()
                         }
                         MenuSeparator {}
                         MenuItem {
@@ -193,7 +197,8 @@ ApplicationWindow {
                 anchors.bottom: parent.bottom
                 onAccepted: (text) => {
                     if (ChatController) {
-                        ChatController.setModel(modelSelector.currentValue.name);
+                        console.log("setModel:", modelSelector.currentValue.name);
+                        ChatController.setModel(modelSelector.currentValue.name);                        
                         ChatController.sendMessage(text);
                     }
                 }
@@ -201,11 +206,14 @@ ApplicationWindow {
         }
     }
 
+    // Model Local Dialog
+    ModelLocalDialog {
+        id: modelLocalDialog
+    }
     // Model Store Dialog
     ModelStoreDialog {
-        id: modelStorePopup
+        id: modelStoreDialog
     }
-
     // Settings Dialog
     SettingsDialog {
         id: settingsDialog
@@ -223,6 +231,20 @@ ApplicationWindow {
                 if (sign < 0 && ThemeManager.currentFontSize > 10 || sign > 0 && ThemeManager.currentFontSize < 40)
                     ThemeManager.currentFontSize += sign;
             }
+        }
+    }
+
+    function createNewChat() {
+        if (ChatController) {
+            console.log("create new chat:", modelSelector.displayText);
+            ChatController.createChat(ChatController.currentChat.currentApi, modelSelector.displayText);
+            chatDrawer.aboutToShow();
+        }
+    }
+    Connections {
+        target: chatDrawer
+        function onNewChat() {
+            main.createNewChat();
         }
     }
 

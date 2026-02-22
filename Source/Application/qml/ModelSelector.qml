@@ -16,6 +16,7 @@ ComboBox {
     displayText: ChatController && ChatController.currentChat ? ChatController.currentChat.currentModel : "none"
 
     onActivated: index => {
+        console.log("ModelSelector:", index, currentValue.name);
         displayText = currentValue.name;
     }
     
@@ -70,8 +71,17 @@ ComboBox {
                 if (index !== -1) {
                     root.currentIndex = index;
                 }
+                console.log("ModelSelector: onAvailableModelsChanged:", index, root.displayText, root.currentValue.name);
                 root.displayText = root.currentValue.name;
             }
+        }
+        function onCurrentChatChanged() {
+            var index = root.find(ChatController.currentChat.currentModel);
+            if (index !== -1) {
+                root.currentIndex = index;
+            }            
+            console.log("ModelSelector: onCurrentChatChanged:", index, ChatController.currentChat.currentModel, root.currentValue.name);
+            root.displayText = root.currentValue.name;
         }
     }
 

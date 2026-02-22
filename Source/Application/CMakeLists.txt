@@ -52,12 +52,14 @@ qt_add_qml_module(LlamaBotQml
         qml/Main.qml
         qml/MessageDelegate.qml
         qml/ModelSelector.qml
+        qml/ModelLocalDialog.qml
         qml/ModelStoreDialog.qml
         qml/SettingsDialog.qml
         qml/+android/ChatDrawer.qml
         qml/+android/InputArea.qml        
         qml/+android/Main.qml
         qml/+android/MessageDelegate.qml
+        qml/+android/ModelLocalDialog.qml
         qml/+android/ModelStoreDialog.qml
         qml/+android/SettingsDialog.qml
         
@@ -126,10 +128,10 @@ set_target_properties(LlamaBot PROPERTIES
 )
 
 if (NOT ANDROID)
-    execute_process (COMMAND ${CMAKE_COMMAND} -E make_directory "${CMAKE_BINARY_DIR}/bin")
-    execute_process (COMMAND ${CMAKE_COMMAND} -E create_symlink "${CMAKE_SOURCE_DIR}/bin/data" "${CMAKE_BINARY_DIR}/bin/data")
+    execute_process(COMMAND ${CMAKE_COMMAND} -E make_directory "${CMAKE_BINARY_DIR}/bin")
+    execute_process(COMMAND ${CMAKE_COMMAND} -E create_symlink "${CMAKE_SOURCE_DIR}/bin/data" "${CMAKE_BINARY_DIR}/bin/data")
     # Copy icons to build directory for proper icon building into project
-    execute_process (COMMAND ${CMAKE_COMMAND} -E copy_directory "${CMAKE_SOURCE_DIR}/bin/data/images" "${CMAKE_CURRENT_BINARY_DIR}/images")
+    execute_process(COMMAND ${CMAKE_COMMAND} -E copy_directory "${CMAKE_SOURCE_DIR}/bin/data/images" "${CMAKE_CURRENT_BINARY_DIR}/images")
 endif ()
 
 include(GNUInstallDirs)
@@ -140,7 +142,7 @@ install(TARGETS LlamaBot
 )
 
 # Install desktop file and icon for Linux
-if(UNIX AND NOT APPLE)
+if (UNIX AND NOT APPLE)
     install(FILES ${CMAKE_SOURCE_DIR}/bin/data/ressources/llamabot.desktop DESTINATION share/applications/)
     install(FILES ${CMAKE_SOURCE_DIR}/bin/data/images/icon128.png DESTINATION share/icons/hicolor/128x128/apps RENAME llamabot.png)
     install(FILES ${CMAKE_SOURCE_DIR}/bin/data/images/icon256.png DESTINATION share/icons/hicolor/256x256/apps RENAME llamabot.png)
