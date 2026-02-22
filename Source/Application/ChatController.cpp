@@ -278,6 +278,8 @@ void ChatController::setModel(const QString& modelName)
             emit currentChatChanged(); // Notify to update UI
             emit chatListChanged();
         }
+
+        connectAPIsSignals();
     }
 }
 

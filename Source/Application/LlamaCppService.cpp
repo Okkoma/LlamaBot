@@ -965,6 +965,14 @@ LlamaModelData* LlamaCppService::loadModel(const QString& modelName, int numGpuL
 void LlamaCppService::setModelInternal(LlamaCppChatData* data, const QString& modelName)
 {
     qDebug() << "LlamaCppService::setModelInternal ...";
+
+    while (busy_) 
+    {
+        // it's ok to sleep in this thread (it's not the main thread)
+        QThread::sleep(1);
+    }
+
+    busy_ = true;
     emit modelLoadingStarted(modelName);
     if (data->model_ && modelName != data->model_->modelName_)
     {
@@ -979,6 +987,7 @@ void LlamaCppService::setModelInternal(LlamaCppChatData* data, const QString& mo
     if (model && !data->model_)
         initializeData(data, model);
 
+    busy_ = false;
     emit modelLoadingFinished(modelName, true);
     qDebug() << "LlamaCppService::setModelInternal ... end!";
 }

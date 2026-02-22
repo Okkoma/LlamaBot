@@ -445,4 +445,5 @@ private:
 
     LlamaModelData* lastModelAddedInMemory_{nullptr};  ///< Dernier modèle chargé
     LlamaModelData* embeddingModel_{nullptr};          ///< Modèle pour les embeddings
+    bool busy_{false};
 };
