@@ -18,7 +18,7 @@ Drawer {
     height: parent.height
     edge: Qt.LeftEdge
     background: Rectangle {
-        color: ThemeManager.color("window")
+        color: ThemeManager.windowColor
     }
 
     ColumnLayout {
@@ -29,7 +29,7 @@ Drawer {
         Label {
             id: convers
             text: "Conversations"
-            color: ThemeManager.color("text")
+            color: ThemeManager.textColor
             font.pixelSize: 18
             font.bold: true
             Layout.fillWidth: true
@@ -40,8 +40,8 @@ Drawer {
             text: "+ New Chat"
             Layout.fillWidth: true
             palette {
-                buttonText: ThemeManager.color("buttonText")
-                button: ThemeManager.color("button")
+                buttonText: ThemeManager.buttonTextColor
+                button: ThemeManager.buttonColor
             }
             onClicked: {
                 root.newChat();
@@ -71,7 +71,7 @@ Drawer {
                 property var chatObject: modelData.chatObject
 
                 background: Rectangle {
-                    color: chatDelegate.isCurrent ? ThemeManager.color("windowDarker") : (chatDelegate.hovered ? ThemeManager.color("windowDarker2") : "transparent")
+                    color: chatDelegate.isCurrent ? ThemeManager.windowDarkerColor : (chatDelegate.hovered ? ThemeManager.windowDarker2Color : 'transparent')
                     radius: 5
                 }
 
@@ -85,7 +85,7 @@ Drawer {
                         Label {
                             id: chatNameLabel
                             text: chatDelegate.modelData.name
-                            color: ThemeManager.color("buttonText")
+                            color: ThemeManager.buttonTextColor
                             font.bold: chatDelegate.isCurrent
                             Layout.fillWidth: true
                             elide: Text.ElideRight
@@ -98,7 +98,7 @@ Drawer {
                             Label {
                                 id: chatModelLabel
                                 text: chatDelegate.modelData.model
-                                color: ThemeManager.color("buttonText")
+                                color: ThemeManager.buttonTextColor
                                 font.pixelSize: 10
                                 Layout.fillWidth: true
                                 elide: Text.ElideRight
@@ -107,7 +107,7 @@ Drawer {
                             Label {
                                 id: tokensLabel
                                 text: chatDelegate.chatObject ? " • " + chatDelegate.chatObject.contextSizeUsed + "/" + chatDelegate.chatObject.contextSize : ""
-                                color: ThemeManager.color("buttonText")
+                                color: ThemeManager.buttonTextColor
                                 font.pixelSize: 10
                                 Layout.alignment: Qt.AlignRight
                             }
@@ -122,7 +122,7 @@ Drawer {
                             id: optionsButtonText
                             text: "⋮"
                             font.pixelSize: 24
-                            color: ThemeManager.color("buttonText")
+                            color: ThemeManager.buttonTextColor
                             horizontalAlignment: Text.AlignHCenter
                             verticalAlignment: Text.AlignVCenter
                         }
@@ -130,7 +130,7 @@ Drawer {
                         background: Rectangle {
                             implicitWidth: 30
                             implicitHeight: 30
-                            color: optionsButton.hovered ? ThemeManager.color("windowDarker2") : "transparent"
+                            color: optionsButton.hovered ? ThemeManager.windowDarker2Color : 'transparent'
                             radius: 4
                         }
 
@@ -220,31 +220,7 @@ Drawer {
                         }
                     }
                 }
-
-                Connections {
-                    target: ThemeManager
-                    function onDarkModeChanged() {
-                        chatDelegate.background.color = "transparent";
-                        chatNameLabel.color = ThemeManager.color("buttonText");
-                        chatModelLabel.color = ThemeManager.color("buttonText");
-                        tokensLabel.color = ThemeManager.color("buttonText");
-                        optionsButtonText.color = ThemeManager.color("buttonText");
-                        optionsButton.background.color = "transparent";
-                    }
-                }
             }
-        }
-    }
-
-    // Add connection to themeManager to listen for theme changes
-    Connections {
-        target: ThemeManager
-        function onDarkModeChanged() {
-            // Update colors for static elements
-            root.background.color = ThemeManager.color("window");
-            convers.color = ThemeManager.color("text");
-            chatBtn.palette.buttonText = ThemeManager.color("buttonText");
-            chatBtn.palette.button = ThemeManager.color("button");
         }
     }
 

@@ -22,10 +22,10 @@ ComboBox {
     }
 
     palette {
-        buttonText: ThemeManager.color("buttonText")
-        button: ThemeManager.color("button")
-        window: ThemeManager.color("window")
-        text: ThemeManager.color("text")
+        buttonText: ThemeManager.buttonTextColor
+        button: ThemeManager.buttonColor
+        window: ThemeManager.windowColor
+        text: ThemeManager.textColor
     }
 
     delegate: ItemDelegate {
@@ -40,36 +40,18 @@ ComboBox {
             Label {
                 id: apiNameLbl
                 text: apiDelegate.modelData.name
-                color: ThemeManager.color("text")
+                color: ThemeManager.textColor
                 font.bold: true
                 anchors.verticalCenter: parent.verticalCenter
             }
             Label {
                 id: apiReadyLbl
                 text: apiDelegate.modelData.ready ? "●" : "○"
-                color: apiDelegate.modelData.ready ? ThemeManager.color("windowDarker") : ThemeManager.color("windowDarker2")
+                color: apiDelegate.modelData.ready ? ThemeManager.windowDarkerColor : ThemeManager.windowDarker2Color
                 font.pixelSize: 16
                 anchors.verticalCenter: parent.verticalCenter
             }
         }
         highlighted: root.highlightedIndex === index
-
-        Connections {
-            target: ThemeManager
-            function onDarkModeChanged() {
-                apiNameLbl.color = ThemeManager.color("text");
-                apiReadyLbl.color = ThemeManager.color("windowDarker");
-            }
-        }
-    }
-
-    Connections {
-        target: ThemeManager
-        function onDarkModeChanged() {
-            root.palette.buttonText = ThemeManager.color("buttonText");
-            root.palette.button = ThemeManager.color("button");
-            root.palette.window = ThemeManager.color("window");
-            root.palette.text = ThemeManager.color("text");
-        }
     }
 }

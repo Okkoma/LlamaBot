@@ -44,8 +44,8 @@ Item {
 
         background: Rectangle {
             id: emojiPopupBackground
-            color: ThemeManager.color("windowDarker")
-            border.color: ThemeManager.color("windowDarker2")
+            color: ThemeManager.windowDarkerColor
+            border.color: ThemeManager.windowDarker2Color
             border.width: 1
             radius: 8
             
@@ -86,14 +86,14 @@ Item {
                         font.family: ThemeManager.colorEmojiFont
                         font.pixelSize: 20
                         text: emojiButton.emoji
-                        color: ThemeManager.color("text")
+                        color: ThemeManager.textColor
                     }
                     
                     background: Rectangle {
                         anchors.centerIn: textid                        
                         width: parent.width
                         height: parent.height
-                        color: emojiButton.hovered ? ThemeManager.color("accent") : "transparent"
+                        color: emojiButton.hovered ? ThemeManager.accentColor : 'transparent'
                         radius: 8
                     }
 
@@ -135,8 +135,8 @@ Item {
             font.pixelSize: 20
             text: "😌"
             palette {
-                buttonText: ThemeManager.color("buttonText")
-                button: ThemeManager.color("button")
+                buttonText: ThemeManager.buttonTextColor
+                button: ThemeManager.buttonColor
             }                  
             onClicked: emojiPopup.open()
         }
@@ -159,7 +159,7 @@ Item {
                     implicitWidth: 8
                     implicitHeight: root.preferredInputHeight - inputField.topPadding - inputField.bottomPadding - 8
                     radius: width / 2
-                    color: ThemeManager.color("windowDarker2")
+                    color: ThemeManager.windowDarker2Color
                     opacity: 0.3
                 }
                 
@@ -169,7 +169,7 @@ Item {
             TextArea {
                 id: inputField
                 placeholderText: "your message..."
-                color: ThemeManager.color("text")
+                color: ThemeManager.textColor
                 font.family: ThemeManager.currentFont
                 font.pixelSize: ThemeManager.currentFontSize * 1.2
                 verticalAlignment: Text.AlignTop // Alignement standard pour le texte multi-lignes
@@ -252,8 +252,8 @@ Item {
             id: sendBtn
             Layout.alignment: Qt.AlignBottom        
             palette {
-                buttonText: ThemeManager.color("buttonText")
-                button: ThemeManager.color("button")
+                buttonText: ThemeManager.buttonTextColor
+                button: ThemeManager.buttonColor
             }             
             text: "Send"
             enabled: text === "Stop" || (inputField.text.trim().length > 0 || ChatController.pendingAssets.length > 0)
@@ -280,15 +280,6 @@ Item {
     // Add connection to themeManager to listen for theme changes
     Connections {
         target: ThemeManager
-        function onDarkModeChanged() {
-            inputField.color = ThemeManager.color("text")
-            sendBtn.palette.buttonText = ThemeManager.color("buttonText")
-            sendBtn.palette.button = ThemeManager.color("button")
-            emojiPopupButton.palette.buttonText = ThemeManager.color("buttonText")
-            emojiPopupButton.palette.button = ThemeManager.color("button")
-            emojiPopupBackground.color = ThemeManager.color("windowDarker")
-            emojiPopupBackground.border.color = ThemeManager.color("windowDarker2")
-        }
         function onFontChanged() {
             inputField.font.family = ThemeManager.currentFont
             inputField.font.pixelSize = ThemeManager.currentFontSize * 1.2

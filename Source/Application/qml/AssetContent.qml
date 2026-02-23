@@ -14,8 +14,8 @@ Rectangle {
     // Fix: Utiliser une hauteur fixe basée sur le nombre d'items plutôt que contentHeight
     height: assetList.count > 0 ? 150 : 0
     visible: assetList.count > 0
-    color: ThemeManager.color("windowDarker")
-    border.color: ThemeManager.color("windowDarker2")
+    color: ThemeManager.windowDarkerColor
+    border.color: ThemeManager.windowDarker2Color
     border.width: 1
     
     Behavior on height {
@@ -49,8 +49,8 @@ Rectangle {
 
                 width: 120
                 height: 120
-                color: ThemeManager.color("window")
-                border.color: ThemeManager.color("windowDarker2")
+                color: ThemeManager.windowColor
+                border.color: ThemeManager.windowDarker2Color
                 border.width: 1
                 radius: 8
                 
@@ -68,7 +68,7 @@ Rectangle {
                     Rectangle {
                         width: parent.width
                         height: parent.height - 30
-                        color: "transparent"
+                        color: 'transparent'
                         clip: true
                         
                         Image {
@@ -103,7 +103,7 @@ Rectangle {
                             text: (assetDelegate.assetData && assetDelegate.assetData.name) ? assetDelegate.assetData.name : "Image"
                             elide: Text.ElideMiddle
                             font.pixelSize: 10
-                            color: ThemeManager.color("text")
+                            color: ThemeManager.textColor
                         }
                         
                         Button {
@@ -114,8 +114,8 @@ Rectangle {
                             text: "❌"
                             font.pixelSize: 14
                             palette {
-                                buttonText: ThemeManager.color("text")
-                                button: "transparent"
+                                buttonText: ThemeManager.textColor
+                                button: 'transparent'
                             }
                             onClicked: {
                                 if (ChatController) {
@@ -141,14 +141,6 @@ Rectangle {
         target: ChatController
         function onPendingAssetsChanged() {
             console.log("pendingAssetsChanged - count:", ChatController.pendingAssets.length)
-        }
-    }
-    
-    Connections {
-        target: ThemeManager
-        function onDarkModeChanged() {
-            root.color = ThemeManager.color("windowDarker")
-            root.border.color = ThemeManager.color("windowDarker2")
         }
     }
 }

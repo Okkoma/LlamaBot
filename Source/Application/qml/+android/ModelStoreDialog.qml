@@ -54,7 +54,7 @@ Dialog {
         id: root
         radius: 0
         anchors.fill: parent
-        color: ThemeManager.color("window")
+        color: ThemeManager.windowColor
 
         property bool isDownloading: ModelStore.isDownloading
         property string statusMessage: ModelStore.statusMessage
@@ -76,7 +76,7 @@ Dialog {
                         id: sourceComboLbl
                         text: "Source"
                         font.bold: true
-                        color: ThemeManager.color("text")
+                        color: ThemeManager.textColor
                     }
                     ComboBox {
                         id: sourceCombo
@@ -84,10 +84,10 @@ Dialog {
                         Layout.preferredWidth: 150
 
                         palette {
-                            buttonText: ThemeManager.color("buttonText")
-                            button: ThemeManager.color("button")
-                            window: ThemeManager.color("window")
-                            text: ThemeManager.color("text")
+                            buttonText: ThemeManager.buttonTextColor
+                            button: ThemeManager.buttonColor
+                            window: ThemeManager.windowColor
+                            text: ThemeManager.textColor
                         }
 
                         onCurrentTextChanged: {
@@ -111,16 +111,16 @@ Dialog {
                         id: sortComboLbl
                         text: "Sort By"
                         font.bold: true
-                        color: ThemeManager.color("text")
+                        color: ThemeManager.textColor
                     }
                     ComboBox {
                         id: sortCombo
                         model: ["Trending", "Likes", "Date"]
                         palette {
-                            buttonText: ThemeManager.color("buttonText")
-                            button: ThemeManager.color("button")
-                            window: ThemeManager.color("window")
-                            text: ThemeManager.color("text")
+                            buttonText: ThemeManager.buttonTextColor
+                            button: ThemeManager.buttonColor
+                            window: ThemeManager.windowColor
+                            text: ThemeManager.textColor
                         }
                         onCurrentTextChanged: ModelStore.setSort(currentText)
                     }
@@ -133,17 +133,17 @@ Dialog {
                         id: sizeFilterLbl
                         text: "By param"
                         font.bold: true
-                        color: ThemeManager.color("text")
+                        color: ThemeManager.textColor
                     }
                     ComboBox {
                         id: sizeFilter
                         model: ["All", "<2B", "<4B", "<8B", "<20B"]
                         Layout.preferredWidth: 85
                         palette {
-                            buttonText: ThemeManager.color("buttonText")
-                            button: ThemeManager.color("button")
-                            window: ThemeManager.color("window")
-                            text: ThemeManager.color("text")
+                            buttonText: ThemeManager.buttonTextColor
+                            button: ThemeManager.buttonColor
+                            window: ThemeManager.windowColor
+                            text: ThemeManager.textColor
                         }
                         onCurrentTextChanged: ModelStore.setSizeFilter(currentText)
                     }
@@ -162,7 +162,7 @@ Dialog {
                         id: mustContainsFieldLbl
                         text: "By tag"
                         font.bold: true
-                        color: ThemeManager.color("text")
+                        color: ThemeManager.textColor
                     }
                     RowLayout {
                         Layout.alignment: Qt.AlignVCenter
@@ -172,8 +172,8 @@ Dialog {
                             Layout.preferredWidth: 250
                             Layout.fillWidth: true
                             palette {
-                                text: ThemeManager.color("text")
-                                base: ThemeManager.color("windowDarker")
+                                text: ThemeManager.textColor
+                                base: ThemeManager.windowDarkerColor
                             }
                             onEditingFinished: ModelStore.searchName = text
                         }
@@ -181,8 +181,8 @@ Dialog {
                             id: refreshBtn
                             text: "Refresh"
                             palette {
-                                buttonText: ThemeManager.color("buttonText")
-                                button: ThemeManager.color("button")
+                                buttonText: ThemeManager.buttonTextColor
+                                button: ThemeManager.buttonColor
                             }
                             onClicked: ModelStore.fetchModels()
                         }
@@ -217,8 +217,8 @@ Dialog {
 
                     background: Rectangle {
                         id: delegateBackground
-                        color: modelListView.currentIndex === modelDelegate.index ? ThemeManager.color("windowDarker") : (modelDelegate.hovered ? ThemeManager.color("windowDarker2") : "transparent")
-                        border.color: modelListView.currentIndex === modelDelegate.index ? ThemeManager.color("button") : "transparent"
+                        color: modelListView.currentIndex === modelDelegate.index ? ThemeManager.windowDarkerColor : (modelDelegate.hovered ? ThemeManager.windowDarker2Color : 'transparent')
+                        border.color: modelListView.currentIndex === modelDelegate.index ? ThemeManager.buttonColor : 'transparent'
                         border.width: 1
                     }
 
@@ -239,7 +239,7 @@ Dialog {
                                 maximumLineCount: 2
                                 elide: Text.ElideRight
                                 text: modelDelegate.modelData.name || ""
-                                color: ThemeManager.color("text")
+                                color: ThemeManager.textColor
                             }
 
                             Label {
@@ -247,7 +247,7 @@ Dialog {
                                 Layout.alignment: Qt.AlignTop | Qt.AlignRight
                                 font.pixelSize: 14
                                 text: modelDelegate.modelData.size ? (modelDelegate.modelData.size / 1024 / 1024 / 1024).toFixed(2) + " GB" : ""
-                                color: ThemeManager.color("text")
+                                color: ThemeManager.textColor
                             }
                         }
 
@@ -260,7 +260,7 @@ Dialog {
                             maximumLineCount: 4                            
                             elide: Text.ElideRight
                             text: modelDelegate.modelData.description || ""
-                            color: ThemeManager.color("text")
+                            color: ThemeManager.textColor
                         }
                     }
 
@@ -269,15 +269,6 @@ Dialog {
                         detailsPanel.manifest = modelsModel.get(index);
                         detailsPanel.details = ({});
                         ModelStore.fetchModelDetails(modelData.name || modelData.tag);
-                    }
-
-                    Connections {
-                        target: ThemeManager
-                        function onDarkModeChanged() {
-                            delegateBackground.color = "transparent";
-                            delegateBackground.border.color = ThemeManager.color("button");
-                            nameLbl.color = sizeLbl.color = descLbl.color = ThemeManager.color("text");
-                        }
                     }
                 }
             }
@@ -289,8 +280,8 @@ Dialog {
                 Layout.preferredHeight: 325
 
                 visible: modelListView.currentIndex >= 0
-                color: ThemeManager.color("windowDarker")
-                border.color: ThemeManager.color("button")
+                color: ThemeManager.windowDarkerColor
+                border.color: ThemeManager.buttonColor
                 border.width: 1
                 radius: 16
 
@@ -318,14 +309,14 @@ Dialog {
                             maximumLineCount: 2
                             elide: Text.ElideRight
                             text: detailsPanel.manifest && detailsPanel.manifest.name || "Select a model"
-                            color: ThemeManager.color("text")
+                            color: ThemeManager.textColor
                         }
                         Button {
                             text: "Close"
                             Layout.alignment: Qt.AlignTop | Qt.AlignRight
                             palette {
-                                buttonText: ThemeManager.color("buttonText")
-                                button: ThemeManager.color("button")
+                                buttonText: ThemeManager.buttonTextColor
+                                button: ThemeManager.buttonColor
                             }
                             onClicked: {
                                 modelListView.currentIndex = -1;
@@ -344,7 +335,7 @@ Dialog {
                             id: detailsPanelTrendingLbl
                             text: (detailsPanel.manifest && detailsPanel.manifest.trending) ? detailsPanel.manifest.trending : ""
                             font.pixelSize: 14
-                            color: ThemeManager.color("text")
+                            color: ThemeManager.textColor
                         }
                         Label {
                             text: (detailsPanel.manifest && detailsPanel.manifest.likes) ? "⭐" : ""
@@ -355,7 +346,7 @@ Dialog {
                             id: detailsPanelLikesLbl
                             text: (detailsPanel.manifest && detailsPanel.manifest.likes) ? detailsPanel.manifest.likes : ""
                             font.pixelSize: 14
-                            color: ThemeManager.color("text")
+                            color: ThemeManager.textColor
                         }
                         Label {
                             text: (detailsPanel.manifest && detailsPanel.manifest.downloads) ? "📥" : ""
@@ -366,7 +357,7 @@ Dialog {
                             id: detailsPanelDownloadsLbl
                             text: (detailsPanel.manifest && detailsPanel.manifest.downloads) ? detailsPanel.manifest.downloads : ""
                             font.pixelSize: 14
-                            color: ThemeManager.color("text")
+                            color: ThemeManager.textColor
                         }
                     }
 
@@ -376,13 +367,13 @@ Dialog {
                             id: detailsPanelDateLbl
                             text: (detailsPanel.manifest && detailsPanel.manifest.date) ? "lastUpdate: " + detailsPanel.manifest.date : ""
                             font.pixelSize: 14
-                            color: ThemeManager.color("text")
+                            color: ThemeManager.textColor
                         }
                         Label {
                             id: detailsPanelPipelineLbl
-                            text: (detailsPanel.manifest && detailsPanel.manifest.pipeline) ? "- pipeline: " + detailsPanel.manifest.pipeline : ""
+                            text: (detailsPanel.manifest && detailsPanel.manifest.pipeline) ? "- " + detailsPanel.manifest.pipeline : ""
                             font.pixelSize: 14
-                            color: ThemeManager.color("text")
+                            color: ThemeManager.textColor
                         }
                     }
 
@@ -394,7 +385,7 @@ Dialog {
                         maximumLineCount: 5
                         elide: Text.ElideRight
                         text: detailsPanel.manifest && detailsPanel.manifest.desc || "Loading description ..."
-                        color: ThemeManager.color("text")
+                        color: ThemeManager.textColor
                     }
 
                     ComboBox {
@@ -404,10 +395,10 @@ Dialog {
                         model: detailsPanel.details.files
                         textRole: "name"
                         palette {
-                            buttonText: ThemeManager.color("buttonText")
-                            button: ThemeManager.color("button")
-                            window: ThemeManager.color("window")
-                            text: ThemeManager.color("text")
+                            buttonText: ThemeManager.buttonTextColor
+                            button: ThemeManager.buttonColor
+                            window: ThemeManager.windowColor
+                            text: ThemeManager.textColor
                         }
                         popup.height: 200
                     }
@@ -420,8 +411,8 @@ Dialog {
                             text: "Download File"
                             enabled: !root.isDownloading
                             palette {
-                                buttonText: ThemeManager.color("buttonText")
-                                button: ThemeManager.color("button")
+                                buttonText: ThemeManager.buttonTextColor
+                                button: ThemeManager.buttonColor
                             }
                             onClicked: {
                                 ModelStore.downloadFile(detailsPanel.details.name, detailsPanel.details.files[filesCombo.currentIndex]);
@@ -432,8 +423,8 @@ Dialog {
                             text: "Download All Files"
                             enabled: !root.isDownloading
                             palette {
-                                buttonText: ThemeManager.color("buttonText")
-                                button: ThemeManager.color("button")
+                                buttonText: ThemeManager.buttonTextColor
+                                button: ThemeManager.buttonColor
                             }
                             onClicked: {
                                 ModelStore.downloadAllFiles(detailsPanel.details.name, detailsPanel.details.files);
@@ -454,15 +445,15 @@ Dialog {
                     Layout.fillWidth: true
                     Layout.preferredHeight: 30
                     visible: root.isDownloading
-                    color: ThemeManager.color("window")
+                    color: ThemeManager.windowColor
 
                     Button {
                         anchors.top: parent.top
                         anchors.right: parent.right
                         text: "Cancel"
                         palette {
-                            buttonText: ThemeManager.color("buttonText")
-                            button: ThemeManager.color("button")
+                            buttonText: ThemeManager.buttonTextColor
+                            button: ThemeManager.buttonColor
                         }
                         onClicked: {
                             ModelStore.cancelDownload();
@@ -489,7 +480,7 @@ Dialog {
                         width: implicitWidth
                         text: root.statusMessage
                         font.italic: true
-                        color: ThemeManager.color("text")
+                        color: ThemeManager.textColor
                     }
                 }
             }
@@ -534,47 +525,6 @@ Dialog {
                     // Rafraîchir la liste des modèles disponibles après un téléchargement réussi
                     ChatController.refreshModels();
                 }
-            }
-        }
-
-        Connections {
-            target: ThemeManager
-            function onDarkModeChanged() {
-                root.color = ThemeManager.color("window");
-                sourceComboLbl.color = ThemeManager.color("text");
-                sourceCombo.palette.buttonText = ThemeManager.color("buttonText");
-                sourceCombo.palette.button = ThemeManager.color("button");
-                sourceCombo.palette.window = ThemeManager.color("window");
-                sourceCombo.palette.text = ThemeManager.color("text");
-                sortComboLbl.color = ThemeManager.color("text");
-                sortCombo.palette.buttonText = ThemeManager.color("buttonText");
-                sortCombo.palette.button = ThemeManager.color("button");
-                sortCombo.palette.window = ThemeManager.color("window");
-                sortCombo.palette.text = ThemeManager.color("text");
-                sizeFilterLbl.color = ThemeManager.color("text");
-                sizeFilter.palette.buttonText = ThemeManager.color("buttonText");
-                sizeFilter.palette.button = ThemeManager.color("button");
-                sizeFilter.palette.window = ThemeManager.color("window");
-                sizeFilter.palette.text = ThemeManager.color("text");
-                //mustContainsFieldLbl.color = ThemeManager.color("text");
-                //mustContainsField.palette.text = ThemeManager.color("text");
-                //mustContainsField.palette.base = ThemeManager.color("windowDarker");
-                detailsPanel.color = ThemeManager.color("windowDarker");
-                detailsPanel.border.color = ThemeManager.color("button");
-                detailsPanelNameLbl.color = ThemeManager.color("text");
-                detailsPanelTrendingLbl.color = ThemeManager.color("text");
-                detailsPanelLikesLbl.color = ThemeManager.color("text");
-                detailsPanelDownloadsLbl.color = ThemeManager.color("text");
-                detailsPanelPipelineLbl.color = ThemeManager.color("text");
-                detailsPanelDateLbl.color = ThemeManager.color("text");
-                detailsPanelDescriptionLbl.color = ThemeManager.color("text");
-                filesCombo.palette.buttonText = ThemeManager.color("buttonText");
-                filesCombo.palette.button = ThemeManager.color("button");
-                filesCombo.palette.window = ThemeManager.color("window");
-                filesCombo.palette.text = ThemeManager.color("text");
-                downloadPanel.color = ThemeManager.color("window");
-                downPanelMessage.color = ThemeManager.color("text");
-                downPanelMessage.color = ThemeManager.color("text");
             }
         }
 

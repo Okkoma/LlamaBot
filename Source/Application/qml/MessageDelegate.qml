@@ -35,7 +35,7 @@ Item {
         Rectangle {
             id: userframe
             width: 40; height: 40; radius: 20
-            color: root.isUser ? ThemeManager.color("windowDarker") : ThemeManager.color("windowDarker2")
+            color: root.isUser ? ThemeManager.windowDarkerColor : ThemeManager.windowDarker2Color
             opacity: root.isThought ? 0.6 : 1.0
             Layout.alignment: Qt.AlignTop
             Label {
@@ -51,7 +51,7 @@ Item {
             Layout.maximumWidth: root.width * 0.95
             Layout.preferredWidth: root.bubbleWidth()
             Layout.preferredHeight: msgText.contentHeight + 20
-            color: root.isUser ? ThemeManager.color("windowDarker") : ThemeManager.color("windowDarker2")
+            color: root.isUser ? ThemeManager.windowDarkerColor : ThemeManager.windowDarker2Color
             border.width: 0
             opacity: root.isThought ? 0.8 : 1.0
             radius: 10
@@ -83,7 +83,7 @@ Item {
                 TextEdit {
                     id: msgText
                     text: root.modelData ? root.modelData.content : ""
-                    color: root.isThought ? ThemeManager.color("buttonText") : ThemeManager.color("text")
+                    color: root.isThought ? ThemeManager.buttonTextColor : ThemeManager.textColor
                     font.family: ThemeManager.currentFont
                     font.pixelSize: root.isThought ? ThemeManager.currentFontSize * 0.8 : ThemeManager.currentFontSize
                     font.italic: root.isThought
@@ -104,11 +104,6 @@ Item {
     // Add connection to themeManager to listen for theme changes
     Connections {
         target: ThemeManager
-        function onDarkModeChanged() {
-            userframe.color = root.isUser ? ThemeManager.color("windowDarker") : ThemeManager.color("windowDarker2")
-            bubble.color = root.isUser ? ThemeManager.color("windowDarker") : ThemeManager.color("windowDarker2")
-            msgText.color = root.isThought ? ThemeManager.color("buttonText") : ThemeManager.color("text")
-        }
         function onFontChanged() {
             msgText.font.family = ThemeManager.currentFont
             msgText.font.pixelSize = root.isThought ? ThemeManager.currentFontSize * 0.8 : ThemeManager.currentFontSize
