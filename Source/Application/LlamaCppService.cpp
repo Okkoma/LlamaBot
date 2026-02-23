@@ -1012,6 +1012,15 @@ void LlamaCppService::setModel(Chat* chat, QString modelName)
     }
 }
 
+void LlamaCppService::deleteModel(const LLMModel& model)
+{
+    qDebug() << "LlamaCppService::deleteModel ... " << model.toString();
+    
+    clearModelInMemory(model.toString());
+    QFile::remove(model.filePath_);
+}
+
+
 bool LlamaCppService::isReady() const
 {
     return true;

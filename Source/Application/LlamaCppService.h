@@ -246,6 +246,12 @@ public:
      * @param model Nom du modèle (optionnel)
      */
     void setModel(Chat* chat, QString model = "") override;
+    
+    /**
+     * @brief Effacer le modèle du stockage local
+     * @param model le modèle
+     */
+    void deleteModel(const LLMModel& model) override;
 
     /**
      * @brief Vérifie si le service est prêt

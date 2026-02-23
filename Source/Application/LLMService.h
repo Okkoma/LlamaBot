@@ -43,8 +43,11 @@ public:
 
     virtual bool start() { return true; };
     virtual bool stop() { return true; };
-    virtual void setModel(Chat* chat, QString model = "") {}
+    
     virtual bool isReady() const { return true; }
+
+    virtual void setModel(Chat* chat, QString model = "") {}
+    virtual void deleteModel(const LLMModel& model) {}
 
     virtual void post(Chat* chat, const QString& content, bool streamed = true) {}
 
