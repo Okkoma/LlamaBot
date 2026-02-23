@@ -20,9 +20,11 @@ Dialog {
         id: settingsScroll
         anchors.fill: parent
         clip: false
-        ScrollBar.vertical.policy: ScrollBar.AsNeeded
+        ScrollBar.horizontal.policy: ScrollBar.AlwaysOff
+        ScrollBar.vertical.policy: ScrollBar.AlwaysOn
         ScrollBar.vertical.width: 5
         ScrollBar.vertical.x: parent.width + 15
+        contentWidth: availableWidth // never move in horizontal
 
         ColumnLayout {
             width: settingsScroll.availableWidth

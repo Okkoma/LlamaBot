@@ -19,7 +19,7 @@ ApplicationWindow {
 
     Material.theme: ThemeManager.darkMode ? Material.Dark : Material.Light
     Material.primary: '#efefef'   // Sets the main color (e.g., ToolBar, raised Button)
-    Material.accent: "#FF4081"    // Sets the accent color (e.g., CheckBox, Slider)
+    Material.accent: '#FF4081'    // Sets the accent color (e.g., CheckBox, Slider)
 
     // Chat Drawer
     ChatDrawer {
@@ -34,7 +34,7 @@ ApplicationWindow {
         edge: Qt.BottomEdge
 
         background: Rectangle {
-            color: ThemeManager.color("window")
+            color: ThemeManager.windowColor
         }
 
         ColumnLayout {
@@ -88,7 +88,7 @@ ApplicationWindow {
             id: toolBar
             Layout.fillWidth: true
             background: Rectangle {
-                color: ThemeManager.color("window")
+                color: ThemeManager.windowColor
             }
             RowLayout {
                 anchors.fill: parent
@@ -114,9 +114,9 @@ ApplicationWindow {
                     Connections {
                         target: chatDrawer
                         function onChatChanged() {
-                            modelSelector.displayText = ChatController.currentChat.currentModel;
+                            modelSelector.availableModel();
                         }
-                    }                    
+                    }
                 }
 
                 Item {
@@ -144,16 +144,12 @@ ApplicationWindow {
                     Menu {
                         id: menu
                         MenuItem {
-                            text: "Local Models"
+                            text: "Models"
                             onTriggered: modelLocalDialog.open()
-                        }                        
-                        MenuItem {
-                            text: "Model Store"
-                            onTriggered: modelStoreDialog.open()
                         }
                         MenuSeparator {}
                         MenuItem {
-                            text: ThemeManager.darkMode ? "☀ Light Theme" : "🌙 Dark Theme"
+                            text: ThemeManager.darkMode ? "🌞 Light Theme" : "🌙 Dark Theme"
                             onTriggered: {
                                 ThemeManager.setDarkMode(!ThemeManager.darkMode);
                             }
@@ -195,10 +191,10 @@ ApplicationWindow {
                 anchors.left: parent.left
                 anchors.right: parent.right
                 anchors.bottom: parent.bottom
-                onAccepted: (text) => {
+                onAccepted: text => {
                     if (ChatController) {
                         console.log("setModel:", modelSelector.currentValue.name);
-                        ChatController.setModel(modelSelector.currentValue.name);                        
+                        ChatController.setModel(modelSelector.currentValue.name);
                         ChatController.sendMessage(text);
                     }
                 }
@@ -210,28 +206,9 @@ ApplicationWindow {
     ModelLocalDialog {
         id: modelLocalDialog
     }
-    // Model Store Dialog
-    ModelStoreDialog {
-        id: modelStoreDialog
-    }
     // Settings Dialog
     SettingsDialog {
         id: settingsDialog
-    }
-
-    // Wheel Handler
-    Item {
-        id: wheelHandler
-        anchors.fill: parent
-        WheelHandler {
-            acceptedModifiers: Qt.ControlModifier
-            onWheel: event => {
-                event.accepted = true;
-                var sign = Math.sign(event.angleDelta.y);
-                if (sign < 0 && ThemeManager.currentFontSize > 10 || sign > 0 && ThemeManager.currentFontSize < 40)
-                    ThemeManager.currentFontSize += sign;
-            }
-        }
     }
 
     function createNewChat() {
@@ -256,7 +233,6 @@ ApplicationWindow {
         }
         function onDarkModeChanged() {
             console.log("Dark Mode changed:", ThemeManager.color("window"));
-            toolBar.background.color = ThemeManager.color("window");
         }
     }
 }

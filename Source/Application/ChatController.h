@@ -25,6 +25,7 @@ class ChatController : public QObject
     Q_PROPERTY(int defaultContextSize READ getDefaultContextSize WRITE setDefaultContextSize NOTIFY defaultContextSizeChanged)
     Q_PROPERTY(bool autoExpandContext READ getAutoExpandContext WRITE setAutoExpandContext NOTIFY autoExpandContextChanged)
     Q_PROPERTY(QVariantList pendingAssets READ pendingAssets NOTIFY pendingAssetsChanged)
+    Q_PROPERTY(QString currentModel READ currentModel WRITE setCurrentModel NOTIFY currentModelChanged)
 
     QML_ELEMENT
     QML_SINGLETON
@@ -125,6 +126,20 @@ public:
 
     // Model Management
     /**
+     * @brief Retourne le modele courant
+     * @return le nom du modele courant
+     */
+    const QString& currentModel() const { return currentModel_; }
+
+    Q_INVOKABLE int currentModelIndex() const;
+
+    /**
+     * @brief Définit le nom du modèle selectionné dans l'ui à utiliser par défaut
+     * @param modelName Nom du modèle selectionné
+     */    
+    Q_INVOKABLE void setCurrentModel(const QString& modelname);
+
+    /**
      * @brief Retourne la liste des modèles disponibles
      * @return Liste des modèles LLM disponibles
      */
@@ -142,6 +157,12 @@ public:
      */
     Q_INVOKABLE void setModel(const QString& modelName);
     
+    /**
+     * @brief Supprime un modele
+     * @param index Index du modele à supprimer
+     */
+    Q_INVOKABLE void deleteModel(int index);
+
     /**
      * @brief Définit l'API LLM à utiliser
      * @param apiName Nom de l'API à utiliser
@@ -198,6 +219,11 @@ signals:
     void availableModelsChanged();
     
     /**
+     * @brief Signal émis lorsque le model courant change
+     */
+     void currentModelChanged();
+
+    /**
      * @brief Signal émis lorsque le chargement commence
      */
     void loadingStarted();
@@ -245,6 +271,7 @@ private:
     int chatCounter_;             ///< Compteur pour générer des noms de chat uniques
     bool ragEnabled_ = false;     ///< Indique si le RAG est activé
     QVariantList pendingAssets_;  ///< Liste temporaire des assets en attente
+    QString currentModel_;        ///< nom du modele courant
 
 public:
     /**

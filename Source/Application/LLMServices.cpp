@@ -89,6 +89,17 @@ void LLMServices::receive(LLMService* api, Chat* chat, const QByteArray& data)
             {
                 qWarning() << "Unknown response format : " << obj;
             }
+            // TODO : Ollama service, update token count
+            if (obj.contains("prompt_eval_count"))
+            {
+                int promptEvalCount = obj["prompt_eval_count"].toInt();
+                qDebug() << "promptEvalCount : " << promptEvalCount;
+            }
+            if (obj.contains("eval_count"))
+            {
+                int evalCount = obj["eval_count"].toInt();
+                qDebug() << "evalCount : " << evalCount;
+            }
         }
     }
 }
@@ -135,7 +146,7 @@ std::vector<LLMService*> LLMServices::getAvailableAPIs() const
     return results;
 }    
 
-std::vector<LLMModel> LLMServices::getAvailableModels(const LLMService* api)
+std::vector<LLMModel> LLMServices::getAvailableModels(const LLMService* api) const
 {
     if (api)
         return api->getAvailableModels();
@@ -264,10 +275,12 @@ void LLMServices::initialize()
     if (!loadServiceJsonFile())
         createDefaultServiceJsonFile();
 
-    LLMService* defaultService_ = apiEntries_.size() ? apiEntries_.front() : nullptr;
+    LLMService* defaultService = apiEntries_.size() ? apiEntries_.front() : nullptr;
 
-    if (defaultService_ && !defaultService_->isReady())
-        defaultService_->start();
+    qDebug() << "initializing with service:" << defaultService << (defaultService ? defaultService->name_ : "");
+    
+    if (defaultService && !defaultService->isReady())
+        defaultService->start();
 
     allowSharedModels(true);
 }

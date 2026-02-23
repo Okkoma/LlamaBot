@@ -229,6 +229,22 @@ void ChatController::stopGeneration()
         llmServices_->stop(currentChat_);
 }
 
+int ChatController::currentModelIndex() const
+{
+    LLMService* currentApi = currentChat_ ? llmServices_->get(currentChat_->getCurrentApi()) : nullptr;
+    std::vector<LLMModel> models = llmServices_->getAvailableModels(currentApi);
+    for (int i = 0; i < models.size(); i++) 
+        if (models[i].toString() == currentModel_)
+            return i;
+    return -1;
+}
+
+void ChatController::setCurrentModel(const QString& modelname)
+{
+    currentModel_ = modelname;
+    emit currentModelChanged();
+}
+
 QVariantList ChatController::getAvailableModels()
 {
     QVariantList models;
@@ -281,6 +297,27 @@ void ChatController::setModel(const QString& modelName)
 
         connectAPIsSignals();
     }
+}
+
+void ChatController::deleteModel(int index)
+{
+    LLMService* currentApi = currentChat_ ? llmServices_->get(currentChat_->getCurrentApi()) : nullptr;
+    std::vector<LLMModel> modelList = llmServices_->getAvailableModels(currentApi);
+    
+    if (index >= modelList.size())
+        return;
+
+    LLMModel& model = modelList[index];
+
+    QString modelName = model.toString();
+    if (currentModel_ == modelName)
+        setCurrentModel(modelList.front().toString());
+
+    currentApi->deleteModel(model);
+    
+    qDebug() << "ChatController::deleteModel" << index << modelName;
+
+    emit availableModelsChanged();
 }
 
 void ChatController::setAPI(const QString& apiName)

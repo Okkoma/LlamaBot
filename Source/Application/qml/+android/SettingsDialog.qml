@@ -13,16 +13,18 @@ Dialog {
     title: "Settings"
     modal: true
     width: Screen.width * 0.85
-    height: Screen.height * 0.85
+    height: Screen.height * 0.65
     anchors.centerIn: parent
 
     ScrollView {
         id: settingsScroll
         anchors.fill: parent
         clip: false
-        ScrollBar.vertical.policy: ScrollBar.AsNeeded
+        ScrollBar.horizontal.policy: ScrollBar.AlwaysOff
+        ScrollBar.vertical.policy: ScrollBar.AlwaysOn
         ScrollBar.vertical.width: 5
         ScrollBar.vertical.x: parent.width + 15
+        contentWidth: availableWidth // never move in horizontal
 
         ColumnLayout {
             width: settingsScroll.availableWidth

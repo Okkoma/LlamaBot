@@ -34,7 +34,7 @@ ApplicationWindow {
         edge: Qt.BottomEdge
 
         background: Rectangle {
-            color: ThemeManager.color("window")
+            color: ThemeManager.windowColor
         }
 
         ColumnLayout {
@@ -88,7 +88,7 @@ ApplicationWindow {
             id: toolBar
             Layout.fillWidth: true
             background: Rectangle {
-                color: ThemeManager.color("window")
+                color: ThemeManager.windowColor
             }
             RowLayout {
                 anchors.fill: parent
@@ -117,7 +117,7 @@ ApplicationWindow {
                 Label {
                     id: lbl_Api
                     text: "API:"
-                    color: ThemeManager.color("text")
+                    color: ThemeManager.textColor
                 }
 
                 APISelector {
@@ -128,7 +128,7 @@ ApplicationWindow {
                 Label {
                     id: lbl_Model
                     text: "Model:"
-                    color: ThemeManager.color("text")
+                    color: ThemeManager.textColor
                 }
 
                 ModelSelector {
@@ -140,8 +140,8 @@ ApplicationWindow {
                         target: chatDrawer
                         function onChatChanged() {
                             console.log("onChatChanged:");
-                            ChatController.setAPI(ChatController.currentChat.currentApi);
-                            modelSelector.displayText = ChatController.currentChat.currentModel;
+                            //ChatController.setAPI(ChatController.currentChat.currentApi);
+                            modelSelector.availableModel();
                         }
                     }
                 }
@@ -182,16 +182,12 @@ ApplicationWindow {
                     Menu {
                         id: menu
                         MenuItem {
-                            text: "Local Models"
+                            text: "Models"
                             onTriggered: modelLocalDialog.open()
-                        }                        
-                        MenuItem {
-                            text: "Model Store"
-                            onTriggered: modelStoreDialog.open()
                         }
                         MenuSeparator {}
                         MenuItem {
-                            text: ThemeManager.darkMode ? "☀ Light Theme" : "🌙 Dark Theme"
+                            text: ThemeManager.darkMode ? "🌞 Light Theme" : "🌙 Dark Theme"
                             onTriggered: {
                                 ThemeManager.setDarkMode(!ThemeManager.darkMode);
                             }
@@ -248,10 +244,6 @@ ApplicationWindow {
     ModelLocalDialog {
         id: modelLocalDialog
     }
-    // Model Store Dialog
-    ModelStoreDialog {
-        id: modelStoreDialog
-    }
     // Settings Dialog
     SettingsDialog {
         id: settingsDialog
@@ -293,9 +285,7 @@ ApplicationWindow {
             console.log("Theme changed in QML:", ThemeManager.currentTheme);
         }
         function onDarkModeChanged() {
-            lbl_Model.color = ThemeManager.color("text");
-            lbl_Api.color = ThemeManager.color("text");
-            toolBar.background.color = ThemeManager.color("window");
+            console.log("Dark Mode changed:", ThemeManager.color("window"));
         }
     }
 }

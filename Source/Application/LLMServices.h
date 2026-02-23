@@ -113,7 +113,7 @@ public:
      * @param api API LLM spécifique (optionnel)
      * @return Vecteur contenant les modèles disponibles
      */
-    std::vector<LLMModel> getAvailableModels(const LLMService* api = nullptr);
+    std::vector<LLMModel> getAvailableModels(const LLMService* api = nullptr) const;
     
     /**
      * @brief Retourne un modèle LLM par nom
