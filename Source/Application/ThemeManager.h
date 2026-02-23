@@ -27,7 +27,17 @@ class ThemeManager : public QObject
     Q_PROPERTY(QString currentFont READ currentFont WRITE setFont NOTIFY fontChanged);
     Q_PROPERTY(QString colorEmojiFont READ colorEmojiFont NOTIFY fontChanged);
     Q_PROPERTY(int currentFontSize READ currentFontSize WRITE setFontSize NOTIFY fontChanged);    
-    Q_PROPERTY(bool darkMode READ darkMode WRITE setDarkMode NOTIFY darkModeChanged)
+    Q_PROPERTY(bool darkMode READ darkMode WRITE setDarkMode NOTIFY darkModeChanged);
+
+    Q_PROPERTY(QColor baseColor READ baseColor NOTIFY themeChanged);
+    Q_PROPERTY(QColor windowColor READ windowColor NOTIFY themeChanged);
+    Q_PROPERTY(QColor windowDarkerColor READ windowDarkerColor NOTIFY themeChanged);
+    Q_PROPERTY(QColor windowDarker2Color READ windowDarker2Color NOTIFY themeChanged);    
+    Q_PROPERTY(QColor windowTextColor READ windowTextColor NOTIFY themeChanged);
+    Q_PROPERTY(QColor accentColor READ accentColor NOTIFY themeChanged);
+    Q_PROPERTY(QColor textColor READ textColor NOTIFY themeChanged);
+    Q_PROPERTY(QColor buttonColor READ buttonColor NOTIFY themeChanged);
+    Q_PROPERTY(QColor buttonTextColor READ buttonTextColor NOTIFY themeChanged);
 
     QML_ELEMENT
     QML_SINGLETON
@@ -130,7 +140,17 @@ public:
      * @param elt Nom de l'élément
      * @return Couleur associée à l'élément
      */
-    Q_INVOKABLE QColor color(const QString& elt);
+    Q_INVOKABLE QColor color(const QString& elt) const;
+
+    QColor baseColor() const;
+    QColor windowColor() const;
+    QColor windowDarkerColor() const;
+    QColor windowDarker2Color() const;
+    QColor windowTextColor() const;
+    QColor accentColor() const;
+    QColor textColor() const;
+    QColor buttonColor() const;
+    QColor buttonTextColor() const;
 
     /**
      * @brief Charge les thèmes depuis les fichiers

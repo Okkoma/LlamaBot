@@ -141,6 +141,7 @@ void ThemeManager::setDarkMode(bool dark)
     {
         darkMode_ = dark;
         emit darkModeChanged();
+        emit themeChanged();
     }
 }
 
@@ -179,9 +180,54 @@ QStringList ThemeManager::availableThemes() const
     return themes_;
 }
 
-QColor ThemeManager::color(const QString& elt)
+QColor ThemeManager::color(const QString& elt) const
 {
     return QColor(currentThemeData_[darkMode_ ? "dark" : "light"][elt].toString());
+}
+
+QColor ThemeManager::baseColor() const
+{ 
+    return color("base");
+}
+
+QColor ThemeManager::windowColor() const
+{ 
+    return color("window");
+}
+
+QColor ThemeManager::windowDarkerColor() const
+{ 
+    return color("windowDarker");
+}
+
+QColor ThemeManager::windowDarker2Color() const
+{ 
+    return color("windowDarker2");
+}
+
+QColor ThemeManager::windowTextColor() const
+{ 
+    return color("windowText");
+}
+
+QColor ThemeManager::accentColor() const
+{ 
+    return color("accent");
+}
+
+QColor ThemeManager::textColor() const
+{ 
+    return color("text");
+}
+
+QColor ThemeManager::buttonColor() const
+{ 
+    return color("button");
+}
+
+QColor ThemeManager::buttonTextColor() const
+{ 
+    return color("buttonText");
 }
 
 void ThemeManager::loadThemes()
@@ -238,12 +284,12 @@ void ThemeManager::applyTheme()
     currentThemeData_ = dataThemes_[currentTheme_];
 
     QPalette palette;
-    palette.setColor(QPalette::Window, color("window"));
-    palette.setColor(QPalette::WindowText, color("windowText"));
-    palette.setColor(QPalette::Base, color("base"));
-    palette.setColor(QPalette::Text, color("text"));
-    palette.setColor(QPalette::Button, color("button"));
-    palette.setColor(QPalette::ButtonText, color("buttonText"));
+    palette.setColor(QPalette::Window, windowColor());
+    palette.setColor(QPalette::WindowText, windowTextColor());
+    palette.setColor(QPalette::Base, baseColor());
+    palette.setColor(QPalette::Text, textColor());
+    palette.setColor(QPalette::Button, buttonColor());
+    palette.setColor(QPalette::ButtonText, buttonTextColor());
     QGuiApplication::setPalette(palette);
 
     // Set color scheme : not really useful because we're using darkMode property.
