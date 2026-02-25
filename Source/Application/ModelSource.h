@@ -69,10 +69,7 @@ public:
     template <typename T>
     static void registerSource(const QString& name)
     {
-        factories_[name] = [](QObject* parent)
-        {
-            return std::make_unique<T>(parent);
-        };
+        factories_[name] = [](QObject* parent) { return std::make_unique<T>(parent); };
     }
 
     static QStringList getSources()

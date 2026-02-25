@@ -3,6 +3,7 @@
 #include <QNetworkReply>
 #include <QNetworkRequest>
 
+#include "OllamaModelSource.h"
 #include "OllamaService.h"
 
 
@@ -35,6 +36,9 @@ std::vector<LLMModel> OllamaService::getAvailableModels() const
         OllamaService::getOllamaModels(QDir::homePath() + "/", result);
     }
 
+    if (llmservices_->allowCloudModels())    
+        OllamaModelSource::getOllamaCloudModels(result);
+    
     qDebug() << "OllamaService::getAvailableModels: " << result.size() << " models found";
 
     return result;
@@ -262,8 +266,33 @@ void OllamaService::postInternal(Chat* chat, const QString& content, bool stream
     // Use api/chat if available or configured
     bool useChatApi = api_generate_.contains("chat");
 
-    QNetworkRequest request(url_ + api_generate_);
+    QJsonObject payload = chat->getInfo();
+    QString url = url_;
+    bool cloud = payload["model"].toString().contains(":cloud");
+    if (cloud)
+    {
+        qDebug() << "OllamaService::postInternal: use a cloud model";
+        url = "https://ollama.com/";
+    }
+
+    QNetworkRequest request(url + api_generate_);
     request.setHeader(QNetworkRequest::ContentTypeHeader, "application/json");
+
+    if (cloud && apiKey_.isEmpty())
+    {
+        apiKey_ = params_["apikey"].toString();
+        if (apiKey_.isEmpty())
+        {
+            qDebug() << "OllamaService::postInternal: cloud model needs an ollama api key ... try env OLLAMA_API_KEY";
+            apiKey_ = qgetenv("OLLAMA_API_KEY");
+        }
+    }
+    // Manually set the Authorization header
+    if (!apiKey_.isEmpty())
+    {
+        qDebug() << "OllamaService::postInternal: add ollama api key";
+        request.setRawHeader("Authorization", ("Bearer " + apiKey_).toUtf8());
+    }
 
     chat->updateContent(content);
 
@@ -273,8 +302,6 @@ void OllamaService::postInternal(Chat* chat, const QString& content, bool stream
     qDebug() << "OllamaService::postInternal: useChatApi:" << useChatApi;
     
     // post the request
-    QJsonObject payload = chat->getInfo();
-
     if (useChatApi)
     {
         // Construct messages array for /api/chat
@@ -398,8 +425,10 @@ void OllamaService::postInternal(Chat* chat, const QString& content, bool stream
 
 void OllamaService::post(Chat* chat, const QString& content, bool streamed)
 {
+    bool cloudModel = chat->getInfo()["model"].toString().contains(":cloud");
+
     // api availability : post when api is ready
-    if (!isReady())
+    if (!cloudModel && !isReady())
     {
         qDebug() << "OllamaService::post: api not started";
         if (canStartProcess() && requireStartProcess())

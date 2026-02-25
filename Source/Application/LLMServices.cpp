@@ -2,7 +2,8 @@
 
 LLMServices::LLMServices(QObject* parent) : 
     QObject(parent), 
-    allowSharedModels_(false)
+    allowSharedModels_(false),
+    allowCloudModels_(false)
 {
     loadSettings();
     initialize();
@@ -13,6 +14,8 @@ void LLMServices::saveSettings()
     QSettings settings;
     settings.setValue("defaultContextSize", defaultContextSize_);
     settings.setValue("autoExpandContext", autoExpandContext_);
+    settings.setValue("allowSharedModels", allowSharedModels_);
+    settings.setValue("allowCloudModels", allowCloudModels_);    
 }
 
 void LLMServices::loadSettings()
@@ -20,6 +23,10 @@ void LLMServices::loadSettings()
     QSettings settings;
     defaultContextSize_ = settings.value("defaultContextSize", LLM_DEFAULT_CONTEXT_SIZE).toInt();
     autoExpandContext_ = settings.value("autoExpandContext", true).toBool();
+    allowSharedModels_ = settings.value("allowSharedModels", true).toBool();
+    allowCloudModels_ = settings.value("allowCloudModels", true).toBool();  
+    // TODO : add to ui settings
+    allowCloudModels_ = true;
 }
 
 LLMServices::~LLMServices()
@@ -34,6 +41,11 @@ LLMServices::~LLMServices()
 void LLMServices::allowSharedModels(bool enable)
 { 
     allowSharedModels_ = enable;
+}
+
+void LLMServices::allowCloudModels(bool enable)
+{ 
+    allowCloudModels_ = enable;
 }
 
 void LLMServices::addAPI(LLMService* api)
@@ -132,6 +144,11 @@ LLMService* LLMServices::get(const QString& name) const
 
 const std::vector<LLMService*>& LLMServices::getAPIs() const
 { 
+    return apiEntries_;
+}
+
+std::vector<LLMService*>& LLMServices::getAPIs()
+{
     return apiEntries_;
 }
 
@@ -263,6 +280,17 @@ void LLMServices::createDefaultServiceJsonFile()
         params["executable"] = ollamaExecutable;
         params["programargs"] = QStringList("serve");
         addAPI(LLMService::createService(this, params));
+    }
+    else if (allowCloudModels_)
+    {
+        qDebug() << "Ollama cloud enabled";
+        params["type"] = static_cast<int>(LLMEnum::LLMType::Ollama);
+        params["name"] = "Ollama";
+        params["url"] = "https://ollama.com/";
+        params["apiver"] = "api/version";
+        params["apigen"] = "api/chat";
+        params["apikey"] = QString(qgetenv("OLLAMA_API_KEY"));
+        addAPI(LLMService::createService(this, params));        
     }
 
     qDebug() << "createDefaultServiceJsonFile ... apis=" << apiEntries_.size();

@@ -6,6 +6,8 @@
 
 #include "ErrorSystem.h"
 
+#include "OllamaService.h"
+
 #include "LlamaCppService.h"
 
 static int ERRCODE_LLAMACPP_ONTEXT_EXCEEDED = ErrorSystem::instance().registerError("LlamaCpp - ontext exceeded");
@@ -1225,14 +1227,28 @@ int LlamaCppService::getContextSize(Chat* chat) const
     return data ? data->n_ctx_ : defaultContextSize_;
 }
 
+void removeCloudModels(std::vector<LLMModel>& models)
+{
+    int i = 0;
+    while (i < models.size())
+    {
+        if (models[i++].num_params_ == "cloud")
+            models.erase(std::next(models.begin(), --i));            
+    }
+}
+
 std::vector<LLMModel> LlamaCppService::getAvailableModels() const
 {
-    std::vector<LLMModel> result;
+    std::vector<LLMModel> models;
 
     // LlamaCpp can use shared models from Ollama.
-    LLMService* ollamaApi = llmservices_->get(LLMEnum::LLMType::Ollama);
-    if (ollamaApi)
-        result = llmservices_->getAvailableModels(ollamaApi);
+    if (llmservices_->hasSharedModels())
+    {
+        OllamaService::getOllamaModels(OllamaService::ollamaSystemDir, models);
+        OllamaService::getOllamaModels(QDir::homePath() + "/", models);  
+    }
+
+    removeCloudModels(models);
 
     QStringList paths;
     paths += QStandardPaths::writableLocation(QStandardPaths::AppDataLocation) + "/models";
@@ -1253,14 +1269,14 @@ std::vector<LLMModel> LlamaCppService::getAvailableModels() const
                 model.filePath_ = it.fileInfo().absoluteFilePath();
                 model.name_ = it.fileName().replace(".gguf", ""); // Use filename as model name
                 model.num_params_ = "";                           // Unknown without parsing GGUF header
-                result.push_back(model);
+                models.push_back(model);
             }
         }
     }
 
-    qDebug() << "LlamaCppService::getAvailableModels: " << result.size() << " models found";
+    qDebug() << "LlamaCppService::getAvailableModels: " << models.size() << " models found";
 
-    return result;
+    return models;
 }
 
 LlamaModelData* LlamaCppService::getModel(const QString& modelname)

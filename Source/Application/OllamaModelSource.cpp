@@ -4,9 +4,11 @@
 #include <QJsonObject>
 #include <QStandardPaths>
 #include <QDir>
-#include <qnetworkreply.h>
 
 #include "OllamaModelSource.h"
+#include "LLMServiceDefs.h"
+
+QVector<LLMModel> OllamaModelSource::cloudModels_;
 
 const QString rx = "[ ,:\\-]";
 const QStringList sizeFilterTagsStr[] =
@@ -51,21 +53,34 @@ QString OllamaModelSource::parseModelName(const QString& input, QString& tag)
     return name;
 }
 
+void OllamaModelSource::getOllamaCloudModels(std::vector<LLMModel>& models)
+{
+    for (LLMModel& cloudmodel : cloudModels_)
+    {
+        QString cloudmodelname = cloudmodel.toString();
+        if (std::find_if(models.begin(),models.end(), 
+            [cloudmodelname](LLMModel& localmodel) { return cloudmodelname == localmodel.toString(); })
+                == models.end())
+            models.push_back(cloudmodel);
+    }
+}
+
 void OllamaModelSource::fetchModels(SortOrder sort, SizeFilter sizeFilter, const QString& searchName,
-                                    std::function<void(bool, const QVector<ModelManifest>&, const QString&)> callback)
+                                    std::function<void(bool, const QVector<ModelManifest>&, const QString&)> fetchCallback)
 {
     QUrl url("https://ollama.com/api/tags");
     QNetworkRequest request(url);
-
     QNetworkReply* reply = manager_->get(request);
 
+    cloudModels_.clear();
+
     connect(reply, &QNetworkReply::finished, this,
-        [this, reply, sort, sizeFilter, callback]()
+        [this, reply, sort, sizeFilter, fetchCallback]()
         {
             if (reply->error() != QNetworkReply::NoError)
             {
                 QString err = QString("Network Error: %1").arg(reply->errorString());
-                callback(false, {}, err);
+                fetchCallback(false, {}, err);
                 reply->deleteLater();
                 return;
             }
@@ -75,38 +90,69 @@ void OllamaModelSource::fetchModels(SortOrder sort, SizeFilter sizeFilter, const
             if (!doc.isObject())
             {
                 QString err = "Invalid JSON response";
-                callback(false, {}, err);
+                fetchCallback(false, {}, err);
                 reply->deleteLater();
                 return;
             }
 
             QJsonObject root = doc.object();
             QJsonArray modelsArray = root["models"].toArray();
-            QVector<ModelManifest> models;
 
-            // 2. Append Dynamic Models from API
+            auto models = std::make_shared<QVector<ModelManifest>>();
+            auto remaining = std::make_shared<int>(modelsArray.size());
             for (const QJsonValue& val : modelsArray)
             {
                 QJsonObject modelObj = val.toObject();
                 ModelManifest m;
-                m.size = modelObj["size"].toVariant().toLongLong();            
+                m.size = modelObj["size"].toVariant().toLongLong();
                 m.name = modelObj["name"].toString();
                 m.date = modelObj["modified_at"].toString().left(10);
                 m.tags = modelObj["digest"].toString();
                 m.desc = " ";
-                models.append(m);
+
+                fetchModelDetails(m.name,
+                    [this, reply, sort, sizeFilter, remaining, m, models, fetchCallback](bool result, const ModelDetails& details, const QString& err)
+                    {
+                        bool cloudModel = true;
+                        if (result)
+                        {                            
+                            for (const ModelFile& file : details.files)
+                            {
+                                if (file.type.contains("model"))
+                                {
+                                    qDebug() << "add gguf model:" << file.name;
+                                    models->append(m);
+                                    cloudModel = false;
+                                    break;
+                                }
+                            }
+                        }
+                        if (cloudModel)
+                        {
+                            qDebug() << "add cloud model:" << m.name;      
+                            LLMModel cloudModel;
+                            cloudModel.name_ = m.name;
+                            cloudModel.num_params_ = "cloud";                            
+                            this->cloudModels_.append(cloudModel);
+                        }
+
+                        (*remaining)--;
+                        if (*remaining == 0)
+                        {
+                            // Apply size filter
+                            if (sizeFilter != SizeFilter::All)
+                                (*models) = filterByTag(*models, sizeFilterTagsStr[(int)sizeFilter]);
+
+                            // Note: Ollama API doesn't support custom sorting, so we use client-side sorting
+                            this->sortModels(*models, sort);
+                            fetchCallback(true, *models, "");
+                            reply->deleteLater();
+                        }
+                    }
+                );
             }
-           
-            // Apply size filter
-            if (sizeFilter != SizeFilter::All)
-                models = filterByTag(models, sizeFilterTagsStr[(int)sizeFilter]);
-
-            // Note: Ollama API doesn't support custom sorting, so we use client-side sorting
-            sortModels(models, sort);
-
-            callback(true, models, "");
-            reply->deleteLater();
-        });
+        }
+    );
 }
 
 void OllamaModelSource::fetchModelDetails(const QString& modelId, 
@@ -136,12 +182,13 @@ void OllamaModelSource::fetchModelDetails(const QString& modelId,
                 {
                     QJsonArray errors = errorDoc.object()["errors"].toArray();
                     if (!errors.isEmpty())                    
-                        detail += " | Server: " + errors[0].toObject()["message"].toString();                    
+                        detail += " | Server: " + errors[0].toObject()["message"].toString();
                 }
                 int httpCode = reply->attribute(QNetworkRequest::HttpStatusCodeAttribute).toInt();
                 detail = QString("HTTP %1: %2").arg(httpCode).arg(detail);
         
                 callback(false, {}, detail);
+                reply->deleteLater();
                 return;
             }
         
@@ -149,6 +196,7 @@ void OllamaModelSource::fetchModelDetails(const QString& modelId,
             if (!doc.isObject())
             {
                 callback(false, {}, "Invalid JSON response");
+                reply->deleteLater();
                 return;
             }
         
@@ -169,7 +217,7 @@ void OllamaModelSource::fetchModelDetails(const QString& modelId,
                 QJsonObject obj = val.toObject();
                 ModelFile file;
                 file.type = obj["mediaType"].toString(); 
-                file.digest = obj["digest"].toString();                  
+                file.digest = obj["digest"].toString();
                 if (file.type.contains("model"))
                     file.name = modelId + "-model.gguf";
                 else if (file.type.contains("docker"))
@@ -181,7 +229,7 @@ void OllamaModelSource::fetchModelDetails(const QString& modelId,
                 else if (file.type.contains("params"))
                     file.name = modelId + "-params.json";
                 else
-                    file.name = modelId + "-" + file.type;    
+                    file.name = modelId + "-" + file.type;
                 details.files.append(file);
 
                 // get the maximum size of files
@@ -189,13 +237,15 @@ void OllamaModelSource::fetchModelDetails(const QString& modelId,
                 if (size > maxSize)
                 {
                     maxSize = size;
+                    details.maxSize = size;
                     details.digest = file.name;
                 }
             }
-        
+
             callback(true, details, "");
             reply->deleteLater();
-        });
+        }
+    );
 }
 
 void OllamaModelSource::downloadFile(const QString& modelId, const QString& digest, 

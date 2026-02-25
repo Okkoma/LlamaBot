@@ -39,7 +39,13 @@ public:
      * @param enable true pour activer le partage, false pour le désactiver
      */
     void allowSharedModels(bool enable);
-    
+
+    /**
+     * @brief Active ou désactive les cloud modèles
+     * @param enable true pour activer les cloud modèles
+     */
+     void allowCloudModels(bool enable);
+
     /**
      * @brief Ajoute une API LLM au service
      * @param api Pointeur vers l'API LLM à ajouter
@@ -75,6 +81,8 @@ public:
      */
     bool hasSharedModels() const { return allowSharedModels_; }
     
+    bool allowCloudModels() const { return allowCloudModels_; }
+
     /**
      * @brief Vérifie si un service LLM est disponible
      * @param service Type de service LLM
@@ -101,6 +109,7 @@ public:
      * @return Référence vers le vecteur contenant toutes les APIs
      */
     const std::vector<LLMService*>& getAPIs() const;
+    std::vector<LLMService*>& getAPIs();
     
     /**
      * @brief Retourne la liste des APIs LLM disponibles
@@ -247,6 +256,7 @@ private:
 
     std::vector<LLMService*> apiEntries_;    ///< Liste des APIs LLM enregistrées
     bool allowSharedModels_;                 ///< Indique si le partage des modèles est activé
+    bool allowCloudModels_;                  ///< Indique si les modèles cloud sont autorisés
     int defaultContextSize_ = LLM_DEFAULT_CONTEXT_SIZE; ///< Taille de contexte par défaut
     bool autoExpandContext_ = true;          ///< Auto-expansion du contexte
     QString customModelsPath_;

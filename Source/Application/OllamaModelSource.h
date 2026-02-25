@@ -2,6 +2,8 @@
 
 #include "ModelSource.h"
 
+#include "LLMServiceDefs.h"
+
 /**
  * @brief Model source implementation for Ollama registry
  * 
@@ -27,6 +29,10 @@ public:
     void downloadFile(const QString& modelId, const QString& digest, 
                       const QString& fileName, const QString& savePath) override;
 
+    static void getOllamaCloudModels(std::vector<LLMModel>& models);
+
 private:
     QString parseModelName(const QString& input, QString& tag);
+
+    static QVector<LLMModel> cloudModels_;
 };

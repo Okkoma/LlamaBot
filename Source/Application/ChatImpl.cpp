@@ -60,7 +60,10 @@ void ChatImpl::initialize(const QString& apiName, const QString& modelName)
         {
             std::vector<LLMModel> models = api->getAvailableModels();
             if (models.size())
+            {
                 currentModel_ = models.front().toString();
+                qDebug() << "ChatImpl::initialize: no model found use default:" << currentApi_ << currentModel_;
+            }
         }
     }
 
@@ -88,12 +91,15 @@ void ChatImpl::setModel(const QString& model)
     {
         if (modelInfo.filePath_.contains(".gguf") && currentApi_ == "Ollama")
         {
+            qDebug() << "ChatImpl::setModel: gguf model => switch to LlamaCpp";
             setApi("LlamaCpp");
         }
 
         LLMService* api = llmservices_->get(currentApi_);
         if (api)
             api->setModel(this, model);
+
+        qDebug() << "ChatImpl::setModel: use" << model;
 
         if (currentModel_ != model)
         {
