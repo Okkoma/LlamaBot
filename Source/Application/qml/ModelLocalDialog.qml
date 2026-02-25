@@ -24,6 +24,13 @@ Dialog {
         text: ThemeManager.textColor
     }
 
+    // spacer
+    Rectangle {
+        Layout.fillWidth: true
+        height: 1
+        color: ThemeManager.spacerColor
+    }
+
     ColumnLayout {
         anchors.fill: parent
         spacing: 20
@@ -34,116 +41,226 @@ Dialog {
         Layout.topMargin: 10
         Layout.bottomMargin: 10
 
-        // Model Selection
-        Label {
-            text: "Available Models"
-            font.bold: true
-        }
-
-        ScrollView {
-            id: scroll
+        // Service Selection
+        ColumnLayout {
             Layout.fillWidth: true
-            implicitHeight: 200
-            clip: true
-            ScrollBar.horizontal.policy: ScrollBar.AlwaysOff
-            ScrollBar.vertical.policy: ScrollBar.AsNeeded
-            ScrollBar.vertical.width: 5
-            contentWidth: availableWidth // never move in horizontal
+            implicitHeight: 100
 
-            background: Rectangle {
-                opacity: 0.2
-                color: ThemeManager.windowDarkerColor
+            Label {
+                text: "Services"
+                font.bold: true
             }
 
-            ListView {
-                id: modelsList
-                anchors.fill: parent
-                model: ChatController ? ChatController.getAvailableModels() : []
-
-                highlight: Rectangle {
-                    // Indispensable pour l'alignement
-                    width: modelsList.width
-                    height: modelsList.currentItem ? modelsList.currentItem.height : 0
-
-                    color: 'transparent'
-                    border.color: ThemeManager.accentColor
-                    border.width: 2
-                    radius: 10
+            ScrollView {
+                Layout.fillWidth: true
+                implicitHeight: 60
+                clip: true
+                ScrollBar.horizontal.policy: ScrollBar.AlwaysOff
+                ScrollBar.vertical.policy: ScrollBar.AsNeeded
+                ScrollBar.vertical.width: 5
+                contentWidth: availableWidth // never move in horizontal
+                background: Rectangle {
+                    opacity: 0.3
+                    color: ThemeManager.windowDarkerColor
                 }
 
-                highlightFollowsCurrentItem: true
-                highlightMoveDuration: 200
+                ListView {
+                    id: servicesList
+                    anchors.fill: parent
+                    model: ChatController ? ChatController.getAvailableAPIs() : []
 
-                delegate: ItemDelegate {
-                    id: modelsDelegate
-                    width: ListView.view.width
+                    highlight: Rectangle {
+                        // Indispensable pour l'alignement
+                        width: servicesList.width
+                        height: servicesList.currentItem ? servicesList.currentItem.height : 0
 
-                    required property int index
-                    required property string name
-
-                    contentItem: Text {
-                        verticalAlignment: Text.AlignVCenter
-                        text: modelsDelegate.name
-                        font.bold: true
-                        color: ThemeManager.textColor
+                        color: 'transparent'
+                        border.color: ThemeManager.accentColor
+                        border.width: 2
+                        radius: 10
                     }
 
-                    highlighted: ListView.isCurrentItem
-                    onClicked: ListView.view.currentIndex = index
+                    highlightFollowsCurrentItem: true
+                    highlightMoveDuration: 200
 
-                    background: Item {}
-                }
+                    delegate: ItemDelegate {
+                        id: servicesDelegate
+                        width: ListView.view.width
 
-                // Refresh model list when available models change
-                Connections {
-                    target: ChatController || null
-                    function onAvailableModelsChanged() {
-                        if (ChatController) {
-                            modelsList.model = ChatController.getAvailableModels();
-                            var currentModelName = ChatController.currentChat.currentModel;
-                            console.log("Models: onAvailableModelsChanged:", modelsList.currentIndex, currentModelName);
+                        required property int index
+                        required property string name
+
+                        contentItem: Text {
+                            verticalAlignment: Text.AlignVCenter
+                            text: servicesDelegate.name
+                            font.bold: true
+                            color: ThemeManager.textColor
+                        }
+
+                        highlighted: ListView.isCurrentItem
+                        onClicked: {
+                            ListView.view.currentIndex = index;
+                            ChatController.setAPI(servicesDelegate.name);
+                            modifyOllamaBtn.enabled = servicesDelegate.name == "Ollama";
+                        }
+
+                        background: Item {}
+                    }
+
+                    // Refresh model list when available services change
+                    Connections {
+                        target: ChatController
+                        function onAvailableAPIsChanged() {
+                            servicesList.model = ChatController.getAvailableAPIs();
+                            console.log("Services: onAvailableAPIsChanged:", servicesList.currentIndex, ChatController.currentChat.currentApi);
+                        }
+                        function onCurrentAPIChanged() {
+                            servicesList.currentIndex = ChatController.currentAPIIndex();                            
+                            console.log("ServicesModels: onCurrentAPIChanged:", servicesList.currentIndex, ChatController.currentApi);
                         }
                     }
-                    function onCurrentModelChanged() {
-                        modelsList.currentIndex = ChatController.currentModelIndex();
-                        console.log("Models: onCurrentModelChanged:", modelsList.currentIndex, ChatController.currentModel);
+                }
+            }
+
+            RowLayout {
+                Layout.fillWidth: true
+                Layout.alignment: Qt.AlignHCenter
+                spacing: 20
+                Button {
+                    id: modifyOllamaBtn
+                    text: "Modify"
+                    enabled: false
+                    onClicked: {
+                        console.log("Modify Service");
+                        ollamaServiceModifier.open();
                     }
                 }
-            }
+            }            
         }
 
-        RowLayout {
-            Layout.fillWidth: true
-            Layout.alignment: Qt.AlignHCenter
-            spacing: 20
-            Button {
-                text: "Apply"
-                onClicked: {
-                    console.log("Select Model", modelsList.currentIndex, ChatController.getAvailableModels()[modelsList.currentIndex].name);
-                    ChatController.setCurrentModel(ChatController.getAvailableModels()[modelsList.currentIndex].name);
-                }
-            }
-            Button {
-                text: "Delete"
-                onClicked: {
-                    console.log("Delete Model", modelsList.currentIndex, ChatController.getAvailableModels()[modelsList.currentIndex].name);
-                    ChatController.deleteModel(modelsList.currentIndex);
-                }
-            }
-        }
-
+        // spacer
         Rectangle {
             Layout.fillWidth: true
             height: 1
-            color: ThemeManager.buttonColor
+            color: ThemeManager.spacerColor
+        }
+
+        // Model Selection
+        ColumnLayout {
+            Layout.fillWidth: true
+            implicitHeight: 160
+            // Model Selection
+            Label {
+                text: "Available Models"
+                font.bold: true
+            }
+
+            ScrollView {
+                id: scroll
+                Layout.fillWidth: true
+                implicitHeight: 120
+                clip: true
+                ScrollBar.horizontal.policy: ScrollBar.AlwaysOff
+                ScrollBar.vertical.policy: ScrollBar.AsNeeded
+                ScrollBar.vertical.width: 5
+                contentWidth: availableWidth // never move in horizontal
+
+                background: Rectangle {
+                    opacity: 0.3
+                    color: ThemeManager.windowDarkerColor
+                }
+
+                ListView {
+                    id: modelsList
+                    anchors.fill: parent
+                    model: ChatController ? ChatController.getAvailableModels() : []
+
+                    highlight: Rectangle {
+                        // Indispensable pour l'alignement
+                        width: modelsList.width
+                        height: modelsList.currentItem ? modelsList.currentItem.height : 0
+
+                        color: 'transparent'
+                        border.color: ThemeManager.accentColor
+                        border.width: 2
+                        radius: 10
+                    }
+
+                    highlightFollowsCurrentItem: true
+                    highlightMoveDuration: 200
+
+                    delegate: ItemDelegate {
+                        id: modelsDelegate
+                        width: ListView.view.width
+
+                        required property int index
+                        required property string name
+
+                        contentItem: Text {
+                            verticalAlignment: Text.AlignVCenter
+                            text: modelsDelegate.name
+                            font.bold: true
+                            color: ThemeManager.textColor
+                        }
+
+                        highlighted: ListView.isCurrentItem
+                        onClicked: ListView.view.currentIndex = index
+
+                        background: Item {}
+                    }
+
+                    // Refresh model list when available models change
+                    Connections {
+                        target: ChatController || null
+                        function onAvailableModelsChanged() {
+                            if (ChatController) {
+                                modelsList.model = ChatController.getAvailableModels();
+                                var currentModelName = ChatController.currentChat.currentModel;
+                                console.log("Models: onAvailableModelsChanged:", modelsList.currentIndex, currentModelName);
+                            }
+                        }
+                        function onCurrentModelChanged() {
+                            modelsList.currentIndex = ChatController.currentModelIndex();
+                            console.log("Models: onCurrentModelChanged:", modelsList.currentIndex, ChatController.currentModel);
+                        }
+                    }
+                }
+            }
+
+            RowLayout {
+                Layout.fillWidth: true
+                Layout.alignment: Qt.AlignHCenter
+                spacing: 20
+                Button {
+                    text: "Apply"
+                    onClicked: {
+                        console.log("Select Model", modelsList.currentIndex, ChatController.getAvailableModels()[modelsList.currentIndex].name);
+                        ChatController.setCurrentModel(ChatController.getAvailableModels()[modelsList.currentIndex].name);
+                    }
+                }
+                Button {
+                    text: "Delete"
+                    onClicked: {
+                        console.log("Delete Model", modelsList.currentIndex, ChatController.getAvailableModels()[modelsList.currentIndex].name);
+                        ChatController.deleteModel(modelsList.currentIndex);
+                    }
+                }
+            }
+        }
+        
+        // spacer
+        Rectangle {
+            Layout.fillWidth: true
+            height: 1
+            color: ThemeManager.spacerColor
         }
 
         RowLayout {
             Layout.alignment: Qt.AlignHCenter
             Button {
-                text: "Download Model"
+                text: "📥 Models Store"
                 onClicked: {
-                    console.log("Download Model");
+                    console.log("Models Store");
                     modelStoreDialog.open();
                 }
             }
@@ -153,5 +270,9 @@ Dialog {
     // Model Store Dialog
     ModelStoreDialog {
         id: modelStoreDialog
+    }
+
+    OllamaServiceModifier {
+        id: ollamaServiceModifier
     }
 }

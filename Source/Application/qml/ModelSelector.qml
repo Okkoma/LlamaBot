@@ -67,7 +67,7 @@ ComboBox {
 
     // Refresh model list when available models change
     Connections {
-        target: ChatController || null
+        target: ChatController
         function onAvailableModelsChanged() {
             root.model = ChatController.getAvailableModels();
             var index = root.find(root.displayText);
@@ -87,4 +87,17 @@ ComboBox {
             console.log("ModelSelector: currentModelChanged: ", root.currentIndex, root.displayText);
         }
     }
+
+    Connections {
+        target: ModelStore
+        function onModelsListChanged(models) {
+            root.model = ChatController.getAvailableModels();
+            var index = root.find(root.displayText);
+            if (index !== -1) {
+                root.currentIndex = index;
+            }
+            console.log("ModelSelector: onModelsListChanged:", index, root.displayText, root.currentValue.name);
+            root.displayText = root.currentValue.name;
+        }
+    }    
 }

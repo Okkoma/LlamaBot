@@ -245,7 +245,7 @@ void ChatController::setCurrentModel(const QString& modelname)
     emit currentModelChanged();
 }
 
-QVariantList ChatController::getAvailableModels()
+QVariantList ChatController::getAvailableModels() const
 {
     QVariantList models;
 
@@ -265,7 +265,7 @@ QVariantList ChatController::getAvailableModels()
     return models;
 }
 
-QVariantList ChatController::getAvailableAPIs()
+QVariantList ChatController::getAvailableAPIs() const
 {
     QVariantList apis;
 
@@ -279,6 +279,32 @@ QVariantList ChatController::getAvailableAPIs()
     }
 
     return apis;
+}
+
+QVariantMap ChatController::getAPI(const QString& apiname) const
+{
+    const std::vector<LLMService*>& apiList = llmServices_->getAPIs();
+    for (LLMService* api : apiList)
+    {
+        if (api->name_ == apiname)
+            return api->params_;        
+    }
+    return QVariantMap();
+}
+
+QVariantList ChatController::getRegisteredAPITypes() const
+{
+    QVariantList apiTypes;
+    QStringList types = { "LlamaCpp", "Ollama" };
+
+    for (const auto& type : types)
+    {
+        QVariantMap typeInfo;
+        typeInfo["name"] = type;
+        apiTypes.append(typeInfo);
+    }
+    
+    return apiTypes;
 }
 
 void ChatController::setModel(const QString& modelName)
@@ -332,6 +358,55 @@ void ChatController::setAPI(const QString& apiName)
 
         connectAPIsSignals();
     }
+}
+
+bool ChatController::modifyAPI(const QString& apiName, const QString& apiType, const QString& urlstr, const QString& apikey)
+{
+    qDebug() << "ChatController::modifyAPI:" << apiName << apiType << urlstr;
+    
+    QUrl url = QUrl::fromUserInput(urlstr);
+    if (!url.isValid())
+    {
+        qWarning() << "ChatController::addAPI: qurl:" << url.toDisplayString() << "not valid !";
+        return false;
+    }
+
+    QVariantMap params;
+    params["name"] = apiName;
+
+    if (apiType == "Ollama")
+    {
+        params["type"] = static_cast<int>(LLMEnum::LLMType::Ollama);
+        params["url"] = url.toDisplayString();
+        params["apiver"] = "api/version";
+        params["apigen"] = "api/chat";
+        params["apikey"] = apikey;
+        if (url.host().contains("localhost") || url.host().contains("127.0.0.1"))
+        {
+            QString ollamaExecutable = QStandardPaths::findExecutable("ollama");
+            if (!ollamaExecutable.isEmpty())
+            {
+                params["executable"] = ollamaExecutable;
+                params["programargs"] = QStringList("serve"); 
+            }
+        }
+    }
+    
+    std::vector<LLMService*> apis = llmServices_->getAPIs();
+    auto it = std::find_if(apis.begin(), apis.end(), [apiName](LLMService* api) { return api->name_ == apiName; });
+    if (it != apis.end())
+    {
+        LLMService* api = *it;
+        api->params_ = params;
+    }
+    else
+    {
+        llmServices_->addAPI(LLMService::createService(llmServices_, params));
+    }
+
+    emit availableAPIsChanged();
+
+    return true;
 }
 
 void ChatController::refreshModels()

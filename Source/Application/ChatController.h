@@ -143,14 +143,22 @@ public:
      * @brief Retourne la liste des modèles disponibles
      * @return Liste des modèles LLM disponibles
      */
-    Q_INVOKABLE QVariantList getAvailableModels();
+    Q_INVOKABLE QVariantList getAvailableModels() const;
     
     /**
      * @brief Retourne la liste des APIs disponibles
      * @return Liste des APIs LLM disponibles
      */
-    Q_INVOKABLE QVariantList getAvailableAPIs();
+    Q_INVOKABLE QVariantList getAvailableAPIs() const;
     
+    Q_INVOKABLE QVariantMap getAPI(const QString& apiname) const;
+
+    /**
+     * @brief Retourne la liste des types d'APIs 
+     * @return Liste des types d'APIs disponibles
+     */
+    Q_INVOKABLE QVariantList getRegisteredAPITypes() const;
+
     /**
      * @brief Définit le modèle LLM à utiliser
      * @param modelName Nom du modèle à utiliser
@@ -168,7 +176,17 @@ public:
      * @param apiName Nom de l'API à utiliser
      */
     Q_INVOKABLE void setAPI(const QString& apiName);
-    
+
+    /**
+     * @brief Ajoute/Modifie une API
+     * @param apiName Nom de l'API à utiliser
+     * @param apiType type de l'API
+     * @param url     url de l'API
+     * @param apikey  apikey
+     * @return false si echec.
+     */
+    Q_INVOKABLE bool modifyAPI(const QString& apiName, const QString& apiType, const QString& url, const QString& apikey);
+
     /**
      * @brief Rafraîchit la liste des modèles disponibles
      * 
@@ -217,6 +235,11 @@ signals:
      * @brief Signal émis lorsque la liste des modèles disponibles change
      */
     void availableModelsChanged();
+    
+    /**
+     * @brief Signal émis lorsque la liste des APIs disponibles change
+     */
+    void availableAPIsChanged();
     
     /**
      * @brief Signal émis lorsque le model courant change

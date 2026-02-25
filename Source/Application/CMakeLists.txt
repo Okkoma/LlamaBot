@@ -54,6 +54,7 @@ qt_add_qml_module(LlamaBotQml
         qml/ModelSelector.qml
         qml/ModelLocalDialog.qml
         qml/ModelStoreDialog.qml
+        qml/OllamaServiceModifier.qml
         qml/SettingsDialog.qml
         qml/+android/ChatDrawer.qml
         qml/+android/InputArea.qml        
