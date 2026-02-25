@@ -143,11 +143,18 @@ ModelSource::SizeFilter ModelStore::parseSizeFilter(const QString& size)
 
 void ModelStore::fetchModels()
 {
+    if (isFetching_)
+        return;
+
     if (sources_.find(currentSourceName_) == sources_.end())
         return;
 
+    qDebug() << "ModelStore::fetchModels:" << currentSourceName_;
+
+    isFetching_ = true;
     setStatus("Fetching models from " + currentSourceName_ + "...");
-    
+    ModelSource* source = sources_[currentSourceName_].get();
+
     sources_[currentSourceName_]->fetchModels(currentSort_, currentSizeFilter_, searchName_,
         [this](bool success, const QVector<ModelManifest>& models, const QString& error)
         {
@@ -159,6 +166,7 @@ void ModelStore::fetchModels()
                 
                 emit modelsListChanged(list);
                 setStatus(QString("Found %1 models.").arg(list.size()));
+                isFetching_ = false;
             }
             else
             {
@@ -240,9 +248,6 @@ void ModelStore::fetchModelDetails(const QString& modelId)
             {
                 QVariantMap details = modelDetailsToVariant(modelDetails);
                 details["name"] = modelId; // Ensure name is available
-                // Add description if available (not in manifest, maybe separate?)
-                // For now, minimal info
-                
                 emit modelDetailsChanged(details);
                 setStatus("Ready to download " + modelId);
             }

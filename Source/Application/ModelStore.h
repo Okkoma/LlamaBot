@@ -95,6 +95,8 @@ private:
 
     bool isDownloading_;
     float downloadProgress_;
+
+    bool isFetching_{false};
     
     // Temporary storage for model details to allow downloading
     QString lastModelId_;
