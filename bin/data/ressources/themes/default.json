@@ -10,7 +10,8 @@
         "windowDarker2": "#323232",
         "text": "#C0C0C0",
         "button": "#1E1E1E",
-        "buttonText": "#C0C0C0"
+        "buttonText": "#C0C0C0",
+        "spacer": "#9a9a9a"
     },
     "light":
     {
@@ -22,6 +23,7 @@
         "windowDarker2": "#DADADA",
         "text": "#040404",
         "button": "#F5F5F5",
-        "buttonText": "#414141"
+        "buttonText": "#414141",
+        "spacer": "#a0a0a0"
     }
 }

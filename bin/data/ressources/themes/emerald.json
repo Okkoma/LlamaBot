@@ -1,0 +1,27 @@
+{
+    "name": "Emerald",
+    "dark": {
+        "window": "#060D0B",
+        "windowText": "#E6F2EE",
+        "base": "#060D0B",
+        "accent": "#10B981",
+        "windowDarker": "#0F1A17",
+        "windowDarker2": "#1A2C27",
+        "text": "#A5B5B0",
+        "button": "#1E312B",
+        "buttonText": "#E6F2EE",
+        "spacer": "#374F48"
+    },
+    "light": {
+        "window": "#F0F4F3",
+        "windowText": "#064E3B",
+        "base": "#F0F4F3",
+        "accent": "#059669",
+        "windowDarker": "#E1EAE7",
+        "windowDarker2": "#D2DDD9",
+        "text": "#111827",
+        "button": "#FFFFFF",
+        "buttonText": "#064E3B",
+        "spacer": "#6B7280"
+    }
+}

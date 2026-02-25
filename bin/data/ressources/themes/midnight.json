@@ -1,0 +1,27 @@
+{
+    "name": "Midnight",
+    "dark": {
+        "window": "#0B0E14",
+        "windowText": "#EBEEF5",
+        "base": "#0B0E14",
+        "accent": "#71D1FF",
+        "windowDarker": "#151921",
+        "windowDarker2": "#1C232D",
+        "text": "#B0BCCD",
+        "button": "#1F2937",
+        "buttonText": "#FFFFFF",
+        "spacer": "#4B5563"
+    },
+    "light": {
+        "window": "#FFFFFF",
+        "windowText": "#0F172A",
+        "base": "#FFFFFF",
+        "accent": "#3B82F6",
+        "windowDarker": "#F1F5F9",
+        "windowDarker2": "#E2E8F0",
+        "text": "#1E293B",
+        "button": "#F8FAFC",
+        "buttonText": "#0F172A",
+        "spacer": "#94A3B8"
+    }
+}

@@ -1,0 +1,27 @@
+{
+    "name": "Nordic",
+    "dark": {
+        "window": "#2E3440",
+        "windowText": "#ECEFF4",
+        "base": "#2E3440",
+        "accent": "#88C0D0",
+        "windowDarker": "#3B4252",
+        "windowDarker2": "#434C5E",
+        "text": "#D8DEE9",
+        "button": "#4C566A",
+        "buttonText": "#ECEFF4",
+        "spacer": "#4C566A"
+    },
+    "light": {
+        "window": "#ECEFF4",
+        "windowText": "#2E3440",
+        "base": "#ECEFF4",
+        "accent": "#5E81AC",
+        "windowDarker": "#E5E9F0",
+        "windowDarker2": "#D8DEE9",
+        "text": "#3B4252",
+        "button": "#D8DEE9",
+        "buttonText": "#2E3440",
+        "spacer": "#B4BEFE"
+    }
+}

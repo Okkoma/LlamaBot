@@ -1,0 +1,27 @@
+{
+    "name": "Cyber",
+    "dark": {
+        "window": "#0F051D",
+        "windowText": "#FFFFFF",
+        "base": "#0F051D",
+        "accent": "#FDE047",
+        "windowDarker": "#1A0B2E",
+        "windowDarker2": "#2D1254",
+        "text": "#E0AAFF",
+        "button": "#7B2CBF",
+        "buttonText": "#FFFFFF",
+        "spacer": "#9D4EDD"
+    },
+    "light": {
+        "window": "#FDFCFE",
+        "windowText": "#240046",
+        "base": "#FDFCFE",
+        "accent": "#7B2CBF",
+        "windowDarker": "#F5EFFF",
+        "windowDarker2": "#E0AAFF",
+        "text": "#3C096C",
+        "button": "#FFCC00",
+        "buttonText": "#240046",
+        "spacer": "#C77DFF"
+    }
+}
