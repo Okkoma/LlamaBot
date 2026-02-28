@@ -215,6 +215,11 @@ public:
      */
     bool saveServiceJsonFile();
 
+    /**
+     * @brief Restaure la configuration par defaut
+     */
+    void resetSettings();
+
 private:
     /**
      * @brief Initialise les services LLM

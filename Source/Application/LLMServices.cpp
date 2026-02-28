@@ -3,7 +3,7 @@
 LLMServices::LLMServices(QObject* parent) : 
     QObject(parent), 
     allowSharedModels_(false),
-    allowCloudModels_(false)
+    allowCloudModels_(true)
 {
     loadSettings();
     initialize();
@@ -23,10 +23,17 @@ void LLMServices::loadSettings()
     QSettings settings;
     defaultContextSize_ = settings.value("defaultContextSize", LLM_DEFAULT_CONTEXT_SIZE).toInt();
     autoExpandContext_ = settings.value("autoExpandContext", true).toBool();
-    allowSharedModels_ = settings.value("allowSharedModels", true).toBool();
+    allowSharedModels_ = settings.value("allowSharedModels", false).toBool();
     allowCloudModels_ = settings.value("allowCloudModels", true).toBool();  
-    // TODO : add to ui settings
+}
+
+void LLMServices::resetSettings()
+{
+    defaultContextSize_ = LLM_DEFAULT_CONTEXT_SIZE;
+    autoExpandContext_ = true;
+    allowSharedModels_ = false;
     allowCloudModels_ = true;
+    saveSettings();
 }
 
 LLMServices::~LLMServices()
