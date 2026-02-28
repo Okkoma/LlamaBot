@@ -55,6 +55,10 @@ qt_add_executable(Test_Ollama
     ../../Source/Application/ChatImpl.cpp
     ../../Source/Application/OllamaService.h
     ../../Source/Application/OllamaService.cpp
+    ../../Source/Application/ModelSource.h
+    ../../Source/Application/ModelSource.cpp
+    ../../Source/Application/OllamaModelSource.h
+    ../../Source/Application/OllamaModelSource.cpp  
     mock_services.cpp
     tst_ollama.cpp
 )
@@ -73,6 +77,12 @@ qt_add_executable(Test_LlamaCpp
     ../../Source/Application/ChatImpl.cpp
     ../../Source/Application/LlamaCppService.h
     ../../Source/Application/LlamaCppService.cpp
+    ../../Source/Application/OllamaService.h
+    ../../Source/Application/OllamaService.cpp
+    ../../Source/Application/ModelSource.h
+    ../../Source/Application/ModelSource.cpp
+    ../../Source/Application/OllamaModelSource.h
+    ../../Source/Application/OllamaModelSource.cpp
     mock_services.cpp
     tst_llamacpp.cpp
 )
