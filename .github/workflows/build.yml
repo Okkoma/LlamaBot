@@ -80,20 +80,38 @@ jobs:
         if: (runner.os == 'Windows' && github.actor != 'nektos/act') || runner.os == 'Linux'
         run: cmake --install build
 
-      - name: Package
-        if: (runner.os == 'Windows' && github.actor != 'nektos/act') || runner.os == 'Linux'
+      - name: Deploy & Create AppImage
+        if: runner.os == 'Linux'
         shell: bash
+        env:
+          QMAKE: ${{ env.QT_INSTALL_DIR }}/6.10.2/gcc_64/bin/qmake
         run: |
-          cd build
-          cpack .
+          sudo apt-get update
+          sudo apt-get install -y libfuse2 documentation-utils
+          wget -q https://github.com/linuxdeploy/linuxdeploy/releases/download/continuous/linuxdeploy-x86_64.AppImage
+          wget -q https://github.com/linuxdeploy/linuxdeploy-plugin-qt/releases/download/continuous/linuxdeploy-plugin-qt-x86_64.AppImage
+          chmod +x linuxdeploy*.AppImage
+          export PATH=${{ env.QT_INSTALL_DIR }}/6.10.2/gcc_64/bin:$PATH
+          ./linuxdeploy-x86_64.AppImage --appdir exe -e exe/bin/LlamaBot --plugin qt --qmldir . --output appimage
+
+      - name: Deploy Windows Dependencies
+        if: runner.os == 'Windows' && github.actor != 'nektos/act'
+        shell: pwsh
+        run: |
+          $QT_BIN = "${{ env.QT_INSTALL_DIR }}/6.10.2/msvc2022_64/bin"
+          & "$QT_BIN/windeployqt.exe" --qmldir . exe/bin/LlamaBot.exe
+          cd exe
+          zip -r ../LlamaBot-${{ matrix.name }}.zip .          
 
       - name: Upload Artifacts
         if: github.actor != 'nektos/act'
         uses: actions/upload-artifact@v4
         with:
           name: ${{ matrix.name }}-Artifacts
-          path: ./build/LlamaBot*.zip
-
+          path: |
+            *.AppImage
+            build/LlamaBot-*.zip
+  
   build-android:
     if: ${{ github.event.workflow_run.conclusion == 'success' || github.event_name == 'workflow_dispatch' || github.actor == 'nektos/act' }}
     timeout-minutes: 40  
