@@ -18,8 +18,8 @@ ApplicationWindow {
     title: qsTr("LlamaBot QML")
 
     Material.theme: ThemeManager.darkMode ? Material.Dark : Material.Light
-    Material.primary: '#efefef'   // Sets the main color (e.g., ToolBar, raised Button)
-    Material.accent: '#FF4081'    // Sets the accent color (e.g., CheckBox, Slider)
+    Material.primary: ThemeManager.windowColor;
+    Material.accent: ThemeManager.accentColor;
 
     // Chat Drawer
     ChatDrawer {
@@ -193,7 +193,8 @@ ApplicationWindow {
                 anchors.bottom: parent.bottom
                 onAccepted: text => {
                     if (ChatController) {
-                        console.log("setModel:", modelSelector.currentValue.name);
+                        console.log("InputArea: api:", ChatController.currentApi, " model:", modelSelector.currentValue.name);
+                        ChatController.setAPI(ChatController.currentApi);
                         ChatController.setModel(modelSelector.currentValue.name);
                         ChatController.sendMessage(text);
                     }

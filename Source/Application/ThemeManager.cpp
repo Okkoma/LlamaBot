@@ -230,6 +230,11 @@ QColor ThemeManager::buttonTextColor() const
     return color("buttonText");
 }
 
+QColor ThemeManager::spacerColor() const
+{
+    return color("spacer");
+}
+
 void ThemeManager::loadThemes()
 {
     // Chemin absolu vers le dossier des thèmes
@@ -310,7 +315,7 @@ void ThemeManager::loadSettings()
     QSettings settings;
     settings.beginGroup("ui");
     currentStyle_ = settings.value("style", defaultStyle_).toString();
-    currentTheme_ = settings.value("theme", "").toString();
+    currentTheme_ = settings.value("theme", "Default").toString();
     darkMode_ = settings.value("darkMode", false).toBool();
     currentFont_ =  settings.value("fontFamily", defaultFont).toString();
     currentFontSize_ = settings.value("fontSize", defaultFontSize).toInt();

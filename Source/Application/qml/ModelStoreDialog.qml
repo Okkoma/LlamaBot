@@ -14,8 +14,9 @@ Dialog {
     title: "Model Store"
 
     modal: true
+
     width: 800
-    height: 800
+    height: 700
     anchors.centerIn: parent
 
     padding: 0
@@ -27,7 +28,7 @@ Dialog {
         padding: 0 // Supprime l'espace interne du Pane
 
         background: Rectangle {
-            color: "#FF4081"
+            color: ThemeManager.accentColor
         }
 
         contentItem: RowLayout {

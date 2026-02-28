@@ -38,7 +38,8 @@ class ThemeManager : public QObject
     Q_PROPERTY(QColor textColor READ textColor NOTIFY themeChanged);
     Q_PROPERTY(QColor buttonColor READ buttonColor NOTIFY themeChanged);
     Q_PROPERTY(QColor buttonTextColor READ buttonTextColor NOTIFY themeChanged);
-
+    Q_PROPERTY(QColor spacerColor READ spacerColor NOTIFY themeChanged);    
+    
     QML_ELEMENT
     QML_SINGLETON
     QML_UNCREATABLE("ThemeManager is a singleton provided by the application")
@@ -151,7 +152,8 @@ public:
     QColor textColor() const;
     QColor buttonColor() const;
     QColor buttonTextColor() const;
-
+    QColor spacerColor() const;
+    
     /**
      * @brief Charge les thèmes depuis les fichiers
      * 

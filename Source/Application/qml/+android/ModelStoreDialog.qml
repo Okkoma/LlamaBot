@@ -13,7 +13,7 @@ Dialog {
     title: "Model Store"
 
     modal: true
-    width: Screen.width
+    width: Screen.width + 2
     height: Screen.height
     anchors.centerIn: parent
 
@@ -31,7 +31,7 @@ Dialog {
         padding: 0
 
         background: Rectangle {
-            color: "#FF4081"
+            color: ThemeManager.accentColor
         }
         contentItem: RowLayout {
             Label {

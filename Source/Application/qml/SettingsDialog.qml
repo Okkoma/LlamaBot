@@ -12,8 +12,9 @@ Dialog {
 
     title: "Settings"
     modal: true
-    width: 400
-    height: 600
+
+    width: Math.min(parent.width * 0.75, 400)
+    height: Math.min(parent.height * 0.75, 600)
     anchors.centerIn: parent
 
     ScrollView {
@@ -35,6 +36,13 @@ Dialog {
             Layout.rightMargin: 25
             Layout.topMargin: 10
             Layout.bottomMargin: 10
+
+            // spacer
+            Rectangle {
+                Layout.fillWidth: true
+                height: 1
+                color: ThemeManager.spacerColor
+            }
 
             // Style Selection
             Label {
@@ -64,6 +72,9 @@ Dialog {
                 Component.onCompleted: {
                     currentIndex = find(ThemeManager.currentTheme);
                 }
+                onActivated: {
+                    ThemeManager.setTheme(themeSelector.currentValue);
+                }
             }
 
             // FontSize Selection
@@ -82,10 +93,11 @@ Dialog {
             }
 
             // RAG Section
+            // spacer
             Rectangle {
                 Layout.fillWidth: true
                 height: 1
-                color: ThemeManager.color("border")
+                color: ThemeManager.spacerColor
             }
 
             Label {
@@ -130,16 +142,17 @@ Dialog {
             Label {
                 text: ChatController && ChatController.ragService ? ChatController.ragService.collectionStatus : "N/A"
                 font.pixelSize: 12
-                color: ThemeManager.color("text")
+                color: ThemeManager.textColor
                 Layout.fillWidth: true
                 wrapMode: Text.WordWrap
             }
 
             // Context Settings Section
+            // spacer
             Rectangle {
                 Layout.fillWidth: true
                 height: 1
-                color: ThemeManager.color("border")
+                color: ThemeManager.spacerColor
             }
 
             Label {
@@ -179,10 +192,11 @@ Dialog {
                 ToolTip.text: "Automatically double context size when full (up to 128k)"
             }
 
+            // spacer
             Rectangle {
                 Layout.fillWidth: true
                 height: 1
-                color: ThemeManager.color("border")
+                color: ThemeManager.spacerColor
             }
 
             RowLayout {
@@ -197,6 +211,18 @@ Dialog {
                     onClicked: {
                         if (ChatController)
                             ChatController.saveChats(true);
+                    }
+                }
+            }
+
+            RowLayout {
+                Layout.fillWidth: true
+
+                Button {
+                    text: "Reset Settings"
+                    onClicked: {
+                        if (ChatController)
+                            ChatController.resetSettings();
                     }
                 }
             }

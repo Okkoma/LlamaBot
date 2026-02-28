@@ -12,8 +12,9 @@ Dialog {
 
     title: "Settings"
     modal: true
-    width: Screen.width * 0.85
-    height: Screen.height * 0.65
+
+    width: Math.min(parent.width * 0.75, 400)
+    height: Math.min(parent.height * 0.75, 600)
     anchors.centerIn: parent
 
     ScrollView {
@@ -36,6 +37,31 @@ Dialog {
             Layout.topMargin: 10
             Layout.bottomMargin: 10
 
+            // spacer
+            Rectangle {
+                Layout.fillWidth: true
+                height: 1
+                color: ThemeManager.spacerColor
+            }
+
+            // Theme Selection
+            Label {
+                text: "Theme"
+                font.bold: true
+            }
+
+            ComboBox {
+                id: themeSelector
+                Layout.fillWidth: true
+                model: ThemeManager.availableThemes()
+                Component.onCompleted: {
+                    currentIndex = find(ThemeManager.currentTheme);
+                }
+                onActivated: {
+                    ThemeManager.setTheme(themeSelector.currentValue);
+                }
+            }
+
             // FontSize Selection
             Label {
                 text: "Font Size"
@@ -52,10 +78,11 @@ Dialog {
             }
 
             // RAG Section
+            // spacer
             Rectangle {
                 Layout.fillWidth: true
                 height: 1
-                color: ThemeManager.color("border")
+                color: ThemeManager.spacerColor
             }
 
             Label {
@@ -100,16 +127,17 @@ Dialog {
             Label {
                 text: ChatController && ChatController.ragService ? ChatController.ragService.collectionStatus : "N/A"
                 font.pixelSize: 12
-                color: ThemeManager.color("text")
+                color: ThemeManager.textColor
                 Layout.fillWidth: true
                 wrapMode: Text.WordWrap
             }
 
             // Context Settings Section
+            // spacer
             Rectangle {
                 Layout.fillWidth: true
                 height: 1
-                color: ThemeManager.color("border")
+                color: ThemeManager.spacerColor
             }
 
             Label {
@@ -149,10 +177,11 @@ Dialog {
                 ToolTip.text: "Automatically double context size when full (up to 128k)"
             }
 
+            // spacer
             Rectangle {
                 Layout.fillWidth: true
                 height: 1
-                color: ThemeManager.color("border")
+                color: ThemeManager.spacerColor
             }
 
             RowLayout {

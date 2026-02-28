@@ -20,6 +20,9 @@ ApplicationWindow {
 
     Material.theme: ThemeManager.darkMode ? Material.Dark : Material.Light
     Universal.theme: ThemeManager.darkMode ? Universal.Dark : Universal.Light
+    Material.primary: ThemeManager.windowColor;
+    Material.accent: ThemeManager.accentColor;
+    Universal.accent: ThemeManager.accentColor;
 
     // Chat Drawer
     ChatDrawer {
@@ -140,7 +143,6 @@ ApplicationWindow {
                         target: chatDrawer
                         function onChatChanged() {
                             console.log("onChatChanged:");
-                            //ChatController.setAPI(ChatController.currentChat.currentApi);
                             modelSelector.availableModel();
                         }
                     }
@@ -231,7 +233,8 @@ ApplicationWindow {
                 anchors.bottom: parent.bottom
                 onAccepted: (text) => {
                     if (ChatController) {
-                        console.log("setModel:", modelSelector.currentValue.name);
+                        console.log("InputArea: api:", ChatController.currentApi, " model:", modelSelector.currentValue.name);
+                        ChatController.setAPI(ChatController.currentApi);
                         ChatController.setModel(modelSelector.currentValue.name);
                         ChatController.sendMessage(text);
                     }
@@ -271,13 +274,14 @@ ApplicationWindow {
             chatDrawer.aboutToShow();
         }
     }
+
     Connections {
         target: chatDrawer
         function onNewChat() {
             main.createNewChat();
         }
     }
-
+    
     // Add connection to themeManager to listen for theme changes
     Connections {
         target: ThemeManager

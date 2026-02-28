@@ -14,8 +14,10 @@ Dialog {
 
     title: "Ollama service"
     modal: true
-    width: 400
+
+    width: parent.width - 20
     height: 400
+
     anchors.centerIn: parent
 
     palette {
@@ -23,13 +25,6 @@ Dialog {
         button: ThemeManager.buttonColor
         window: ThemeManager.windowColor
         text: ThemeManager.textColor
-    }
-
-    // spacer
-    Rectangle {
-        Layout.fillWidth: true
-        height: 1
-        color: ThemeManager.spacerColor
     }
 
     ColumnLayout {
@@ -41,6 +36,13 @@ Dialog {
         Layout.rightMargin: 25
         Layout.topMargin: 10
         Layout.bottomMargin: 10
+
+        // spacer
+        Rectangle {
+            Layout.fillWidth: true
+            height: 1
+            color: ThemeManager.spacerColor
+        }
 
         TextField {
 
@@ -74,6 +76,7 @@ Dialog {
             id: apiKeyField
             placeholderText: "API Key"
             text: ChatController.getAPI("Ollama")["apikey"]
+            font.pixelSize: 8
             Layout.fillWidth: true
             echoMode: TextInput.Password
             selectByMouse: false // Désactive la sélection pour empêcher la copie
