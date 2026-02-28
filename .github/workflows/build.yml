@@ -80,14 +80,14 @@ jobs:
         if: (runner.os == 'Windows' && github.actor != 'nektos/act') || runner.os == 'Linux'
         run: cmake --install build
 
-      - name: Deploy & Create AppImage
+      - name: Deploy & Create AppImage (Linux)
         if: runner.os == 'Linux'
         shell: bash
         env:
           QMAKE: ${{ env.QT_INSTALL_DIR }}/6.10.2/gcc_64/bin/qmake
         run: |
           sudo apt-get update
-          sudo apt-get install -y libfuse2 documentation-utils
+          sudo apt-get install -y libfuse2
           wget -q https://github.com/linuxdeploy/linuxdeploy/releases/download/continuous/linuxdeploy-x86_64.AppImage
           wget -q https://github.com/linuxdeploy/linuxdeploy-plugin-qt/releases/download/continuous/linuxdeploy-plugin-qt-x86_64.AppImage
           chmod +x linuxdeploy*.AppImage
@@ -98,10 +98,12 @@ jobs:
         if: runner.os == 'Windows' && github.actor != 'nektos/act'
         shell: pwsh
         run: |
-          $QT_BIN = "${{ env.QT_INSTALL_DIR }}/6.10.2/msvc2022_64/bin"
-          & "$QT_BIN/windeployqt.exe" --qmldir . exe/bin/LlamaBot.exe
+          $QtBinDir = "${{ env.QT_INSTALL_DIR }}/6.10.2/msvc2022_64/bin".Replace("/", "\")
+          $ExePath = "exe/bin/LlamaBot.exe".Replace("/", "\")
+          Write-Host "Recherche de windeployqt dans: $QtBinDir"
+          & "$QtBinDir\windeployqt.exe" --qmldir . --no-translations $ExePath
           cd exe
-          zip -r ../LlamaBot-${{ matrix.name }}.zip .          
+          zip -r ../LlamaBot-${{ matrix.name }}.zip .
 
       - name: Upload Artifacts
         if: github.actor != 'nektos/act'
