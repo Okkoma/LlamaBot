@@ -68,7 +68,7 @@ jobs:
           if [ "${{ runner.os }}" == "Windows" ]; then
             CMAKE_ARGS="-DCMAKE_TOOLCHAIN_FILE=$VCPKG_INSTALLATION_ROOT/scripts/buildsystems/vcpkg.cmake -DGGML_BLAS=OFF"
           fi
-          cmake -B build -G "${{ matrix.cmake_generator }}" -DCMAKE_BUILD_TYPE=${{ env.BUILD_TYPE }} -DBUILD_TEST=OFF $CMAKE_ARGS
+          cmake -B build -G "${{ matrix.cmake_generator }}" -DCMAKE_BUILD_TYPE=${{ env.BUILD_TYPE }} -DGGML_CUDA=OFF -DBUILD_TEST=OFF $CMAKE_ARGS
 
       - name: Build
         if: (runner.os == 'Windows' && github.actor != 'nektos/act') || runner.os == 'Linux'
