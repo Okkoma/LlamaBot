@@ -31,13 +31,17 @@ public:
     LLMService(int type, LLMServices* llmservices, const QString& name) :
         llmservices_(llmservices),
         type_(type),
-        name_(name) {}
+        name_(name)
+    { }
 
     LLMService(LLMServices* llmservices, const QVariantMap& params) :
         llmservices_(llmservices),
         type_(params["type"].toInt()),
         name_(params["name"].toString()),
-        params_(params) {}
+        params_(params)
+    {
+        setApiKey(params["apikey"].toString());
+    }
 
     virtual ~LLMService() { stop(); }
 
@@ -48,6 +52,8 @@ public:
 
     virtual void setModel(Chat* chat, QString model = "") {}
     virtual void deleteModel(const LLMModel& model) {}
+
+    void setApiKey(QString value);
 
     virtual void post(Chat* chat, const QString& content, bool streamed = true) {}
 
@@ -67,7 +73,6 @@ public:
         obj["url"] = params_["url"].toString();
         obj["apiver"] = params_["apiver"].toString();
         obj["apigen"] = params_["apigen"].toString();
-        obj["apikey"] = params_["apikey"].toString();
         obj["executable"] = params_["executable"].toString();
         obj["args"] = params_["programargs"].toJsonArray();
         return obj;
@@ -87,7 +92,6 @@ public:
         params["url"] = obj["url"].toString();
         params["apiver"] = obj["apiver"].toString();
         params["apigen"] = obj["apigen"].toString();
-        params["apikey"] = obj["apikey"].toString();
         QStringList programArguments;
         QJsonArray argsArray = obj["args"].toArray();
         for (const QJsonValue& val : argsArray)
@@ -109,6 +113,9 @@ signals:
     void modelLoadingFinished(const QString& modelName, bool success);
 
     void stopStreamRequested();
+
+protected:
+    QString apiKey_;
 
 private:
     static std::unordered_map<int, LLMAPIFactory> factories_;

@@ -103,18 +103,15 @@ OllamaService::OllamaService(LLMServices* service, const QString& name, const QS
     url_(url),
     api_version_(ver),
     api_generate_(gen),
-    apiKey_(apiKey),
     programPath_(programPath),
     programArguments_(programArguments)
-{
-}
+{ }
 
 OllamaService::OllamaService(LLMServices* service, const QVariantMap& params) :
     LLMService(service, params),
     url_(params["url"].toString()),
     api_version_(params["apiver"].toString()),
     api_generate_(params["apigen"].toString()),
-    apiKey_(params["apikey"].toString()),
     programPath_(params["executable"].toString()),
     programArguments_(params["programargs"].toStringList())
 {
@@ -278,20 +275,19 @@ void OllamaService::postInternal(Chat* chat, const QString& content, bool stream
     QNetworkRequest request(url + api_generate_);
     request.setHeader(QNetworkRequest::ContentTypeHeader, "application/json");
 
-    if (cloud && apiKey_.isEmpty())
+    QString apiKey = apiKey_;
+
+    if (cloud && apiKey.isEmpty())
     {
-        apiKey_ = params_["apikey"].toString();
-        if (apiKey_.isEmpty())
-        {
-            qDebug() << "OllamaService::postInternal: cloud model needs an ollama api key ... try env OLLAMA_API_KEY";
-            apiKey_ = qgetenv("OLLAMA_API_KEY");
-        }
+        qDebug() << "OllamaService::postInternal: cloud model needs an ollama api key ... getted from env OLLAMA_API_KEY";     
+        apiKey = qgetenv("OLLAMA_API_KEY");
     }
+    
     // Manually set the Authorization header
-    if (!apiKey_.isEmpty())
+    if (!apiKey.isEmpty())
     {
         qDebug() << "OllamaService::postInternal: add ollama api key";
-        request.setRawHeader("Authorization", ("Bearer " + apiKey_).toUtf8());
+        request.setRawHeader("Authorization", ("Bearer " + apiKey).toUtf8());
     }
 
     chat->updateContent(content);

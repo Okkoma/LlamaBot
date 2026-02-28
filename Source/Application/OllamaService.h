@@ -285,7 +285,6 @@ private:
     QString url_;                    ///< URL du serveur Ollama
     QString api_version_;            ///< Version de l'API
     QString api_generate_;           ///< Endpoint de génération
-    QString apiKey_;                 ///< Clé API
 
     QString programPath_;            ///< Chemin vers l'exécutable Ollama
     QStringList programArguments_;   ///< Arguments pour l'exécutable

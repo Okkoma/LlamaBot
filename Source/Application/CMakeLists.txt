@@ -60,7 +60,6 @@ qt_add_qml_module(LlamaBotQml
         qml/+android/InputArea.qml        
         qml/+android/Main.qml
         qml/+android/MessageDelegate.qml
-        qml/+android/ModelLocalDialog.qml
         qml/+android/ModelStoreDialog.qml
         qml/+android/SettingsDialog.qml
         
