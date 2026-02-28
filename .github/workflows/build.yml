@@ -83,16 +83,16 @@ jobs:
       - name: Deploy & Create AppImage (Linux)
         if: runner.os == 'Linux'
         shell: bash
-        env:
-          QMAKE: ${{ env.QT_INSTALL_DIR }}/6.10.2/gcc_64/bin/qmake
         run: |
           sudo apt-get update
           sudo apt-get install -y libfuse2
           wget -q https://github.com/linuxdeploy/linuxdeploy/releases/download/continuous/linuxdeploy-x86_64.AppImage
           wget -q https://github.com/linuxdeploy/linuxdeploy-plugin-qt/releases/download/continuous/linuxdeploy-plugin-qt-x86_64.AppImage
           chmod +x linuxdeploy*.AppImage
-          export PATH=${{ env.QT_INSTALL_DIR }}/6.10.2/gcc_64/bin:$PATH
+          export QMAKE=$(find ${{ env.QT_INSTALL_DIR }} -name qmake -type f | grep "gcc_64/bin/qmake" | head -n 1)
+          export PATH=$(dirname $QMAKE):$PATH
           ./linuxdeploy-x86_64.AppImage --appdir=exe --executable=exe/bin/LlamaBot --plugin=qt --output=appimage
+          rm -rf exe
 
       - name: Deploy Windows Dependencies
         if: runner.os == 'Windows' && github.actor != 'nektos/act'
@@ -106,9 +106,9 @@ jobs:
           Write-Host "windeployqt path: $WindeployqtPath"
           $ExePath = (Join-Path (Get-Location) "exe/bin/LlamaBot.exe").Replace("/", "\")
           & $WindeployqtPath --qmldir Source/Application/qml --no-translations --compiler-runtime $ExePath
-          cd exe
-          zip -r ../LlamaBot-${{ matrix.name }}.zip .
-
+          Compress-Archive -Path "exe/*" -DestinationPath "LlamaBot-Windows.zip" -Force
+          Remove-Item -Recurse -Force dist
+          
       - name: Upload Artifacts
         if: github.actor != 'nektos/act'
         uses: actions/upload-artifact@v4
