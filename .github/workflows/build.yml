@@ -52,13 +52,15 @@ jobs:
         if: runner.os == 'Linux'
         run: |
           sudo apt-get update
-          sudo apt-get install -y build-essential libgl1-mesa-dev libvulkan-dev libssl-dev libfontconfig1-dev libjpeg-dev libopenjp2-7-dev libblas-dev
+          sudo apt-get install -y build-essential libgl1-mesa-dev shaderc libvulkan-dev libssl-dev libfontconfig1-dev libjpeg-dev libopenjp2-7-dev libblas-dev
 
       - name: Install Windows Dependencies
         if: runner.os == 'Windows' && github.actor != 'nektos/act'
         shell: pwsh
         run: |
-          vcpkg install libjpeg-turbo openjpeg --triplet x64-windows
+          vcpkg install libjpeg-turbo openjpeg shaderc --triplet x64-windows
+          $GLSLC_PATH = "$env:VCPKG_INSTALLATION_ROOT\installed\x64-windows\tools\shaderc"
+          echo $GLSLC_PATH | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
 
       - name: Configure CMake
         shell: bash
