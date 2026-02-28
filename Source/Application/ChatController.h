@@ -26,6 +26,7 @@ class ChatController : public QObject
     Q_PROPERTY(bool autoExpandContext READ getAutoExpandContext WRITE setAutoExpandContext NOTIFY autoExpandContextChanged)
     Q_PROPERTY(QVariantList pendingAssets READ pendingAssets NOTIFY pendingAssetsChanged)
     Q_PROPERTY(QString currentModel READ currentModel WRITE setCurrentModel NOTIFY currentModelChanged)
+    Q_PROPERTY(QString currentApi READ currentApi WRITE setCurrentApi NOTIFY currentApiChanged)
 
     QML_ELEMENT
     QML_SINGLETON
@@ -137,7 +138,7 @@ public:
      * @brief Définit le nom du modèle selectionné dans l'ui à utiliser par défaut
      * @param modelName Nom du modèle selectionné
      */    
-    Q_INVOKABLE void setCurrentModel(const QString& modelname);
+    Q_INVOKABLE void setCurrentModel(const QString& modelname=QString());
 
     /**
      * @brief Retourne la liste des modèles disponibles
@@ -152,6 +153,16 @@ public:
     Q_INVOKABLE QVariantList getAvailableAPIs() const;
     
     Q_INVOKABLE QVariantMap getAPI(const QString& apiname) const;
+
+    const QString& currentApi() const { return currentAPI_; }
+
+    Q_INVOKABLE int currentApiIndex() const;
+
+    /**
+     * @brief Définit le nom du service selectionné dans l'ui à utiliser par défaut
+     * @param apiName Nom du service selectionné
+     */    
+    Q_INVOKABLE void setCurrentApi(const QString& apiName=QString());
 
     /**
      * @brief Retourne la liste des types d'APIs 
@@ -194,6 +205,9 @@ public:
      * doit être mise à jour (par exemple après un téléchargement).
      */
     Q_INVOKABLE void refreshModels();
+
+    // TODO : créer une classe Settings
+    Q_INVOKABLE void resetSettings();
 
     /**
      * @brief Ajoute un asset au chat courant
@@ -247,6 +261,11 @@ signals:
      void currentModelChanged();
 
     /**
+     * @brief Signal émis lorsque le service courant change
+     */
+     void currentApiChanged();
+     
+    /**
      * @brief Signal émis lorsque le chargement commence
      */
     void loadingStarted();
@@ -295,6 +314,7 @@ private:
     bool ragEnabled_ = false;     ///< Indique si le RAG est activé
     QVariantList pendingAssets_;  ///< Liste temporaire des assets en attente
     QString currentModel_;        ///< nom du modele courant
+    QString currentAPI_;          ///< nom du service courant
 
 public:
     /**

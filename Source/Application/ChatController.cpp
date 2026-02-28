@@ -48,6 +48,12 @@ void ChatController::initialize(LLMServices* llmservices)
             setAPI(apiList.front()->name_);
     }    
 
+    if (currentAPI_.isEmpty())
+        currentAPI_ = llmServices_->getAPIs().front()->name_;
+
+    setCurrentApi();
+    setCurrentModel();
+
     // Fix: Connect LLMServices signals to ChatController signals to notify QML
     connect(llmServices_, &LLMServices::defaultContextSizeChanged, this, &ChatController::defaultContextSizeChanged);
     connect(llmServices_, &LLMServices::autoExpandContextChanged, this, &ChatController::autoExpandContextChanged);    
@@ -121,12 +127,16 @@ void ChatController::createChat(const QString& api, const QString& model)
     QString chatName = QString("Chat %1").arg(chatCounter_);
     Chat* chat = new ChatImpl(llmServices_, chatName, "", true, api, model, this);
     chats_.append(chat);
+
     currentChat_ = chat;
 
     QObject::connect(chat, &Chat::processingFinished, this, &ChatController::notifyUpdatedChat);
 
     // Save new chat creation
     saveChats();
+
+    setCurrentApi(currentChat_->getCurrentApi());
+    setCurrentModel(currentChat_->getCurrentModel());
 
     emit chatListChanged();
     emit currentChatChanged();
@@ -136,13 +146,23 @@ void ChatController::createChat(const QString& api, const QString& model)
 
 void ChatController::switchToChat(int index)
 {
+    Chat* chat = currentChat_;
+
     if (index >= 0 && index < chats_.size())
+        chat = chats_[index];
+    else if (!chats_.isEmpty())
+        chat = chats_.last();
+    else 
+        chat = nullptr;
+
+    if (chat != currentChat_)
     {
-        if (currentChat_ != chats_[index])
-        {
-            currentChat_ = chats_[index];
-            emit currentChatChanged();
-        }
+        currentChat_ = chat;
+
+        setCurrentApi(currentChat_->getCurrentApi());
+        setCurrentModel(currentChat_->getCurrentModel());
+
+        emit currentChatChanged();
     }
 }
 
@@ -162,14 +182,7 @@ void ChatController::deleteChat(int index)
         {
             stopGeneration();
 
-            if (index < chats_.size())
-                currentChat_ = chats_[index];
-            else if (!chats_.isEmpty())
-                currentChat_ = chats_.last();
-            else
-                currentChat_ = nullptr;
-
-            emit currentChatChanged();
+            switchToChat(index);
         }
 
         checkChatsProcessingFinished();
@@ -231,7 +244,7 @@ void ChatController::stopGeneration()
 
 int ChatController::currentModelIndex() const
 {
-    LLMService* currentApi = currentChat_ ? llmServices_->get(currentChat_->getCurrentApi()) : nullptr;
+    LLMService* currentApi = llmServices_->get(currentAPI_);
     std::vector<LLMModel> models = llmServices_->getAvailableModels(currentApi);
     for (int i = 0; i < models.size(); i++) 
         if (models[i].toString() == currentModel_)
@@ -241,16 +254,31 @@ int ChatController::currentModelIndex() const
 
 void ChatController::setCurrentModel(const QString& modelname)
 {
-    currentModel_ = modelname;
-    emit currentModelChanged();
+    QString currentModel;
+
+    if (!modelname.isEmpty())
+        currentModel = modelname;
+    else if (currentChat_)
+        currentModel = currentChat_->getCurrentModel();
+    else
+        currentModel = currentModel_;
+
+    if (currentModel != currentModel_)
+    {
+        qDebug() << "ChatController::setCurrentModel:" << currentModel;
+        currentModel_ = currentModel;
+        emit currentModelChanged();
+    }
 }
 
 QVariantList ChatController::getAvailableModels() const
 {
     QVariantList models;
 
+    qDebug() << "ChatController::getAvailableModels:" << currentAPI_;
+
     // Get models from current API or all APIs
-    LLMService* currentApi = currentChat_ ? llmServices_->get(currentChat_->getCurrentApi()) : nullptr;
+    LLMService* currentApi = llmServices_->get(currentAPI_);
     std::vector<LLMModel> modelList = llmServices_->getAvailableModels(currentApi);
 
     for (const LLMModel& model : modelList)
@@ -263,48 +291,6 @@ QVariantList ChatController::getAvailableModels() const
     }
 
     return models;
-}
-
-QVariantList ChatController::getAvailableAPIs() const
-{
-    QVariantList apis;
-
-    const std::vector<LLMService*>& apiList = llmServices_->getAPIs();
-    for (LLMService* api : apiList)
-    {
-        QVariantMap apiInfo;
-        apiInfo["name"] = api->name_;
-        apiInfo["ready"] = api->isReady();
-        apis.append(apiInfo);
-    }
-
-    return apis;
-}
-
-QVariantMap ChatController::getAPI(const QString& apiname) const
-{
-    const std::vector<LLMService*>& apiList = llmServices_->getAPIs();
-    for (LLMService* api : apiList)
-    {
-        if (api->name_ == apiname)
-            return api->params_;        
-    }
-    return QVariantMap();
-}
-
-QVariantList ChatController::getRegisteredAPITypes() const
-{
-    QVariantList apiTypes;
-    QStringList types = { "LlamaCpp", "Ollama" };
-
-    for (const auto& type : types)
-    {
-        QVariantMap typeInfo;
-        typeInfo["name"] = type;
-        apiTypes.append(typeInfo);
-    }
-    
-    return apiTypes;
 }
 
 void ChatController::setModel(const QString& modelName)
@@ -346,18 +332,95 @@ void ChatController::deleteModel(int index)
     emit availableModelsChanged();
 }
 
+QVariantList ChatController::getAvailableAPIs() const
+{
+    QVariantList apis;
+
+    const std::vector<LLMService*>& apiList = llmServices_->getAPIs();
+    for (LLMService* api : apiList)
+    {
+        QVariantMap apiInfo;
+        apiInfo["name"] = api->name_;
+        apiInfo["ready"] = api->isReady();
+        apis.append(apiInfo);
+    }
+
+    return apis;
+}
+
+QVariantMap ChatController::getAPI(const QString& apiname) const
+{
+    const std::vector<LLMService*>& apiList = llmServices_->getAPIs();
+    for (LLMService* api : apiList)
+    {
+        if (api->name_ == apiname)
+            return api->params_;        
+    }
+    return QVariantMap();
+}
+
+int ChatController::currentApiIndex() const
+{
+    const std::vector<LLMService*>& apiList = llmServices_->getAPIs();
+    for (int i=0; i < apiList.size(); i++)
+    {
+        if (apiList[i]->name_ == currentAPI_)
+            return i;        
+    }    
+    return 0;
+}
+
+QVariantList ChatController::getRegisteredAPITypes() const
+{
+    QVariantList apiTypes;
+    QStringList types = { "LlamaCpp", "Ollama" };
+
+    for (const auto& type : types)
+    {
+        QVariantMap typeInfo;
+        typeInfo["name"] = type;
+        apiTypes.append(typeInfo);
+    }
+    
+    return apiTypes;
+}
+
+void ChatController::setCurrentApi(const QString& apiname)
+{
+    QString currentApi;
+
+    if (!apiname.isEmpty())
+        currentApi = apiname;
+    else if (currentChat_)
+        currentApi = currentChat_->getCurrentApi();
+    
+    if (currentApi != currentAPI_)
+    {
+        if (currentApi.isEmpty())
+            currentApi = currentAPI_;
+
+        currentAPI_ = currentApi;
+        emit availableModelsChanged(); // Notify that available models list has changed
+        
+        qDebug() << "ChatController::setCurrentApi:" << currentAPI_;
+
+        emit currentApiChanged();
+    }
+}
+
 void ChatController::setAPI(const QString& apiName)
 {
-    if (currentChat_)
-    {
-        qDebug() << "ChatController::setAPI" << apiName;
+    if (!currentChat_)
+        return;
+    
+    qDebug() << "ChatController::setAPI" << apiName;
 
-        currentChat_->setApi(apiName);
-        emit currentChatChanged();     // Notify to update UI
-        emit availableModelsChanged(); // Notify that available models list has changed
+    currentChat_->setApi(apiName);
 
-        connectAPIsSignals();
-    }
+    emit availableModelsChanged(); // Notify that available models list has changed
+    emit currentChatChanged();     // Notify to update UI
+
+    connectAPIsSignals();    
 }
 
 bool ChatController::modifyAPI(const QString& apiName, const QString& apiType, const QString& urlstr, const QString& apikey)
@@ -398,6 +461,7 @@ bool ChatController::modifyAPI(const QString& apiName, const QString& apiType, c
     {
         LLMService* api = *it;
         api->params_ = params;
+        api->setApiKey(apikey);
     }
     else
     {
@@ -413,6 +477,14 @@ void ChatController::refreshModels()
 {
     qDebug() << "ChatController::refreshModels - Refreshing available models list";
     emit availableModelsChanged();
+}
+
+void ChatController::resetSettings()
+{
+    llmServices_->resetSettings();
+    refreshModels();
+    
+    // TODO : ajouter les autres settings ThemeManager ...
 }
 
 QString ChatController::getChatsFilePath() const
@@ -454,7 +526,6 @@ void ChatController::loadChats()
             QObject::connect(chat, &Chat::processingFinished, this, &ChatController::notifyUpdatedChat);        
 
         chatCounter_ = chats_.size();
-
         currentChat_ = chats_.last();
         emit currentChatChanged();
         emit chatListChanged();

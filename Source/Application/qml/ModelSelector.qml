@@ -83,8 +83,9 @@ ComboBox {
         }
         function onCurrentModelChanged() {
             root.currentIndex = root.find(ChatController.currentModel);
-            root.displayText = root.currentValue.name;
-            console.log("ModelSelector: currentModelChanged: ", root.currentIndex, root.displayText);
+            if (root.currentIndex !== -1)
+                root.displayText = root.currentValue.name;
+            console.log("ModelSelector: currentModelChanged: ", ChatController.currentModel, root.currentIndex, root.displayText);
         }
     }
 

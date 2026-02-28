@@ -13,12 +13,19 @@ ComboBox {
     model: ChatController.getAvailableAPIs()
     textRole: "name"
 
-    displayText: ChatController.currentChat ? ChatController.currentChat.currentApi : "none"
+    displayText: ChatController.currentApi
 
     onActivated: index => {
         if (currentValue) {
-            ChatController.setAPI(currentValue.name);
+            console.log("APISelector: onActivated:", index, currentValue.name);
+            ChatController.setCurrentApi(currentValue.name);
         }
+    }
+    
+    Component.onCompleted: {
+        currentIndex = ChatController.currentApiIndex;
+        console.log("APISelector: onCompleted:", currentIndex, currentValue.name);        
+        displayText = currentValue.name;
     }
 
     palette {
@@ -53,5 +60,23 @@ ComboBox {
             }
         }
         highlighted: root.highlightedIndex === index
+    }
+
+    Connections {
+        target: ChatController
+        function onAvailableAPIsChanged() {
+            root.model = ChatController.getAvailableAPIs();
+            var index = root.find(root.displayText);
+            if (index !== -1) {
+                root.currentIndex = index;
+            }
+            console.log("APISelector: onAvailableAPIsChanged:", index, root.displayText, root.currentValue.name);
+            root.displayText = root.currentValue.name;
+        }
+        function onCurrentApiChanged() {
+            root.currentIndex = ChatController.currentApiIndex();
+            root.displayText = root.currentValue.name;
+            console.log("APISelector: onCurrentApiChanged:", root.currentIndex, root.displayText);
+        }
     }
 }
