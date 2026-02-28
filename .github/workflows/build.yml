@@ -92,16 +92,20 @@ jobs:
           wget -q https://github.com/linuxdeploy/linuxdeploy-plugin-qt/releases/download/continuous/linuxdeploy-plugin-qt-x86_64.AppImage
           chmod +x linuxdeploy*.AppImage
           export PATH=${{ env.QT_INSTALL_DIR }}/6.10.2/gcc_64/bin:$PATH
-          ./linuxdeploy-x86_64.AppImage --appdir exe -e exe/bin/LlamaBot --plugin qt --qmldir . --output appimage
+          ./linuxdeploy-x86_64.AppImage --appdir=exe --executable=exe/bin/LlamaBot --plugin=qt --output=appimage
 
       - name: Deploy Windows Dependencies
         if: runner.os == 'Windows' && github.actor != 'nektos/act'
         shell: pwsh
         run: |
-          $QtBinDir = "${{ env.QT_INSTALL_DIR }}/6.10.2/msvc2022_64/bin".Replace("/", "\")
-          $ExePath = "exe/bin/LlamaBot.exe".Replace("/", "\")
-          Write-Host "Recherche de windeployqt dans: $QtBinDir"
-          & "$QtBinDir\windeployqt.exe" --qmldir . --no-translations $ExePath
+          $WindeployqtPath = Get-ChildItem -Path "${{ env.QT_INSTALL_DIR }}" -Filter "windeployqt.exe" -Recurse | Select-Object -ExpandProperty FullName -First 1
+          if (-not $WindeployqtPath) {
+              Write-Error "no windeployqt.exe in ${{ env.QT_INSTALL_DIR }}"
+              exit 1
+          }
+          Write-Host "windeployqt path: $WindeployqtPath"
+          $ExePath = (Join-Path (Get-Location) "exe/bin/LlamaBot.exe").Replace("/", "\")
+          & $WindeployqtPath --qmldir Source/Application/qml --no-translations --compiler-runtime $ExePath
           cd exe
           zip -r ../LlamaBot-${{ matrix.name }}.zip .
 
