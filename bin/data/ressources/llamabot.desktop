@@ -7,10 +7,10 @@ Comment=Chat with AI models using LlamaBot
 Exec=LlamaBot
 Icon=llamabot
 Terminal=false
-Categories=Utility;AI;Chat;
+Categories=Network;Chat;
 StartupWMClass=LlamaBot
+Actions=NewWindow;
 
 [Desktop Action NewWindow]
 Name=New Window
 Exec=LlamaBot
-OnlyShowIn=Unity;
