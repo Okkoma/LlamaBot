@@ -103,6 +103,7 @@ jobs:
               --icon-file="./exe/share/icons/hicolor/512x512/apps/llamabot.png" \
               --plugin=qt \
               --output=appimage
+          rm -f linuxdeploy*.AppImage
           rm -rf exe
 
       - name: Deploy Windows Dependencies
@@ -126,8 +127,8 @@ jobs:
         with:
           name: ${{ matrix.name }}-Artifacts
           path: |
-            *.AppImage
-            build/LlamaBot-*.zip
+            LlamaBot*.AppImage
+            LlamaBot*.zip
   
   build-android:
     if: ${{ github.event.workflow_run.conclusion == 'success' || github.event_name == 'workflow_dispatch' || github.actor == 'nektos/act' }}
