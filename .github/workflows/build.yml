@@ -112,18 +112,20 @@ jobs:
           wget -q https://github.com/linuxdeploy/linuxdeploy/releases/download/continuous/linuxdeploy-x86_64.AppImage
           wget -q https://github.com/linuxdeploy/linuxdeploy-plugin-qt/releases/download/continuous/linuxdeploy-plugin-qt-x86_64.AppImage
           chmod +x linuxdeploy*.AppImage
-
+          mkdir -p deploy
           export QMAKE=$(find ${{ env.QT_INSTALL_DIR }} -name qmake -type f | grep "gcc_64/bin/qmake" | head -n 1)
           export PATH=$(dirname $QMAKE):$PATH
           export QML_SOURCES_PATHS="Source/Application/qml"
+          export LINUXDEPLOY_EXCLUDED_LIBRARIES="libqtiff.so;libqsqloci.so;libqsqlodbc.so;libqsqlpsql.so;libqsqlmimer.so;libqsqlibase.so"
           export LINUXDEPLOY_OUTPUT_VERSION="0.1.1"
-          
           ./linuxdeploy-x86_64.AppImage --appdir=deploy \
             --executable=exe/bin/LlamaBot \
             --desktop-file=exe/share/applications/llamabot.desktop \
+            --icon-file=exe/share/icons/hicolor/128x128/apps/llamabot.png \
+            --icon-file=exe/share/icons/hicolor/256x256/apps/llamabot.png \            
             --icon-file=exe/share/icons/hicolor/512x512/apps/llamabot.png \
             --plugin=qt --output=appimage
-
+          rm -Rf exe deploy
           mv LlamaBot*.AppImage LlamaBot-Linux.AppImage
 
       - name: Deploy Windows Dependencies
