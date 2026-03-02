@@ -33,7 +33,7 @@ jobs:
           # On utilise le nom du tag capturé par le workflow précédent
           tag_name: ${{ github.event.workflow_run.head_branch }}
           files: |
-            Linux-Artifacts/LlamaBot-Linux.tar.gz
+            Linux-Artifacts/LlamaBot-Linux.AppImage
             Windows-Artifacts/LlamaBot-Windows.zip
             Android-Artifacts/*.apk
           generate_release_notes: true
