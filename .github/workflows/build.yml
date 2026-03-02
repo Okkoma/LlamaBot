@@ -14,6 +14,8 @@ env:
   QT_VERSION: '6.10.2'
   QT_INSTALL_DIR: ${{ github.workspace }}/Qt
   BUILD_TYPE: Release
+  # Force vcpkg à utiliser un dossier local pour le cache binaire (plus rapide)
+  VCPKG_BINARY_SOURCES: 'clear;files,${{ github.workspace }}/vcpkg_cache,readwrite'
 
 jobs:
   build-desktop:
@@ -52,15 +54,35 @@ jobs:
         if: runner.os == 'Linux'
         run: |
           sudo apt-get update
-          sudo apt-get install -y build-essential libgl1-mesa-dev libvulkan-dev glslc libssl-dev libfontconfig1-dev libjpeg-dev libopenjp2-7-dev libblas-dev
+          sudo apt-get install -y --no-install-recommends \
+            build-essential libgl1-mesa-dev libvulkan-dev glslc \
+            libssl-dev libfontconfig1-dev libjpeg-dev libopenjp2-7-dev libblas-dev
+
+      - name: Setup Windows vcpkg Cache Path
+        if: runner.os == 'Windows' && github.actor != 'nektos/act'
+        run: mkdir -p ${{ github.workspace }}/vcpkg_cache
+
+      - name: Cache Windows Dependencies
+        if: runner.os == 'Windows' && github.actor != 'nektos/act'
+        uses: actions/cache@v4
+        with:
+          path: ${{ github.workspace }}/vcpkg_cache
+          # Clé unique par build avec récupération du dernier cache valide
+          key: ${{ runner.os }}-vcpkg-${{ github.run_id }}
+          restore-keys: |
+            ${{ runner.os }}-vcpkg-
 
       - name: Install Windows Dependencies
         if: runner.os == 'Windows' && github.actor != 'nektos/act'
         shell: pwsh
         run: |
           vcpkg install libjpeg-turbo openjpeg vulkan shaderc --triplet x64-windows
-          $GLSLC_PATH = "$env:VCPKG_INSTALLATION_ROOT\installed\x64-windows\tools\shaderc"
-          echo $GLSLC_PATH | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
+          # glslc est dans le dossier local 'vcpkg_installed'
+          $GLSLC_DIR = "$(Get-Location)\vcpkg_installed\x64-windows\tools\shaderc"
+          if (Test-Path "$GLSLC_DIR\glslc.exe") {
+            Write-Host "Adding $GLSLC_DIR to PATH"
+            echo "$GLSLC_DIR" | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
+          }
 
       - name: Configure CMake
         shell: bash
@@ -70,7 +92,9 @@ jobs:
           if [ "${{ runner.os }}" == "Windows" ]; then
             CMAKE_ARGS="-DCMAKE_TOOLCHAIN_FILE=$VCPKG_INSTALLATION_ROOT/scripts/buildsystems/vcpkg.cmake -DGGML_BLAS=OFF"
           fi
-          cmake -B build -G "${{ matrix.cmake_generator }}" -DCMAKE_BUILD_TYPE=${{ env.BUILD_TYPE }} -DGGML_CUDA=OFF -DBUILD_TEST=OFF $CMAKE_ARGS
+          cmake -B build -G "${{ matrix.cmake_generator }}" \
+            -DCMAKE_BUILD_TYPE=${{ env.BUILD_TYPE }} \
+            -DGGML_CUDA=OFF -DBUILD_TEST=OFF $CMAKE_ARGS
 
       - name: Build
         if: (runner.os == 'Windows' && github.actor != 'nektos/act') || runner.os == 'Linux'
@@ -78,36 +102,28 @@ jobs:
 
       - name: Install
         if: (runner.os == 'Windows' && github.actor != 'nektos/act') || runner.os == 'Linux'
-        run: cmake --install build
+        run: cmake --install build --prefix exe
 
       - name: Deploy & Create AppImage (Linux)
         if: runner.os == 'Linux'
         shell: bash
         run: |
-          sudo apt-get update
           sudo apt-get install -y libfuse2
           wget -q https://github.com/linuxdeploy/linuxdeploy/releases/download/continuous/linuxdeploy-x86_64.AppImage
           wget -q https://github.com/linuxdeploy/linuxdeploy-plugin-qt/releases/download/continuous/linuxdeploy-plugin-qt-x86_64.AppImage
           chmod +x linuxdeploy*.AppImage
-          INSTALL_DIR=exe
-          DEPLOY_DIR=deploy
-          mkdir -p $DEPLOY_DIR
+
           export QMAKE=$(find ${{ env.QT_INSTALL_DIR }} -name qmake -type f | grep "gcc_64/bin/qmake" | head -n 1)
           export PATH=$(dirname $QMAKE):$PATH
           export QML_SOURCES_PATHS="Source/Application/qml"
-          export LINUXDEPLOY_EXCLUDED_LIBRARIES="libqtiff.so;libqsqloci.so;libqsqlodbc.so;libqsqlpsql.so;libqsqlmimer.so;libqsqlibase.so"
           export LINUXDEPLOY_OUTPUT_VERSION="0.1.1"
-          ./linuxdeploy-x86_64.AppImage \
-              --appdir=$DEPLOY_DIR \
-              --executable=$INSTALL_DIR/bin/LlamaBot \
-              --desktop-file=$INSTALL_DIR/share/applications/llamabot.desktop \
-              --icon-file=$INSTALL_DIR/share/icons/hicolor/128x128/apps/llamabot.png \
-              --icon-file=$INSTALL_DIR/share/icons/hicolor/256x256/apps/llamabot.png \
-              --icon-file=$INSTALL_DIR/share/icons/hicolor/512x512/apps/llamabot.png \
-              --plugin=qt \
-              --output=appimage
-          rm -f linuxdeploy*.AppImage
-          rm -Rf $INSTALL_DIR $DEPLOY_DIR
+          
+          ./linuxdeploy-x86_64.AppImage --appdir=deploy \
+            --executable=exe/bin/LlamaBot \
+            --desktop-file=exe/share/applications/llamabot.desktop \
+            --icon-file=exe/share/icons/hicolor/512x512/apps/llamabot.png \
+            --plugin=qt --output=appimage
+
           mv LlamaBot*.AppImage LlamaBot-Linux.AppImage
 
       - name: Deploy Windows Dependencies
@@ -115,15 +131,9 @@ jobs:
         shell: pwsh
         run: |
           $WindeployqtPath = Get-ChildItem -Path "${{ env.QT_INSTALL_DIR }}" -Filter "windeployqt.exe" -Recurse | Select-Object -ExpandProperty FullName -First 1
-          if (-not $WindeployqtPath) {
-              Write-Error "no windeployqt.exe in ${{ env.QT_INSTALL_DIR }}"
-              exit 1
-          }
-          Write-Host "windeployqt path: $WindeployqtPath"
           $ExePath = (Join-Path (Get-Location) "exe/bin/LlamaBot.exe").Replace("/", "\")
           & $WindeployqtPath --qmldir Source/Application/qml --no-translations --compiler-runtime $ExePath
           Compress-Archive -Path "exe/*" -DestinationPath "LlamaBot-Windows.zip" -Force
-          Remove-Item -Recurse -Force exe
 
       - name: Upload Artifacts
         if: github.actor != 'nektos/act'
@@ -133,17 +143,16 @@ jobs:
           path: |
             LlamaBot*.AppImage
             LlamaBot*.zip
-  
+
   build-android:
     if: ${{ github.event.workflow_run.conclusion == 'success' || github.event_name == 'workflow_dispatch' || github.actor == 'nektos/act' }}
     timeout-minutes: 40  
     name: Android
     runs-on: ubuntu-latest
-
     steps:
       - uses: actions/checkout@v4
         with:
-          ref: ${{ github.event.workflow_run.head_sha }} # Récupère le commit précis du test
+          ref: ${{ github.event.workflow_run.head_sha }}
           submodules: recursive
 
       - name: Set up JDK
@@ -166,13 +175,8 @@ jobs:
         run: sudo apt-get update && sudo apt-get install -y ninja-build
 
       - name: Build Android APK
-        env:
-          ANDROID_KEYSTORE_PASS: ${{ secrets.ANDROID_KEYSTORE_PASS }} # Optional if signing
         run: |
-          # Use qt-cmake from PATH (added by install-qt-action) which handles toolchain setup
-          # Ensure ANDROID_NDK_ROOT is set (GitHub runners usually default to ANDROID_NDK_HOME)
           export ANDROID_NDK_ROOT=${ANDROID_NDK_ROOT:-$ANDROID_NDK_HOME}
-          
           qt-cmake -B build-android -GNinja \
             -DCMAKE_BUILD_TYPE=Release \
             -DANDROID_SDK_ROOT=$ANDROID_SDK_ROOT \
@@ -180,8 +184,7 @@ jobs:
             -DQT_CHAINLOAD_TOOLCHAIN_FILE=$ANDROID_NDK_ROOT/build/cmake/android.toolchain.cmake \
             -DANDROID_ABI=arm64-v8a \
             -DANDROID_STL=c++_shared \
-            -DGGML_VULKAN=OFF \
-            -DBUILD_TEST=OFF 
+            -DGGML_VULKAN=OFF -DBUILD_TEST=OFF 
           
           cmake --build build-android --config Release --target apk --parallel
 
@@ -190,4 +193,3 @@ jobs:
         with:
           name: Android-Artifacts
           path: ./build-android/Source/Application/android-build/build/outputs/apk/release/*.apk
-
