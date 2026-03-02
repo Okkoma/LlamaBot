@@ -418,7 +418,6 @@ void ChatController::setAPI(const QString& apiName)
     currentChat_->setApi(apiName);
 
     emit availableModelsChanged(); // Notify that available models list has changed
-    emit currentChatChanged();     // Notify to update UI
 
     connectAPIsSignals();    
 }
