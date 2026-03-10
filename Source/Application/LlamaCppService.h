@@ -449,7 +449,8 @@ private:
      */
     void setModelInternal(LlamaCppChatData* data, const QString& modelName);
 
+    std::mutex modelMutex_;
+
     LlamaModelData* lastModelAddedInMemory_{nullptr};  ///< Dernier modèle chargé
     LlamaModelData* embeddingModel_{nullptr};          ///< Modèle pour les embeddings
-    bool busy_{false};
 };

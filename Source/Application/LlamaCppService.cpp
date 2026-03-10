@@ -900,6 +900,8 @@ void LlamaCppService::clearData(LlamaCppChatData* data)
 
 void LlamaCppService::clearModelInMemory(const QString& modelName)
 {
+    std::lock_guard<std::mutex> lock(modelMutex_);
+
     if (!models_.contains(modelName))
         return;
     
@@ -968,13 +970,8 @@ void LlamaCppService::setModelInternal(LlamaCppChatData* data, const QString& mo
 {
     qDebug() << "LlamaCppService::setModelInternal ...";
 
-    while (busy_) 
-    {
-        // it's ok to sleep in this thread (it's not the main thread)
-        QThread::sleep(1);
-    }
+    std::lock_guard<std::mutex> lock(modelMutex_);
 
-    busy_ = true;
     emit modelLoadingStarted(modelName);
     if (data->model_ && modelName != data->model_->modelName_)
     {
@@ -989,7 +986,6 @@ void LlamaCppService::setModelInternal(LlamaCppChatData* data, const QString& mo
     if (model && !data->model_)
         initializeData(data, model);
 
-    busy_ = false;
     emit modelLoadingFinished(modelName, true);
     qDebug() << "LlamaCppService::setModelInternal ... end!";
 }
@@ -1313,12 +1309,18 @@ std::vector<float> LlamaCppService::getEmbedding(const QString& text)
     float* emb_ptr = nullptr;
 
     // Get a model
+    // si un modele existe dejà, on le reprend pour traiter les embeddings
+    // TODO: préférer un petit modele
     if (embeddingModel_ && embeddingModel_->model_)
         model = embeddingModel_->model_;
     else if (lastModelAddedInMemory_ && lastModelAddedInMemory_->model_)
         model = lastModelAddedInMemory_->model_;
-    else
+
+    // load a model
+    if (!model)
     {
+        std::lock_guard<std::mutex> lock(modelMutex_);
+
         std::vector<LLMModel> models = getAvailableModels();       
         if (models.size())
         {
