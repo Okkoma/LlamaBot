@@ -1,6 +1,7 @@
 .cache
 backup/*
 build*/*
+exe/*
 Docs/todo*
 Docs/doxygen*
 Docs/llama*
@@ -11,5 +12,6 @@ create_android_project.sh
 .cursorignore
 .qtcreator
 tmp*
+tools*
 coverage*
 **/.qmlls.ini

@@ -86,14 +86,6 @@ echo "ChatBot compilé pour Android avec support Vulkan !"
 echo
 echo "Configuration recommandée pour Android Vulkan:"
 echo "   - Architecture: arm64-v8a (recommandé)"
-echo "   - Platform: android-24+ (Vulkan 1.0+)"
-echo "   - STL: c++_shared (plus léger)"
-echo
-echo "Performance attendue sur Android avec Vulkan:"
-echo "   - GPU Adreno/Mali: 3-8x plus rapide que CPU"
-echo "   - Modèles supportés: jusqu'à 7B-13B paramètres"
-echo "   - Mémoire GPU: 4-12GB selon l'appareil"
-echo "   - Batterie: 20-40% plus efficace qu'OpenCL"
 
 #echo "=== Installation du build Android ==="
 #cmake --install $BUILD_DIR

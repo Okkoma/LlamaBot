@@ -56,6 +56,21 @@
             "name": "test",
             "hidden": true,
             "cacheVariables": {
+                "BUILD_TEST": "ON"
+            }
+        },
+        {
+            "name": "coverage",
+            "hidden": true,
+            "cacheVariables": {
+                "CMAKE_CXX_FLAGS": "--coverage",
+                "CMAKE_EXE_LINKER_FLAGS": "--coverage"
+            }
+        },        
+        {
+            "name": "testonly",
+            "hidden": true,
+            "cacheVariables": {
                 "BUILD_APPLICATION": "OFF",
                 "BUILD_DOCS": "OFF",
                 "BUILD_TEST": "ON"
@@ -172,6 +187,25 @@
                 "x64-linux-gcc",
                 "release",
                 "static"
+            ]
+        },
+        {
+            "name": "x64-linux-gcc-test",
+            "inherits": [
+                "base",
+                "x64-linux-gcc",
+                "debug",
+                "testonly"
+            ]
+        },        
+        {
+            "name": "x64-linux-gcc-test-coverage",
+            "inherits": [
+                "base",
+                "x64-linux-gcc",
+                "debug",
+                "testonly",
+                "coverage"
             ]
         },
         {
@@ -330,11 +364,6 @@
             "configurePreset": "x64-linux-gcc-debug-vk"
         },
         {
-            "name": "x64-linux-debug-test",
-            "inherits": "base-build",
-            "configurePreset": "x64-linux-gcc-debug-test"
-        },
-        {
             "name": "x64-linux-release",
             "inherits": "base-build",
             "configurePreset": "x64-linux-gcc-release"
@@ -357,10 +386,22 @@
     ],
     "testPresets": [
         {
-            "name": "tests",
+            "name": "test",
             "description": "",
             "displayName": "",
             "configurePreset": "x64-linux-gcc-debug-test"
+        },
+        {
+            "name": "testonly",
+            "description": "",
+            "displayName": "",
+            "configurePreset": "x64-linux-gcc-test"
+        },
+        {
+            "name": "testcoverage",
+            "description": "",
+            "displayName": "",
+            "configurePreset": "x64-linux-gcc-test-coverage"
         }
     ]
 }
