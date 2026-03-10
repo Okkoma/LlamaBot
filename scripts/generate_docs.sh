@@ -31,7 +31,7 @@ mkdir -p Docs/doxygen/html
 doxygen Doxyfile
 
 if [ $? -eq 0 ]; then
-    echo "Documentation générée avec succès dans docs/doxygen/html"
+    echo "Documentation générée avec succès dans Docs/doxygen/html"
     echo "Ouvrez index.html dans votre navigateur pour consulter la documentation."
 else
     echo "Erreur lors de la génération de la documentation."

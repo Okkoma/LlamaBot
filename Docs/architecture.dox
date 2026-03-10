@@ -169,7 +169,7 @@
  * ### Strategy
  * - Différentes stratégies de génération
  * - Choix entre streaming et génération complète
- * - Sélection des backends LLM
+ * - Sélection des backends LLM (todo)
  * 
  * ## Gestion des États
  * 
@@ -188,17 +188,17 @@
  * ## Persistance des Données
  * 
  * ### Formats de Stockage
- * - **JSON** : Pour la configuration et les chats
+ * - **JSON** : Pour la configuration
  * - **Binaire** : Pour les embeddings et le VectorStore
- * - **SQLite** : Pour les métadonnées (future implémentation)
+ * - **SQLite** : Pour les chats
  * 
  * ### Emplacements de Stockage
  * - `~/.config/LlamaBot/` : Configuration utilisateur
  * - `~/.local/share/LlamaBot/` : Données de l'application
- * - `chats/` : Sauvegarde des conversations
  * - `models/` : Cache des modèles
- * - `rag/` : Index RAG et documents
- * 
+ * - `rag.db` : RAG vector store
+ * - `chat.db` : Sauvegarde des conversations
+
  * ## Intégration avec Qt
  * 
  * ### Modules Qt Utilisés
@@ -238,7 +238,6 @@
  * ## Évolution Future
  * 
  * ### Améliorations Prévues
- * - Support de nouveaux backends LLM
  * - Amélioration du RAG avec plus de formats de documents
  * - Interface utilisateur plus personnalisable
  * - Meilleure gestion des erreurs et récupération

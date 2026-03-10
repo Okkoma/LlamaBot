@@ -126,13 +126,12 @@
  * ### Installation
  * ```bash
  * # Clonez le dépôt
- * git clone https://github.com/votre-repo/llamabot.git
- * cd llamabot
+ * git clone https://github.com/Okkoma/LlamaBot.git
+ * cd LlamaBot
  * 
  * # Configurez et construisez
- * mkdir build && cd build
- * cmake ..
- * cmake --build . --config Release
+ * cmake -S . -B build
+ * cmake --build build --config Release
  * 
  * # Exécutez l'application
  * ./LlamaBot
