@@ -1,7 +1,9 @@
 #include <QtTest>
 #include <QElapsedTimer>
 #include <QCoreApplication>
+#include <algorithm>
 
+#include "LLMServiceDefs.h"
 #include "mock_services.h"
 
 #include "../../Source/Application/LlamaCppService.h"
@@ -76,8 +78,12 @@ void LlamaCppTest::test_llamacpp_streaming()
 
     // Check if has a model available
     // if no model, skip the test
-    if (!llamaCppService->getAvailableModels().size())
+    std::vector<LLMModel> models = llamaCppService->getAvailableModels();
+    if (!models.size())
         QSKIP("LlamaCppTest::test_llamacpp_streaming() no model ... skipped");
+
+    // check if there's no cloud models
+    QVERIFY(std::find_if(models.begin(), models.end(), [](LLMModel& model){ return model.num_params_ == "cloud"; }) == models.end());
 
     // 1. use local model from the main application target
     // with LLMService::setCustomModelsPath

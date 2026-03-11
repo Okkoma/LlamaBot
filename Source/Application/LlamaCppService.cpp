@@ -1223,16 +1223,6 @@ int LlamaCppService::getContextSize(Chat* chat) const
     return data ? data->n_ctx_ : defaultContextSize_;
 }
 
-void removeCloudModels(std::vector<LLMModel>& models)
-{
-    int i = 0;
-    while (i < models.size())
-    {
-        if (models[i++].num_params_ == "cloud")
-            models.erase(std::next(models.begin(), --i));            
-    }
-}
-
 std::vector<LLMModel> LlamaCppService::getAvailableModels() const
 {
     std::vector<LLMModel> models;
@@ -1244,7 +1234,10 @@ std::vector<LLMModel> LlamaCppService::getAvailableModels() const
         OllamaService::getOllamaModels(QDir::homePath() + "/", models);  
     }
 
-    removeCloudModels(models);
+    // with llamacppservice, the ollama cloud models are not available
+    models.erase(std::remove_if(models.begin(), models.end(), [](LLMModel& m){
+        return m.num_params_ == "cloud";
+    }), models.end());
 
     QStringList paths;
     paths += QStandardPaths::writableLocation(QStandardPaths::AppDataLocation) + "/models";
