@@ -49,7 +49,7 @@ public:
      * 
      * Nettoie les ressources et sauvegarde l'état des chats.
      */
-    ~ChatController();
+    ~ChatController() = default;
 
     /**
      * @brief Retourne le chat courant
@@ -206,7 +206,6 @@ public:
      */
     Q_INVOKABLE void refreshModels();
 
-    // TODO : créer une classe Settings
     Q_INVOKABLE void resetSettings();
 
     /**
@@ -277,7 +276,10 @@ signals:
 
     void pendingAssetsChanged();
 
-private:    
+private:
+
+    void loadSettings();
+
     /**
      * @brief Retourne le chemin du fichier de sauvegarde des chats
      * @return Chemin complet du fichier de sauvegarde
@@ -327,14 +329,7 @@ public:
      * @brief Active ou désactive le RAG
      * @param enabled État souhaité pour le RAG
      */
-    void setRagEnabled(bool enabled)
-    {
-        if (ragEnabled_ != enabled)
-        {
-            ragEnabled_ = enabled;
-            emit ragEnabledChanged();
-        }
-    }
+    void setRagEnabled(bool enabled);
     
     /**
      * @brief Retourne le service RAG

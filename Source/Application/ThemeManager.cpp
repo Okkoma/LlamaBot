@@ -70,15 +70,18 @@ QString findColorEmojiFont()
 
 ThemeManager::ThemeManager(QObject* parent) : 
     QObject(parent)
-{    
+{
+    // Get default font from QApplication if available, otherwise use system default
+    systemFont_ = qApp ? qApp->font().family() : QFontDatabase::systemFont(QFontDatabase::GeneralFont).family();
+    colorEmojiFont_ = findColorEmojiFont();
+
     loadSettings();
 
-    styles_ = getPlatformStyles();    
-
+    styles_ = getPlatformStyles();
     if (!styles_.contains(currentStyle_))
     {
         // Set the fallback style
-        currentStyle_ = styles_.isEmpty() ? DefaultStyle_ : styles_.first();
+        setStyle(styles_.isEmpty() ? DefaultStyle_ : styles_.first());
         emit styleNotAvailableWarning(currentStyle_);
     }
     
@@ -88,16 +91,31 @@ ThemeManager::ThemeManager(QObject* parent) :
     loadThemes();
 }
 
-ThemeManager::~ThemeManager()
-{
-    saveSettings();
-}
-
 void ThemeManager::restartApplication()
 {
-    saveSettings();
     QProcess::startDetached(QCoreApplication::applicationFilePath(), QCoreApplication::arguments());
     QCoreApplication::quit();
+}
+
+void ThemeManager::loadSettings()
+{
+    const QString defaultFont = !colorEmojiFont_.isEmpty() ? colorEmojiFont_ : systemFont_;
+    const int defaultFontSize = 14;
+    
+    QSettings settings;
+    setStyle(settings.value("ui/style", DefaultStyle_).toString());
+    setTheme(settings.value("ui/theme", "Default").toString());
+    setDarkMode(settings.value("ui/darkMode", false).toBool());
+    setFont(settings.value("ui/fontFamily", defaultFont).toString());
+    setFontSize(settings.value("ui/fontSize", defaultFontSize).toInt());
+}
+
+void ThemeManager::resetSettings()
+{
+    setTheme("Default");
+    setDarkMode(false);
+    setFont(!colorEmojiFont_.isEmpty() ? colorEmojiFont_ : QFontDatabase::systemFont(QFontDatabase::GeneralFont).family());
+    setFontSize(14);
 }
 
 void ThemeManager::setStyle(const QString& style) 
@@ -105,6 +123,7 @@ void ThemeManager::setStyle(const QString& style)
     if (currentStyle_ != style)
     {
         currentStyle_ = style;
+        QSettings().setValue("ui/style", currentStyle_);
     }
 }
 
@@ -113,6 +132,7 @@ void ThemeManager::setTheme(const QString& theme)
     if (currentTheme_ != theme)
     {
         currentTheme_ = theme;
+        QSettings().setValue("ui/theme", currentTheme_);  
         applyTheme();
     }
 }
@@ -122,6 +142,7 @@ void ThemeManager::setFont(const QString& font)
     if (currentFont_ != font)
     {
         currentFont_ = font;
+        QSettings().setValue("ui/fontFamily", currentFont_);
         emit fontChanged();
     }
 }
@@ -131,6 +152,7 @@ void ThemeManager::setFontSize(int size)
     if (currentFontSize_ != size)
     {
         currentFontSize_ = size;
+        QSettings().setValue("ui/fontSize", currentFontSize_);
         emit fontChanged();
     }
 }
@@ -140,6 +162,7 @@ void ThemeManager::setDarkMode(bool dark)
     if (darkMode_ != dark)
     {
         darkMode_ = dark;
+        QSettings().setValue("ui/darkMode", darkMode_);
         emit darkModeChanged();
         emit themeChanged();
     }
@@ -302,50 +325,4 @@ void ThemeManager::applyTheme()
 
     qDebug() << "ThemeManager::applyTheme: theme:" << currentTheme_ << "style:" << QQuickStyle::name() << "dark:" << darkMode_;
     emit themeChanged();
-}
-
-void ThemeManager::loadSettings()
-{
-    // Get default font from QApplication if available, otherwise use system default
-    QFont systemFont = qApp ? qApp->font() : QFontDatabase::systemFont(QFontDatabase::GeneralFont);
-    colorEmojiFont_ = findColorEmojiFont();
-    QString defaultFont = !colorEmojiFont_.isEmpty() ? colorEmojiFont_ : systemFont.family();
-    int defaultFontSize = 14;
-
-    QSettings settings;
-    settings.beginGroup("ui");
-    currentStyle_ = settings.value("style", defaultStyle_).toString();
-    currentTheme_ = settings.value("theme", "Default").toString();
-    darkMode_ = settings.value("darkMode", false).toBool();
-    currentFont_ =  settings.value("fontFamily", defaultFont).toString();
-    currentFontSize_ = settings.value("fontSize", defaultFontSize).toInt();
-    settings.endGroup();
-
-    qDebug() << "ThemeManager::loadSettings :"
-        << "theme:" << currentTheme_
-        << "style:" << currentStyle_
-        << "dark:" << darkMode_        
-        << "font:" << currentFont_
-        << "fontsize:" << currentFontSize_;
-
-    emit fontChanged();
-}
-
-void ThemeManager::saveSettings()
-{
-    QSettings settings;
-    settings.beginGroup("ui");
-    settings.setValue("style", currentStyle_);
-    settings.setValue("theme", currentTheme_);    
-    settings.setValue("darkMode", darkMode_);
-    settings.setValue("fontFamily", currentFont_);
-    settings.setValue("fontSize", currentFontSize_);
-    settings.endGroup();
-
-    qDebug() << "ThemeManager::saveSettings :"
-        << "theme:" << currentTheme_
-        << "style:" << currentStyle_
-        << "dark:" << darkMode_        
-        << "font:" << currentFont_
-        << "fontsize:" << currentFontSize_;
 }

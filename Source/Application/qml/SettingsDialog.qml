@@ -221,8 +221,15 @@ Dialog {
                 Button {
                     text: "Reset Settings"
                     onClicked: {
-                        if (ChatController)
-                            ChatController.resetSettings();
+                        console.log("Reset Settings...");
+                        ChatController.resetSettings();
+                        ThemeManager.resetSettings();
+                        fontSizeSelector.value = ThemeManager.currentFontSize;
+                        themeSelector.currentIndex = themeSelector.find(ThemeManager.currentTheme);
+                        autoExpandToggle.checked = ChatController.autoExpandContext;
+                        contextSizeSpin.value = ChatController.defaultContextSize;
+                        ragToggle.checked = ChatController.ragEnabled;
+                        console.log("Reset Settings ... end !");
                     }
                 }
             }

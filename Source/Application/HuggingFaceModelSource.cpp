@@ -26,8 +26,7 @@ const QStringList sizeFilterTagsStr[] =
 HuggingFaceModelSource::HuggingFaceModelSource(QObject* parent) :
     ModelSource(parent)
 {
-    QSettings settings;
-    authToken_ = settings.value("hfToken").toString();
+    authToken_ = QSettings().value("hfToken").toString();
 }
 
 HuggingFaceModelSource::~HuggingFaceModelSource()

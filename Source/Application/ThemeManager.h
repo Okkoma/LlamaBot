@@ -56,7 +56,7 @@ public:
      * 
      * Nettoie les ressources et sauvegarde les paramètres.
      */
-    ~ThemeManager() override;
+    ~ThemeManager() = default;
 
     /**
      * @brief Définit le style courant
@@ -162,18 +162,9 @@ public:
     void loadThemes();
     
     /**
-     * @brief Charge les paramètres depuis la configuration
-     * 
-     * Charge les préférences de thème sauvegardées.
+     * @brief charge les préférences par défaut
      */
-    void loadSettings();
-    
-    /**
-     * @brief Sauvegarde les paramètres dans la configuration
-     * 
-     * Sauvegarde les préférences de thème courantes.
-     */
-    void saveSettings();
+    Q_INVOKABLE void resetSettings();
 
     /**
      * @brief Redémarre l'application
@@ -209,6 +200,13 @@ signals:
 
 private:
     /**
+     * @brief Charge les paramètres depuis la configuration
+     * 
+     * Charge les préférences de thème sauvegardées.
+     */
+     void loadSettings();
+     
+    /**
      * @brief Applique le thème courant
      * 
      * Met à jour l'interface utilisateur avec le thème sélectionné.
@@ -217,7 +215,6 @@ private:
 
     bool darkMode_;                   ///< Indique si le mode sombre est activé
     QString currentStyle_;            ///< Style courant
-    QString defaultStyle_;            ///< Style par défaut
     QStringList styles_;              ///< Liste des styles disponibles
     QStringList themes_;              ///< Liste des thèmes disponibles
     QString currentTheme_;            ///< Thème courant
@@ -225,5 +222,6 @@ private:
     QMap<QString, QJsonObject> dataThemes_; ///< Tous les thèmes chargés
     QString currentFont_;             ///< Police courante
     QString colorEmojiFont_;          ///< Police pour les emojis colorés
+    QString systemFont_;
     int currentFontSize_;             ///< Taille de la police courante
 };

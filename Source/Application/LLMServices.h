@@ -148,15 +148,7 @@ public:
      * @brief Définit la taille de contexte par défaut
      * @param size Nouvelle taille de contexte par défaut
      */
-    void setDefaultContextSize(int size)
-    {
-        if (defaultContextSize_ != size)
-        {
-            defaultContextSize_ = size;
-            emit defaultContextSizeChanged();
-            saveSettings();
-        }
-    }
+    void setDefaultContextSize(int size);
 
     /**
      * @brief Retourne si l'auto-expansion du contexte est activée
@@ -168,15 +160,7 @@ public:
      * @brief Définit l'état de l'auto-expansion du contexte
      * @param enabled Nouvel état
      */
-    void setAutoExpandContext(bool enabled)
-    {
-        if (autoExpandContext_ != enabled)
-        {
-            autoExpandContext_ = enabled;
-            emit autoExpandContextChanged();
-            saveSettings();
-        }
-    }
+    void setAutoExpandContext(bool enabled);
 
         /**
      * @brief Retourne le chemin d'accès personnalisé vers les modeles
@@ -227,11 +211,6 @@ private:
      * Crée et configure les services par défaut.
      */
     void initialize();
-
-    /**
-     * @brief Sauvegarde les paramètres globaux (taille contexte, etc.)
-     */
-    void saveSettings();
 
     /**
      * @brief Charge les paramètres globaux

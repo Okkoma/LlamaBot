@@ -9,31 +9,21 @@ LLMServices::LLMServices(QObject* parent) :
     initialize();
 }
 
-void LLMServices::saveSettings()
-{
-    QSettings settings;
-    settings.setValue("defaultContextSize", defaultContextSize_);
-    settings.setValue("autoExpandContext", autoExpandContext_);
-    settings.setValue("allowSharedModels", allowSharedModels_);
-    settings.setValue("allowCloudModels", allowCloudModels_);    
-}
-
 void LLMServices::loadSettings()
 {
     QSettings settings;
-    defaultContextSize_ = settings.value("defaultContextSize", LLM_DEFAULT_CONTEXT_SIZE).toInt();
-    autoExpandContext_ = settings.value("autoExpandContext", true).toBool();
-    allowSharedModels_ = settings.value("allowSharedModels", false).toBool();
-    allowCloudModels_ = settings.value("allowCloudModels", true).toBool();  
+    defaultContextSize_ = settings.value("llm/defaultContextSize", LLM_DEFAULT_CONTEXT_SIZE).toInt();
+    autoExpandContext_ = settings.value("llm/utoExpandContext", true).toBool();
+    allowSharedModels_ = settings.value("llm/allowSharedModels", false).toBool();
+    allowCloudModels_ = settings.value("llm/allowCloudModels", true).toBool();  
 }
 
 void LLMServices::resetSettings()
 {
-    defaultContextSize_ = LLM_DEFAULT_CONTEXT_SIZE;
-    autoExpandContext_ = true;
-    allowSharedModels_ = false;
-    allowCloudModels_ = true;
-    saveSettings();
+    setDefaultContextSize(LLM_DEFAULT_CONTEXT_SIZE);
+    setAutoExpandContext(true);
+    allowSharedModels(false);
+    allowCloudModels(true);
 }
 
 LLMServices::~LLMServices()
@@ -48,11 +38,33 @@ LLMServices::~LLMServices()
 void LLMServices::allowSharedModels(bool enable)
 { 
     allowSharedModels_ = enable;
+    QSettings().setValue("llm/allowSharedModels", allowSharedModels_);
 }
 
 void LLMServices::allowCloudModels(bool enable)
 { 
     allowCloudModels_ = enable;
+    QSettings().setValue("llm/allowCloudModels", allowCloudModels_); 
+}
+
+void LLMServices::setDefaultContextSize(int size)
+{
+    if (defaultContextSize_ != size)
+    {
+        defaultContextSize_ = size;
+        QSettings().setValue("llm/defaultContextSize", defaultContextSize_);
+        emit defaultContextSizeChanged();
+    }
+}
+
+void LLMServices::setAutoExpandContext(bool enabled)
+{
+    if (autoExpandContext_ != enabled)
+    {
+        autoExpandContext_ = enabled;
+        QSettings().setValue("llm/autoExpandContext", autoExpandContext_);
+        emit autoExpandContextChanged();
+    }
 }
 
 void LLMServices::addAPI(LLMService* api)

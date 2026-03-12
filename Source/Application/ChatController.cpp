@@ -34,6 +34,8 @@ void ChatController::initialize(LLMServices* llmservices)
     // Try to load existing chats
     localStore_ = new ChatStorageLocal(llmservices);
     cloudStore_ = new ChatStorageDistant(llmservices);
+
+    loadSettings();
     loadChats();
 
     // specific case for first run
@@ -57,12 +59,6 @@ void ChatController::initialize(LLMServices* llmservices)
     // Fix: Connect LLMServices signals to ChatController signals to notify QML
     connect(llmServices_, &LLMServices::defaultContextSizeChanged, this, &ChatController::defaultContextSizeChanged);
     connect(llmServices_, &LLMServices::autoExpandContextChanged, this, &ChatController::autoExpandContextChanged);    
-}
-
-ChatController::~ChatController()
-{
-    // Chats will be deleted automatically as they are parented to this
-    qDebug() << "~ChatController()";
 }
 
 QVariantList ChatController::chatList() const
@@ -478,12 +474,17 @@ void ChatController::refreshModels()
     emit availableModelsChanged();
 }
 
+void ChatController::loadSettings()
+{
+    QSettings settings;
+    setRagEnabled(settings.value("ragEnabled", false).toBool());
+}
+
 void ChatController::resetSettings()
 {
     llmServices_->resetSettings();
+    setRagEnabled(false);
     refreshModels();
-    
-    // TODO : ajouter les autres settings ThemeManager ...
 }
 
 QString ChatController::getChatsFilePath() const
@@ -528,6 +529,16 @@ void ChatController::loadChats()
         currentChat_ = chats_.last();
         emit currentChatChanged();
         emit chatListChanged();
+    }
+}
+
+void ChatController::setRagEnabled(bool enabled)
+{
+    if (ragEnabled_ != enabled)
+    {
+        ragEnabled_ = enabled;
+        QSettings().setValue("ragEnabled", ragEnabled_);
+        emit ragEnabledChanged();
     }
 }
 
