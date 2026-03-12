@@ -98,13 +98,18 @@ void RAGService::clearCollection()
 bool RAGService::saveCollection()
 {
     // Save to a default location in app data
-    // For now, let's just save to bin/rag.db
-    return vectorStore_.save("rag.db");
+    QDir dir(QStandardPaths::writableLocation(QStandardPaths::AppDataLocation));
+    if (!dir.exists())
+        dir.mkpath(".");    
+    return vectorStore_.save(dir.filePath("rag.db"));
 }
 
 bool RAGService::loadCollection()
 {
-    bool ok = vectorStore_.load("rag.db");
+    QDir dir(QStandardPaths::writableLocation(QStandardPaths::AppDataLocation));
+    if (!dir.exists())
+        dir.mkpath(".");    
+    bool ok = vectorStore_.load(dir.filePath("rag.db"));
     if (ok)
     {
         status_ = QString("Ready (%1 chunks loaded)").arg(vectorStore_.count());
