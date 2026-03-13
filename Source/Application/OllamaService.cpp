@@ -26,22 +26,28 @@ const QString OllamaService::ollamaSystemDir = []() {
 const QString OllamaService::ollamaManifestBaseDir = ".ollama/models/manifests/registry.ollama.ai/library/";
 const QString OllamaService::ollamaBlobsBaseDir = ".ollama/models/blobs/";
 
-std::vector<LLMModel> OllamaService::getAvailableModels() const
+const std::vector<LLMModel>& OllamaService::getAvailableModels()
 {
-    std::vector<LLMModel> result;
-
-    if (llmservices_->hasSharedModels())
+    if (availableModelsDirty_)
     {
-        OllamaService::getOllamaModels(OllamaService::ollamaSystemDir, result);
-        OllamaService::getOllamaModels(QDir::homePath() + "/", result);
+        std::vector<LLMModel> result;
+
+        if (llmservices_->hasSharedModels())
+        {
+            OllamaService::getOllamaModels(OllamaService::ollamaSystemDir, result);
+            OllamaService::getOllamaModels(QDir::homePath() + "/", result);
+        }
+
+        if (llmservices_->allowCloudModels())    
+            OllamaModelSource::getOllamaCloudModels(result);
+        
+        qDebug() << "OllamaService::getAvailableModels: " << result.size() << " models found";
+
+        availableModels_ = result;
+        availableModelsDirty_ = false;
     }
 
-    if (llmservices_->allowCloudModels())    
-        OllamaModelSource::getOllamaCloudModels(result);
-    
-    qDebug() << "OllamaService::getAvailableModels: " << result.size() << " models found";
-
-    return result;
+    return availableModels_;
 }
 
 OllamaManifest OllamaService::getOllamaManifest(
@@ -186,7 +192,7 @@ bool OllamaService::canStartProcess() const
 
 bool OllamaService::isProcessStarted() const
 {
-    qDebug() << "OllamaService: isProcessStarted:" << programProcess_.get() << (programProcess_ != nullptr ? programProcess_->state() : QProcess::ProcessState::NotRunning);
+    //qDebug() << "OllamaService: isProcessStarted:" << programProcess_.get() << (programProcess_ != nullptr ? programProcess_->state() : QProcess::ProcessState::NotRunning);
     return programProcess_ && programProcess_->state() != QProcess::NotRunning;
 }
 
@@ -198,7 +204,7 @@ bool OllamaService::isUrlAccessible() const
 
     if (!url_.isEmpty())
     {
-        qDebug() << "OllamaService::isUrlAccessible() ..." << url_;
+        //qDebug() << "OllamaService::isUrlAccessible() ..." << url_;
 
         QEventLoop loop;
         QNetworkReply* reply = networkManager_->get(QNetworkRequest(url_ + api_version_));
@@ -225,11 +231,13 @@ bool OllamaService::isUrlAccessible() const
         {
             timer.stop();
             accessible = (reply->error() == QNetworkReply::NoError);
+            /*
             if (!accessible)
             {
                 qDebug() << " ... Erreur réseau:" << reply->errorString();
                 qDebug() << " ... Code HTTP:" << reply->attribute(QNetworkRequest::HttpStatusCodeAttribute);
             }
+            */
         }
         else
         {

@@ -14,6 +14,7 @@ static int ERRCODE_LLAMACPP_ONTEXT_EXCEEDED = ErrorSystem::instance().registerEr
 static int ERRCODE_LLAMACPP_FAILED_DECODE   = ErrorSystem::instance().registerError("LlamaCpp - failed to decode");
 static int ERRCODE_LLAMACPP_FAILED_CONVERT_TOKEN_TO_PIECE = ErrorSystem::instance().registerError("LlamaCpp - failed to convert token to piece");
 static int ERRCODE_LLAMACPP_FAILED_CREATE_CONTEXT = ErrorSystem::instance().registerError("LlamaCpp - failed to create context");
+static int ERRCODE_LLAMACPP_FAILED_LOAD_MODEL = ErrorSystem::instance().registerError("LlamaCpp - failed to load model");
 
 int generationErrorCodes_[]
 {
@@ -24,14 +25,14 @@ int generationErrorCodes_[]
 };
 
 // Utility function to check available GPU memory
-bool checkGpuMemoryAvailable(size_t requiredBytes)
+bool checkGpuMemoryAvailable(size_t requiredBytes=0, bool log=false)
 {
     size_t freeMem = 0;
     size_t totalMem = 0;
     bool hasEnoughMemory = false;
     
     // Check all available GPU devices
-    if (requiredBytes)
+    if (log && requiredBytes)
         qDebug() << QString("GPU memory check - Required: %1 MiB").arg(requiredBytes / (1024 * 1024));
     
     for (size_t i = 0; i < ggml_backend_dev_count(); i++)
@@ -42,11 +43,12 @@ bool checkGpuMemoryAvailable(size_t requiredBytes)
             ggml_backend_dev_memory(dev, &freeMem, &totalMem);
             QString devName = QString::fromUtf8(ggml_backend_dev_name(dev));
             QString devDesc = QString::fromUtf8(ggml_backend_dev_description(dev));
-            qDebug() << QString("Device %1 (%2): %3 MiB free / %4 MiB total")
-                        .arg(devName)
-                        .arg(devDesc)
-                        .arg(freeMem / (1024 * 1024))
-                        .arg(totalMem / (1024 * 1024));
+            if (log)
+                qDebug() << QString("Device %1 (%2): %3 MiB free / %4 MiB total")
+                            .arg(devName)
+                            .arg(devDesc)
+                            .arg(freeMem / (1024 * 1024))
+                            .arg(totalMem / (1024 * 1024));
 
             if (devName.contains("BLAS"))
                 continue;
@@ -56,7 +58,8 @@ bool checkGpuMemoryAvailable(size_t requiredBytes)
                 if (freeMem >= requiredBytes)
                 {
                     hasEnoughMemory = true;
-                    qDebug() << QString("- Sufficient memory on device %1").arg(devName);
+                    if (log)
+                        qDebug() << QString("- Sufficient memory on device %1").arg(devName);
                 }
                 else
                 {
@@ -99,7 +102,7 @@ void waitForGpuMemoryPurge()
     qDebug() << "GPU memory release wait completed";
 }
 
-llama_context* LLamaInitializeContext(llama_model* model, const llama_context_params& params)
+llama_context* LLamaInitializeContext(llama_model* model, const llama_context_params& params, bool log)
 {
     llama_context* ctx = nullptr;
 
@@ -114,12 +117,15 @@ llama_context* LLamaInitializeContext(llama_model* model, const llama_context_pa
     size_t estimatedMemory = kvCacheMemory + computeBuffers;
     estimatedMemory = static_cast<size_t>(estimatedMemory * 1.2); // +20% safety margin
     
-    qDebug() << "LlamaCppChatData::initialize: Creating context with n_ctx=" << params.n_ctx;
-    qDebug() << QString("Estimated memory required: %1 MiB (KV cache: 256 MiB + Buffers: 258.5 MiB + 20% margin)")
-                .arg(estimatedMemory / (1024 * 1024));
+    if (log)
+    {
+        qDebug() << "LLamaInitializeContext: Creating context with n_ctx=" << params.n_ctx;
+        qDebug() << QString("Estimated memory required: %1 MiB (KV cache: 256 MiB + Buffers: 258.5 MiB + 20% margin)")
+                    .arg(estimatedMemory / (1024 * 1024));
+    }
     
     // Check available memory before creating the context
-    if (!checkGpuMemoryAvailable(estimatedMemory))
+    if (!checkGpuMemoryAvailable(estimatedMemory, log))
     {
         qWarning() << "Insufficient GPU memory detected, waiting for release...";
         
@@ -129,7 +135,7 @@ llama_context* LLamaInitializeContext(llama_model* model, const llama_context_pa
         waitForGpuMemoryPurge();
                 
         // Check again after purge
-        if (!checkGpuMemoryAvailable(estimatedMemory))
+        if (!checkGpuMemoryAvailable(estimatedMemory, log))
         {
             qWarning() << "llama-cpp error: Insufficient GPU memory even after purge";
             qWarning() << QString("Required: %1 MiB, but insufficient memory available").arg(estimatedMemory / (1024 * 1024));
@@ -148,7 +154,7 @@ llama_context* LLamaInitializeContext(llama_model* model, const llama_context_pa
         // On failure, wait for memory to be released and retry once
         waitForGpuMemoryPurge();
         
-        if (!checkGpuMemoryAvailable(estimatedMemory))
+        if (!checkGpuMemoryAvailable(estimatedMemory, log))
         {
             qWarning() << "GPU memory still insufficient after purge";
             return nullptr;
@@ -278,11 +284,6 @@ int LlamaGenerateStep(LlamaCppChatData& data)
 }
 
 
-LlamaCppChatData::~LlamaCppChatData()
-{
-    deinitialize();
-}
-
 void LlamaCppChatData::initialize(LlamaModelData* model)
 {
     model_ = model;
@@ -323,7 +324,9 @@ void LlamaCppChatData::initialize(LlamaModelData* model)
     ctx_params.type_v = GGML_TYPE_Q8_0;  // Values Quantification
     ctx_params.flash_attn_type = LLAMA_FLASH_ATTN_TYPE_ENABLED;
 
-    ctx_ = LLamaInitializeContext(model_->model_, ctx_params);
+    assert(ctx_ == nullptr);
+
+    ctx_ = LLamaInitializeContext(model_->model_, ctx_params, true);
     if (!ctx_)
     {
         ErrorSystem::instance().log(ERRCODE_LLAMACPP_FAILED_CREATE_CONTEXT);
@@ -351,7 +354,7 @@ void LlamaCppChatData::deinitialize()
     }
     if (ctx_)
     {
-        qDebug() << "LlamaCppChatData::deinitialize: Freeing llama context ...";
+        qDebug() << "LlamaCppChatData::deinitialize: Freeing llama context ... this:" << this << " ctx:" << ctx_;
         // Free the context
         llama_free(ctx_);
         ctx_ = nullptr;
@@ -763,7 +766,7 @@ void LlamaCppWorker::stopProcessing()
 LlamaCppService::LlamaCppService(LLMServices* service, const QString& name) :
     LLMService(LLMEnum::LLMType::LlamaCpp, service, name)
 {
-    bool check = checkGpuMemoryAvailable(0);
+    bool check = checkGpuMemoryAvailable();
 
     // load dynamic backends - IMPORTANT to enable GPU
     ggml_backend_load_all();
@@ -791,10 +794,13 @@ void logGGMLtoQT(enum ggml_log_level level, const char * text, void * user_data)
         qDebug().noquote() << msg;
 }
 
+void emptyLog(enum ggml_log_level level, const char * text, void * user_data) { ; }
+
 LlamaCppService::LlamaCppService(LLMServices* service, const QVariantMap& params) :
     LLMService(service, params)
 {
-    ggml_log_set(&logGGMLtoQT, nullptr);
+    //ggml_log_set(&logGGMLtoQT, nullptr);
+    llama_log_set(&emptyLog, nullptr);
 
     // Default GPU configuration
     setDefaultUseGpu(true);
@@ -804,7 +810,7 @@ LlamaCppService::LlamaCppService(LLMServices* service, const QVariantMap& params
     // Enable threaded version by default
     setUseThreadedVersion(true);
 
-    bool check = checkGpuMemoryAvailable(0);
+    bool check = checkGpuMemoryAvailable();
 
     // load dynamic backends - IMPORTANT to enable GPU
     ggml_backend_load_all();
@@ -824,23 +830,20 @@ LlamaCppService::~LlamaCppService()
 {
     qDebug() << "~LlamaCppService";
 
-    for (LlamaCppChatData& data : datas_)
-        clearData(&data);
+    for (auto data : datas_)
+        clearData(&data.second);
 
-    for (LlamaModelData& model : models_)
-    {
-        if (model.model_)
-            llama_model_free(model.model_);
-    }
+    for (auto model : models_)
+        if (model.second.model_)
+            llama_model_free(model.second.model_);
 
-    checkGpuMemoryAvailable(0);
-
-    datas_.clear();
-    models_.clear();
+    checkGpuMemoryAvailable();
 }
 
 LlamaCppChatData* LlamaCppService::createData(Chat* chat)
 {
+    qDebug() << "LlamaCppService::createData ... chat:" << chat;
+
     LlamaCppChatData& data = datas_[chat];
     data.chat_ = chat;
     chat->setChatData(&data);
@@ -850,6 +853,8 @@ LlamaCppChatData* LlamaCppService::createData(Chat* chat)
 
 void LlamaCppService::initializeData(LlamaCppChatData* data, LlamaModelData* model)
 {
+    qDebug() << "LlamaCppService::initializeData ... data:" << data;
+
     if (!model)
     {
         qWarning() << "LlamaCppService::initializeData ... no model !";
@@ -888,35 +893,34 @@ void LlamaCppService::clearData(LlamaCppChatData* data)
     // Free context resources
     data->deinitialize();
     data->clear();
+    data->model_ = nullptr;
 
     // Wait for GPU memory to be released
     // CUDA operations are asynchronous, we need to wait for the driver to release memory
     waitForGpuMemoryPurge();
     
     qDebug() << "LlamaCppService::clearData: Cleanup completed";
-
-    data->model_ = nullptr;
 }
 
 void LlamaCppService::clearModelInMemory(const QString& modelName)
 {
     std::lock_guard<std::mutex> lock(modelMutex_);
 
-    if (!models_.contains(modelName))
-        return;
-    
-    LlamaModelData& model = models_[modelName];
-    if (!model.model_)
-        return;
+    if (auto it = models_.find(modelName); it != models_.end())
+    {
+        LlamaModelData& model = it->second;
+        if (!model.model_)
+            return;
 
-    qDebug() << "LlamaCppService::clearModelInMemory:" << modelName;
+        qDebug() << "LlamaCppService::clearModelInMemory: " << modelName;
+        
+        llama_model_free(model.model_);
 
-    llama_model_free(model.model_);
+        waitForGpuMemoryPurge();
+        bool check = checkGpuMemoryAvailable();
 
-    waitForGpuMemoryPurge();
-    bool check = checkGpuMemoryAvailable(0);
-
-    model.model_ = nullptr;
+        model.model_ = nullptr;
+    }
 }
 
 LlamaModelData* LlamaCppService::loadModel(const QString& modelName, int numGpuLayers, bool clearOtherModels)
@@ -925,8 +929,8 @@ LlamaModelData* LlamaCppService::loadModel(const QString& modelName, int numGpuL
 
     qDebug() << "LlamaCppService::loadModel ... start loading model";
 
-    std::vector<LLMModel> models = getAvailableModels();
-    for (LLMModel& model : models)
+    const std::vector<LLMModel>& models = getAvailableModels();
+    for (const LLMModel& model : models)
     {
         if (model.toString() == modelName)
         {
@@ -936,10 +940,18 @@ LlamaModelData* LlamaCppService::loadModel(const QString& modelName, int numGpuL
         }
     }
 
-    if (clearOtherModels && lastModelAddedInMemory_ && modelName != lastModelAddedInMemory_->modelName_)
+    if (clearOtherModels)
     {
-        qDebug() << "LlamaCppService::loadModel: Clear last model" << modelName;
-        clearModelInMemory(lastModelAddedInMemory_->modelName_);
+        qDebug() << "LlamaCppService::loadModel: clearOtherModels in memory";
+        for (auto model : models_)
+        {
+            if (model.first != modelName && (embeddingModel_ && 
+                model.first != embeddingModel_->modelName_))
+            {
+                clearModelInMemory(model.first);
+                markAvailableModelsDirty();
+            }
+        }
     }
 
     // initialize the model
@@ -952,6 +964,7 @@ LlamaModelData* LlamaCppService::loadModel(const QString& modelName, int numGpuL
     if (!modelData.model_)
     {
         qDebug() << "llama-cpp error: unable to load model" << modelData.modelPath_;
+        ErrorSystem::instance().log(ERRCODE_LLAMACPP_FAILED_LOAD_MODEL);
         return nullptr;
     }
     modelData.modelName_ = modelName;
@@ -959,20 +972,16 @@ LlamaModelData* LlamaCppService::loadModel(const QString& modelName, int numGpuL
     modelData.use_gpu_ = numGpuLayers > 0;
     models_[modelName] = modelData;
 
-    lastModelAddedInMemory_ = &models_[modelName];
-
     qDebug() << "LlamaCppService::loadModel ... end loading model";
 
-    return lastModelAddedInMemory_;
+    return &models_[modelName];
 }
 
 void LlamaCppService::setModelInternal(LlamaCppChatData* data, const QString& modelName)
 {
     qDebug() << "LlamaCppService::setModelInternal ...";
 
-    std::lock_guard<std::mutex> lock(modelMutex_);
-
-    emit modelLoadingStarted(modelName);
+    //emit modelLoadingStarted(modelName);
     if (data->model_ && modelName != data->model_->modelName_)
     {
         qDebug() << "LlamaCppService::setModelInternal ... change to model:" << data->model_->modelName_ << " -> " << modelName;
@@ -983,15 +992,17 @@ void LlamaCppService::setModelInternal(LlamaCppChatData* data, const QString& mo
     if (!model || !model->model_)                        
         model = this->loadModel(modelName, 99, onlyOneModelInMemory_);
     
-    if (model && !data->model_)
+    if (model && data->model_ != model)
         initializeData(data, model);
 
-    emit modelLoadingFinished(modelName, true);
+    //emit modelLoadingFinished(modelName, true);
     qDebug() << "LlamaCppService::setModelInternal ... end!";
 }
 
 void LlamaCppService::setModel(Chat* chat, QString modelName)
 {
+    std::lock_guard<std::mutex> lock(modelMutex_);
+
     LlamaCppChatData* data = getData(chat);
     if (!data)
         data = createData(chat);
@@ -1015,18 +1026,18 @@ void LlamaCppService::deleteModel(const LLMModel& model)
     qDebug() << "LlamaCppService::deleteModel ... " << model.toString();
     
     clearModelInMemory(model.toString());
+    markAvailableModelsDirty();
     QFile::remove(model.filePath_);
 }
 
-
 bool LlamaCppService::isReady() const
 {
-    return true;
+    return state_ == isWaiting;
 }
 
 void LlamaCppService::post(Chat* chat, const QString& content, bool streamed)
 {
-    qDebug() << "LlamaCppService::post ... content:" << content;
+    std::lock_guard<std::mutex> lock(modelMutex_);
 
     LlamaCppChatData* data = getData(chat);
     if (!data)
@@ -1223,77 +1234,83 @@ int LlamaCppService::getContextSize(Chat* chat) const
     return data ? data->n_ctx_ : defaultContextSize_;
 }
 
-std::vector<LLMModel> LlamaCppService::getAvailableModels() const
+const std::vector<LLMModel>& LlamaCppService::getAvailableModels()
 {
-    std::vector<LLMModel> models;
-
-    // LlamaCpp can use shared models from Ollama.
-    if (llmservices_->hasSharedModels())
+    if (availableModelsDirty_)
     {
-        OllamaService::getOllamaModels(OllamaService::ollamaSystemDir, models);
-        OllamaService::getOllamaModels(QDir::homePath() + "/", models);  
-    }
+        std::vector<LLMModel> models;
 
-    // with llamacppservice, the ollama cloud models are not available
-    models.erase(std::remove_if(models.begin(), models.end(), [](LLMModel& m){
-        return m.num_params_ == "cloud";
-    }), models.end());
-
-    QStringList paths;
-    paths += QStandardPaths::writableLocation(QStandardPaths::AppDataLocation) + "/models";
-    if (!llmservices_->getCustomModelsPath().isEmpty())
-        paths += llmservices_->getCustomModelsPath();
-
-    for (const QString& path : paths)
-    {
-        qDebug() << "LlamaCppService::getAvailableModels: path:" << path;
-        QDir appDataModelsDir(path);
-        if (appDataModelsDir.exists())
+        // LlamaCpp can use shared models from Ollama.
+        if (llmservices_->hasSharedModels())
         {
-            QDirIterator it(path, QStringList() << "*.gguf", QDir::Files, QDirIterator::NoIteratorFlags);
-            while (it.hasNext())
+            OllamaService::getOllamaModels(OllamaService::ollamaSystemDir, models);
+            OllamaService::getOllamaModels(QDir::homePath() + "/", models);  
+        }
+        
+        // with llamacppservice, the ollama cloud models are not available
+        models.erase(std::remove_if(models.begin(), models.end(), 
+            [](LLMModel& m){ return m.num_params_ == "cloud"; }), models.end());
+
+        QStringList paths;
+        paths += QStandardPaths::writableLocation(QStandardPaths::AppDataLocation) + "/models";
+        if (!llmservices_->getCustomModelsPath().isEmpty())
+            paths += llmservices_->getCustomModelsPath();
+
+        for (const QString& path : paths)
+        {
+            qDebug() << "LlamaCppService::getAvailableModels: path:" << path;
+            QDir appDataModelsDir(path);
+            if (appDataModelsDir.exists())
             {
-                it.next();
-                LLMModel model;
-                model.filePath_ = it.fileInfo().absoluteFilePath();
-                model.name_ = it.fileName().replace(".gguf", ""); // Use filename as model name
-                model.num_params_ = "";                           // Unknown without parsing GGUF header
-                models.push_back(model);
+                QDirIterator it(path, QStringList() << "*.gguf", QDir::Files, QDirIterator::NoIteratorFlags);
+                while (it.hasNext())
+                {
+                    it.next();
+                    LLMModel model;
+                    model.filePath_ = it.fileInfo().absoluteFilePath();
+                    model.name_ = it.fileName().replace(".gguf", ""); // Use filename as model name
+                    model.num_params_ = "";                           // Unknown without parsing GGUF header
+                    models.push_back(model);
+                }
             }
         }
+
+        availableModels_ = models;
+        availableModelsDirty_ = false;
+        qDebug() << "LlamaCppService::getAvailableModels: updated: " << models.size() << " models found";
     }
 
-    qDebug() << "LlamaCppService::getAvailableModels: " << models.size() << " models found";
-
-    return models;
+    return availableModels_;
 }
 
 LlamaModelData* LlamaCppService::getModel(const QString& modelname)
 {
-    QHash<QString, LlamaModelData>::iterator it = models_.find(modelname);
-    return it != models_.end() ? &it.value() : nullptr;
+    auto it = models_.find(modelname);
+    return it != models_.end() ? &it->second : nullptr;
 }
 
 const LlamaModelData* LlamaCppService::getModel(const QString& modelname) const
 {
-    QHash<QString, LlamaModelData>::const_iterator it = models_.find(modelname);
-    return it != models_.end() ? &it.value() : nullptr;
+    const auto it = models_.find(modelname);
+    return it != models_.end() ? &it->second : nullptr;
 }
 
 LlamaCppChatData* LlamaCppService::getData(Chat* chat)
 {
-    QHash<const Chat*, LlamaCppChatData>::iterator it = datas_.find(chat);
-    return it != datas_.end() ? &it.value() : nullptr;
+    auto it = datas_.find(chat);
+    return it != datas_.end() ? &it->second : nullptr;
 }
 
 const LlamaCppChatData* LlamaCppService::getData(const Chat* chat) const
 {
-    QHash<const Chat*, LlamaCppChatData>::const_iterator it = datas_.find(chat);
-    return it != datas_.end() ? &it.value() : nullptr;
+    const auto it = datas_.find(chat);
+    return it != datas_.end() ? &it->second : nullptr;
 }
 
 std::vector<float> LlamaCppService::getEmbedding(const QString& text)
 {   
+    qDebug() << "LlamaCppService::getEmbedding ...";
+
     std::vector<float> embedding;
 
     llama_model* model = nullptr;
@@ -1303,20 +1320,20 @@ std::vector<float> LlamaCppService::getEmbedding(const QString& text)
 
     // Get a model
     // si un modele existe dejà, on le reprend pour traiter les embeddings
-    // TODO: préférer un petit modele
     if (embeddingModel_ && embeddingModel_->model_)
         model = embeddingModel_->model_;
-    else if (lastModelAddedInMemory_ && lastModelAddedInMemory_->model_)
-        model = lastModelAddedInMemory_->model_;
+    else if (models_.size())
+        model = models_.at(0).model_;
 
     // load a model
     if (!model)
     {
         std::lock_guard<std::mutex> lock(modelMutex_);
 
-        std::vector<LLMModel> models = getAvailableModels();       
+        const std::vector<LLMModel>& models = getAvailableModels();       
         if (models.size())
         {
+            // TODO : trouver un petit modele
             QString modelName = models.front().toString();
             embeddingModel_ = loadModel(modelName, 99, false);
             model = embeddingModel_->model_;
@@ -1326,17 +1343,18 @@ std::vector<float> LlamaCppService::getEmbedding(const QString& text)
             qDebug() << "LlamaCppService::getEmbedding: no models";
     }       
     
+    if (!model)
+        return {};
+
     // Create Context for Embedding
     // We use a temporary context to avoid interfering with chat state
-    if (model)
-    {
-        llama_context_params params = llama_context_default_params();
-        params.embeddings = true; // Enable embeddings
+    llama_context_params params = llama_context_default_params();
+    params.embeddings = true; // Enable embeddings
         // Use a reasonable context size for chunks (512 was chunk size, so 1024 or 2048 is safe)
-        params.n_ctx = 2048;
-        params.n_batch = 2048;
-        ctx = LLamaInitializeContext(model, params);
-    }
+    params.n_ctx = 2048;
+    params.n_batch = 2048;
+    ctx = LLamaInitializeContext(model, params, false);
+    
     // Tokenize
     if (ctx)
     {
@@ -1350,6 +1368,7 @@ std::vector<float> LlamaCppService::getEmbedding(const QString& text)
     // Extract Embedding
     if (decode)
         emb_ptr = llama_get_embeddings(ctx);
+
     // Normalize (Cosine Similarity requires normalized vectors or division by norm)
     // We normalize here for storage efficiency and search speed
     if (emb_ptr)
@@ -1375,5 +1394,6 @@ std::vector<float> LlamaCppService::getEmbedding(const QString& text)
     if (!emb_ptr)
         qWarning() << "LlamaCppService::getEmbedding: error !";
 
+    qDebug() << "LlamaCppService::getEmbedding ... end";
     return embedding;       
 }

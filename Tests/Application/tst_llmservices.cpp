@@ -191,12 +191,8 @@ void LLMServicesTest::test_get_available_models()
     services.addAPI(mock);
     
     // Test avec API spécifié
-    std::vector<LLMModel> models = services.getAvailableModels(mock);
+    const std::vector<LLMModel>& models = services.getAvailableModels(mock);
     QCOMPARE(static_cast<int>(models.size()), 2);
-    
-    // Test avec nullptr (devrait retourner vecteur vide)
-    std::vector<LLMModel> emptyModels = services.getAvailableModels(nullptr);
-    QVERIFY(emptyModels.empty());
 }
 
 void LLMServicesTest::test_get_embedding()

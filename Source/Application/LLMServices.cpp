@@ -155,10 +155,8 @@ LLMService* LLMServices::get(LLMEnum::LLMType service) const
 
 LLMService* LLMServices::get(const QString& name) const
 {
-    for (LLMService* entry : apiEntries_)
-        if (entry->name_ == name)
-            return entry;
-    return nullptr;        
+    auto it = std::find_if(apiEntries_.begin(), apiEntries_.end(), [name](LLMService* service){ return service->name_ == name; });
+    return it != apiEntries_.end() ? (*it) : nullptr;
 }
 
 const std::vector<LLMService*>& LLMServices::getAPIs() const
@@ -182,18 +180,17 @@ std::vector<LLMService*> LLMServices::getAvailableAPIs() const
     return results;
 }    
 
-std::vector<LLMModel> LLMServices::getAvailableModels(const LLMService* api) const
+const std::vector<LLMModel>& LLMServices::getAvailableModels(LLMService* api)
 {
-    if (api)
-        return api->getAvailableModels();
-    return {}; // TODO : get all models (all registered apis)   
+    assert(api != nullptr);
+    return api->getAvailableModels();
 }
 
 LLMModel LLMServices::getModel(const QString& name) const
 {
     for (LLMService* api : apiEntries_)
     {
-        std::vector<LLMModel> models = api->getAvailableModels();
+        const std::vector<LLMModel>& models = api->getAvailableModels();
         for (const LLMModel& model : models)
         {
             if (model.toString() == name)
@@ -206,14 +203,12 @@ LLMModel LLMServices::getModel(const QString& name) const
 std::vector<float> LLMServices::getEmbedding(const QString& text)
 {
     // Prefer LlamaCpp
-    for (LLMService* api : apiEntries_)
+    LLMService* service = get(LLMEnum::LLMType::LlamaCpp);
+    if (service)
     {
-        if (api->type_ == LLMEnum::LLMType::LlamaCpp && api->isReady())
-        {
-            std::vector<float> res = api->getEmbedding(text);
-            if (!res.empty())
-                return res;
-        }
+        std::vector<float> res = service->getEmbedding(text);
+        if (!res.empty())
+            return res;
     }
     return {};
 }

@@ -285,7 +285,7 @@ Dialog {
             // Convert file:// URL to local path
             var path = selectedFolder.toString();
             path = path.replace(/^(file:\/{2})/, "");
-            ChatController.ragService.ingestDirectory(path);
+            ChatController.ragIngestDir(path);
         }
     }
 }

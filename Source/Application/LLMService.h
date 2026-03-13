@@ -5,6 +5,13 @@
 class Chat;
 class LLMServices;
 
+
+enum LLMState : int
+{
+    isWaiting = 0,
+    isEmbedding
+};
+
 class LLMService : public QObject
 {
     Q_OBJECT
@@ -45,10 +52,12 @@ public:
 
     virtual ~LLMService() { stop(); }
 
+    void setState(int state) { state_ = state; }
+
     virtual bool start() { return true; };
     virtual bool stop() { return true; };
     
-    virtual bool isReady() const { return true; }
+    virtual bool isReady() const = 0;
 
     virtual void setModel(Chat* chat, QString model = "") {}
     virtual void deleteModel(const LLMModel& model) {}
@@ -101,8 +110,13 @@ public:
     }
 
     virtual std::vector<float> getEmbedding(const QString& text) { return {}; }
-    virtual std::vector<LLMModel> getAvailableModels() const { return {}; }
+    virtual const std::vector<LLMModel>& getAvailableModels() = 0;
     
+    void markAvailableModelsDirty()
+    {
+        availableModelsDirty_ = true;
+    }
+
     LLMServices* llmservices_;
     int type_;
     QString name_;
@@ -116,6 +130,9 @@ signals:
 
 protected:
     QString apiKey_;
+    std::atomic<int> state_ {0};     ///< état interne du service
+    bool availableModelsDirty_ { true };
+    std::vector<LLMModel> availableModels_;
 
 private:
     static std::unordered_map<int, LLMAPIFactory> factories_;

@@ -12,7 +12,7 @@ public:
     MockLLMService(LLMServices* llmservices, const QVariantMap& params) :
         LLMService(llmservices, params) { }
 
-    std::vector<LLMModel> getAvailableModels() const override 
+    const std::vector<LLMModel>& getAvailableModels() override 
     {
         return models_;
     }

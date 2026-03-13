@@ -238,7 +238,7 @@ public:
      * @brief Retourne la liste des modèles disponibles
      * @return Vecteur contenant les modèles disponibles
      */
-    std::vector<LLMModel> getAvailableModels() const override;
+    const std::vector<LLMModel>& getAvailableModels() override;
     
     /**
      * @brief Retourne le manifest d'un modèle Ollama

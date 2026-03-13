@@ -82,18 +82,6 @@ struct LlamaModelData
 struct LlamaCppChatData : public ChatData
 {
     /**
-     * @brief Constructeur par défaut
-     */
-    LlamaCppChatData() = default;
-    
-    /**
-     * @brief Destructeur
-     * 
-     * Nettoie les ressources allouées par llama.cpp.
-     */
-    ~LlamaCppChatData();
-
-    /**
      * @brief Initialise les données du chat
      * @param model Modèle à utiliser (optionnel)
      */
@@ -379,7 +367,7 @@ public:
      * @brief Retourne la liste des modèles disponibles
      * @return Vecteur contenant les modèles disponibles
      */
-    std::vector<LLMModel> getAvailableModels() const override;
+     const std::vector<LLMModel>& getAvailableModels() override;
     
     /**
      * @brief Retourne les données de chat pour un chat donné
@@ -423,8 +411,8 @@ public:
      */
     static LlamaCppService* createDefault(LLMServices* service, const QString& name);
 
-    QHash<QString, LlamaModelData> models_;          ///< Modèles chargés
-    QHash<const Chat*, LlamaCppChatData> datas_;     ///< Données de chat
+    std::map<QString, LlamaModelData> models_;          ///< Modèles chargés
+    std::map<const Chat*, LlamaCppChatData> datas_;     ///< Données de chat
 
     int defaultGpuLayers_{99};                       ///< Couches GPU par défaut
     int defaultContextSize_{LLM_DEFAULT_CONTEXT_SIZE}; ///< Taille de contexte par défaut
@@ -450,7 +438,5 @@ private:
     void setModelInternal(LlamaCppChatData* data, const QString& modelName);
 
     std::mutex modelMutex_;
-
-    LlamaModelData* lastModelAddedInMemory_{nullptr};  ///< Dernier modèle chargé
-    LlamaModelData* embeddingModel_{nullptr};          ///< Modèle pour les embeddings
+    LlamaModelData* embeddingModel_{nullptr};       ///< Modèle pour les embeddings
 };

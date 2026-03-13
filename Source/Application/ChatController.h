@@ -144,7 +144,7 @@ public:
      * @brief Retourne la liste des modèles disponibles
      * @return Liste des modèles LLM disponibles
      */
-    Q_INVOKABLE QVariantList getAvailableModels() const;
+    Q_INVOKABLE QVariantList getAvailableModels();
     
     /**
      * @brief Retourne la liste des APIs disponibles
@@ -227,6 +227,8 @@ public:
     Q_INVOKABLE void clearAssets();
     QVariantList pendingAssets() const { return pendingAssets_; }
 
+    Q_INVOKABLE void ragIngestDir(const QString& path);
+    
 signals:
     /**
      * @brief Signal émis lorsque le contenu d'un chat est mis à jour

@@ -17,7 +17,7 @@ RAGService::RAGService(LLMServices* llmservices, QObject* parent) :
 
 RAGService::~RAGService() {}
 
-void RAGService::ingestFile(const QString& filePath)
+void RAGService::ingestFile(LLMService* service, const QString& filePath)
 {
     status_ = "Ingesting " + QFileInfo(filePath).fileName() + "...";
     emit collectionStatusChanged();
@@ -29,13 +29,15 @@ void RAGService::ingestFile(const QString& filePath)
         });
 }
 
-void RAGService::ingestDirectory(const QString& dirPath)
+void RAGService::ingestDirectory(LLMService* service, const QString& dirPath)
 {
     status_ = "Ingesting directory...";
     emit collectionStatusChanged();
 
+    service->setState(isEmbedding);
+
     QFuture<void> f = QtConcurrent::run(
-        [this, dirPath]()
+        [this, service, dirPath]()
         {
             QDirIterator it(
                 dirPath, QStringList() << "*.pdf" << "*.txt" << "*.md", QDir::Files, QDirIterator::Subdirectories);
@@ -47,12 +49,13 @@ void RAGService::ingestDirectory(const QString& dirPath)
             }
 
             QMetaObject::invokeMethod(this,
-                [this, docs]()
+                [this, service, docs]()
                 {
                     status_ = QString("Ready (%1 docs ingested)").arg(docs);
                     emit collectionStatusChanged();
                     emit ingestionFinished(docs, vectorStore_.count());
                     saveCollection();
+                    service->setState(isWaiting);
                 });
         });
 }

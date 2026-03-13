@@ -24,7 +24,7 @@ ChatImpl::ChatImpl(LLMServices* llmservices, const QString& name, const QString&
 
 void ChatImpl::initialize(const QString& apiName, const QString& modelName)
 {
-    const std::vector<LLMService*>& availableAPIs = llmservices_->getAvailableAPIs();
+    std::vector<LLMService*> availableAPIs = llmservices_->getAvailableAPIs();
     if (!availableAPIs.empty())
     {
         LLMService* api = nullptr;
@@ -62,7 +62,7 @@ void ChatImpl::initialize(const QString& apiName, const QString& modelName)
             if (models.size())
             {
                 currentModel_ = models.front().toString();
-                qDebug() << "ChatImpl::initialize: no model found use default:" << currentApi_ << currentModel_;
+                //qDebug() << "ChatImpl::initialize: no model found use default:" << currentApi_ << currentModel_;
             }
         }
     }
@@ -96,7 +96,7 @@ void ChatImpl::setModel(const QString& model)
         }
 
         LLMService* api = llmservices_->get(currentApi_);
-        if (api)
+        if (api && api->isReady())
             api->setModel(this, model);
 
         qDebug() << "ChatImpl::setModel: use" << model;
@@ -409,7 +409,7 @@ void ChatImpl::fromJson(const QJsonObject& json)
             if (token.isDouble())
                 data->context_tokens_.push_back(token.toInt());
         }
-        qDebug() << "ChatImpl::fromJson : get tokenized_content size:" << data->context_tokens_.size();
+        //qDebug() << "ChatImpl::fromJson : get tokenized_content size:" << data->context_tokens_.size();
     }
 
     // Reconstruct messages for UI
@@ -417,7 +417,7 @@ void ChatImpl::fromJson(const QJsonObject& json)
     for (const auto& msg : history_)
         messages_.append(QString("%1 %2\n").arg(msg.role_ == "user" ? userPrompt_ : aiPrompt_).arg(msg.content_));
 
-    qDebug() << "ChatImpl::fromJson" << this;
+    //qDebug() << "ChatImpl::fromJson" << this;
 
     emit messagesChanged();
     emit currentApiChanged();

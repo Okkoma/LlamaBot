@@ -1,6 +1,7 @@
 #include <QFile>
 #include <QImage>
 #include <QBuffer>
+#include <QtConcurrent/QtConcurrent>
 
 #include "LLMService.h"
 #include "ChatImpl.h"
@@ -207,27 +208,38 @@ void ChatController::sendMessage(const QString& text)
     LLMService* api = llmServices_->get(currentChat_->getCurrentApi());
     if (api)
     {
+        if (!api->isReady())
+        {
+            qDebug() << "ChatController::sendMessage ... service not ready !";
+            return;
+        }
+        else
+            qDebug() << "ChatController::sendMessage ... service is ready !";
+
         qDebug() << "ChatController::sendMessage ... start loading spinner";
         emit loadingStarted();
 
-        QString prompt = text;
-
-        if (ragEnabled_ && ragService_)
-        {
-            QString context = ragService_->retrieveContext(text);
-            if (!context.isEmpty())
+        QFuture<QString> prompt = QtConcurrent::run(
+            [this, text]()
             {
-                // Augment prompt
-                prompt = QString("Uses the following context to answer the user question:\n%1\n\nUser Question: %2")
-                             .arg(context).arg(text);
-            }
-        }
+                if (ragEnabled_ && ragService_)
+                {
+                    qDebug() << "ChatController::sendMessage ... use ragService";
+                    QString context = ragService_->retrieveContext(text);
+                    if (!context.isEmpty())
+                    {
+                        qDebug() << "ChatController::sendMessage ... ragService: find context: " << context;
+                        return QString("Uses the following context to answer the user question:\n%1\n\nUser Question: %2").arg(context).arg(text);
+                    }
+                }
+                return text;
+            });
+
+        qDebug() << "ChatController::sendMessage ... post ...";
 
         // Add assets (images, audio)
         currentChat_->setAssets(pendingAssets_);
-
-        llmServices_->post(api, currentChat_, prompt, true);
-
+        llmServices_->post(api, currentChat_, prompt.result(), true);
         clearAssets();
     }
 }
@@ -267,16 +279,16 @@ void ChatController::setCurrentModel(const QString& modelname)
     }
 }
 
-QVariantList ChatController::getAvailableModels() const
+QVariantList ChatController::getAvailableModels()
 {
     QVariantList models;
 
-    qDebug() << "ChatController::getAvailableModels:" << currentAPI_;
+    qDebug() << "ChatController::getAvailableModels: " << currentAPI_;
 
     // Get models from current API or all APIs
     LLMService* currentApi = llmServices_->get(currentAPI_);
-    std::vector<LLMModel> modelList = llmServices_->getAvailableModels(currentApi);
 
+    const std::vector<LLMModel>& modelList = llmServices_->getAvailableModels(currentApi);
     for (const LLMModel& model : modelList)
     {
         QVariantMap modelInfo;
@@ -310,12 +322,12 @@ void ChatController::setModel(const QString& modelName)
 void ChatController::deleteModel(int index)
 {
     LLMService* currentApi = currentChat_ ? llmServices_->get(currentChat_->getCurrentApi()) : nullptr;
-    std::vector<LLMModel> modelList = llmServices_->getAvailableModels(currentApi);
+    const std::vector<LLMModel>& modelList = llmServices_->getAvailableModels(currentApi);
     
     if (index >= modelList.size())
         return;
 
-    LLMModel& model = modelList[index];
+    const LLMModel& model = modelList[index];
 
     QString modelName = model.toString();
     if (currentModel_ == modelName)
@@ -323,7 +335,7 @@ void ChatController::deleteModel(int index)
 
     currentApi->deleteModel(model);
     
-    qDebug() << "ChatController::deleteModel" << index << modelName;
+    qDebug() << "ChatController::deleteModel: index: " << index << modelName;
 
     emit availableModelsChanged();
 }
@@ -471,6 +483,11 @@ bool ChatController::modifyAPI(const QString& apiName, const QString& apiType, c
 void ChatController::refreshModels()
 {
     qDebug() << "ChatController::refreshModels - Refreshing available models list";
+
+    std::vector<LLMService*> apis = llmServices_->getAPIs();
+    for (LLMService* api : apis)    
+        api->markAvailableModelsDirty();
+
     emit availableModelsChanged();
 }
 
@@ -637,4 +654,12 @@ void ChatController::clearAssets()
         pendingAssets_.clear();
         emit pendingAssetsChanged();
     }
+}
+
+void ChatController::ragIngestDir(const QString& path)
+{
+    if (!ragService_)
+        return;
+
+    ragService_->ingestDirectory(llmServices_->get(LLMEnum::LLMType::LlamaCpp), path);
 }
