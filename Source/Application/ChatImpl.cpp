@@ -95,11 +95,11 @@ void ChatImpl::setModel(const QString& model)
             setApi("LlamaCpp");
         }
 
+        qDebug() << "ChatImpl::setModel: use" << model;
+
         LLMService* api = llmservices_->get(currentApi_);
         if (api && api->isReady())
             api->setModel(this, model);
-
-        qDebug() << "ChatImpl::setModel: use" << model;
 
         if (currentModel_ != model)
         {
@@ -365,7 +365,6 @@ QJsonObject ChatImpl::toJson() const
         for (int token : data->context_tokens_) 
             jsonArray.append(token);            
         json["tokenized_content"] = jsonArray;
-        qDebug() << "ChatImpl::toJson : set tokenized_content: size:" << data->context_tokens_.size();
     }
 
     return json;

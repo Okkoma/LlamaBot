@@ -293,9 +293,13 @@ void LlamaCppChatData::initialize(LlamaModelData* model)
     if (!n_tokens)
     {
         std::vector<llama_token> full_history;
-        QString formattedHistory = chat_->getFormattedHistory();
-        if (chat_ && !formattedHistory.isEmpty())
-            full_history = LlamaTokenize(model_->model_, formattedHistory);
+        QString formattedHistory;
+        if (chat_)
+        {
+            formattedHistory = chat_->getFormattedHistory();
+            if (!formattedHistory.isEmpty())
+                full_history = LlamaTokenize(model_->model_, formattedHistory);
+        }
         n_tokens = full_history.size();
         qDebug() << "llama_initialize: retokenized full history size:" << n_tokens;
     }
@@ -342,7 +346,7 @@ void LlamaCppChatData::initialize(LlamaModelData* model)
     // initialize the default chat template
     llamaCppChattemplate_ = llama_model_chat_template(model_->model_, /* name */ nullptr);
 
-    qDebug() << "llama_initialize: Model loaded successfully";
+    qDebug() << "llama_initialize: success";
 }
 
 void LlamaCppChatData::deinitialize()
@@ -853,7 +857,7 @@ LlamaCppChatData* LlamaCppService::createData(Chat* chat)
 
 void LlamaCppService::initializeData(LlamaCppChatData* data, LlamaModelData* model)
 {
-    qDebug() << "LlamaCppService::initializeData ... data:" << data;
+    qDebug() << "LlamaCppService::initializeData ... data:" << data << " model: " << model;
 
     if (!model)
     {
@@ -909,6 +913,13 @@ void LlamaCppService::clearModelInMemory(const QString& modelName)
     if (auto it = models_.find(modelName); it != models_.end())
     {
         LlamaModelData& model = it->second;
+
+        if (currentModel_ == &model)
+        {
+            currentModel_ = nullptr;
+            qDebug() << "LlamaCppService::clearModelInMemory ... currentModel_=nullptr";
+        }
+
         if (!model.model_)
             return;
 
@@ -951,6 +962,12 @@ LlamaModelData* LlamaCppService::loadModel(const QString& modelName, int numGpuL
                 clearModelInMemory(model.first);
                 markAvailableModelsDirty();
             }
+
+            if (currentModel_ && currentModel_ == &model.second)
+            {
+                currentModel_ = nullptr;
+                qDebug() << "LlamaCppService::loadModel ... currentModel_=nullptr";
+            }
         }
     }
 
@@ -981,7 +998,12 @@ void LlamaCppService::setModelInternal(LlamaCppChatData* data, const QString& mo
 {
     qDebug() << "LlamaCppService::setModelInternal ...";
 
-    //emit modelLoadingStarted(modelName);
+    emit modelLoadingStarted(modelName);
+    
+    std::lock_guard<std::mutex> lock(modelMutex_);
+
+    state_ = isLoading;
+
     if (data->model_ && modelName != data->model_->modelName_)
     {
         qDebug() << "LlamaCppService::setModelInternal ... change to model:" << data->model_->modelName_ << " -> " << modelName;
@@ -992,26 +1014,40 @@ void LlamaCppService::setModelInternal(LlamaCppChatData* data, const QString& mo
     if (!model || !model->model_)                        
         model = this->loadModel(modelName, 99, onlyOneModelInMemory_);
     
+    qDebug() << "LlamaCppService::setModelInternal ... data: " << data << " model: " << model;
+
     if (model && data->model_ != model)
         initializeData(data, model);
 
-    //emit modelLoadingFinished(modelName, true);
+    if (model)
+    {
+        currentModel_ = model;
+        qDebug() << "LlamaCppService::setModelInternal ... currentModel_: " << currentModel_;
+    }
+
+    state_ = isWaiting;
+
+    emit modelLoadingFinished(modelName, true);
+
     qDebug() << "LlamaCppService::setModelInternal ... end!";
 }
 
 void LlamaCppService::setModel(Chat* chat, QString modelName)
 {
-    std::lock_guard<std::mutex> lock(modelMutex_);
+    qDebug() << "LlamaCppService::setModel ..." << modelName;
 
     LlamaCppChatData* data = getData(chat);
     if (!data)
         data = createData(chat);
+    data->chat_ = chat;
 
     if (modelName.isEmpty())
         modelName = data->model_ ? data->model_->modelName_ : chat->getCurrentModel();
 
-    if (!modelName.isEmpty() && (!data->model_ || modelName != data->model_->modelName_))    
+    if (state_ == isWaiting && !modelName.isEmpty() && (!data->model_ || modelName != data->model_->modelName_))    
     {
+        qDebug() << "LlamaCppService::setModel ... => setModelInternal ...";
+
         QFuture<void> f = QtConcurrent::run(
             [this, data, modelName]()
             {
@@ -1037,7 +1073,7 @@ bool LlamaCppService::isReady() const
 
 void LlamaCppService::post(Chat* chat, const QString& content, bool streamed)
 {
-    std::lock_guard<std::mutex> lock(modelMutex_);
+    qDebug() << "LlamaCppService::post ...";
 
     LlamaCppChatData* data = getData(chat);
     if (!data)
@@ -1050,11 +1086,21 @@ void LlamaCppService::post(Chat* chat, const QString& content, bool streamed)
             return;
         }
     }
-    
+    data->chat_ = chat;
+
     QFuture<void> f = QtConcurrent::run(
         [this, data, chat]() 
         {
-            setModelInternal(data, chat->getCurrentModel());
+            if (state_ == isWaiting)
+            {
+                qDebug() << "LlamaCppService::post ... => setModelInternal";
+                setModelInternal(data, chat->getCurrentModel());
+            }
+            else
+            {   
+                qDebug() << "LlamaCppService::post ... => setModelInternal ... already running ... skip and wait !";
+                while (state_ == isLoading) QThread::msleep(100);
+            }
         })
         .then(
         [this, data, chat, content, streamed]() 
@@ -1309,7 +1355,7 @@ const LlamaCppChatData* LlamaCppService::getData(const Chat* chat) const
 
 std::vector<float> LlamaCppService::getEmbedding(const QString& text)
 {   
-    qDebug() << "LlamaCppService::getEmbedding ...";
+    std::lock_guard<std::mutex> lock(modelMutex_);
 
     std::vector<float> embedding;
 
@@ -1320,16 +1366,14 @@ std::vector<float> LlamaCppService::getEmbedding(const QString& text)
 
     // Get a model
     // si un modele existe dejà, on le reprend pour traiter les embeddings
-    if (embeddingModel_ && embeddingModel_->model_)
+    if (currentModel_)
+        model = currentModel_->model_;
+    else if (embeddingModel_ && embeddingModel_->model_)
         model = embeddingModel_->model_;
-    else if (models_.size())
-        model = models_.at(0).model_;
 
     // load a model
     if (!model)
     {
-        std::lock_guard<std::mutex> lock(modelMutex_);
-
         const std::vector<LLMModel>& models = getAvailableModels();       
         if (models.size())
         {
@@ -1350,7 +1394,7 @@ std::vector<float> LlamaCppService::getEmbedding(const QString& text)
     // We use a temporary context to avoid interfering with chat state
     llama_context_params params = llama_context_default_params();
     params.embeddings = true; // Enable embeddings
-        // Use a reasonable context size for chunks (512 was chunk size, so 1024 or 2048 is safe)
+    // Use a reasonable context size for chunks (512 was chunk size, so 1024 or 2048 is safe)
     params.n_ctx = 2048;
     params.n_batch = 2048;
     ctx = LLamaInitializeContext(model, params, false);

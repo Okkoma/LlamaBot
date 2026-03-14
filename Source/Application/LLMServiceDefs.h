@@ -33,3 +33,10 @@ public:
     QString vendor_;
     QString filePath_;
 };
+
+enum LLMState : int
+{
+    isWaiting = 0,
+    isEmbedding,
+    isLoading
+};

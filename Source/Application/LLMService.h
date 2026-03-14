@@ -5,13 +5,6 @@
 class Chat;
 class LLMServices;
 
-
-enum LLMState : int
-{
-    isWaiting = 0,
-    isEmbedding
-};
-
 class LLMService : public QObject
 {
     Q_OBJECT
@@ -53,6 +46,7 @@ public:
     virtual ~LLMService() { stop(); }
 
     void setState(int state) { state_ = state; }
+    int getState() const { return state_; }
 
     virtual bool start() { return true; };
     virtual bool stop() { return true; };

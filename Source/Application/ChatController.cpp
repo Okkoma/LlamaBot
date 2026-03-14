@@ -205,10 +205,12 @@ void ChatController::sendMessage(const QString& text)
     if (!currentChat_)
         return;
 
+    qDebug() << "ChatController::sendMessage ...";
+
     LLMService* api = llmServices_->get(currentChat_->getCurrentApi());
     if (api)
     {
-        if (!api->isReady())
+        if (api->getState() > isWaiting)
         {
             qDebug() << "ChatController::sendMessage ... service not ready !";
             return;
@@ -218,29 +220,36 @@ void ChatController::sendMessage(const QString& text)
 
         qDebug() << "ChatController::sendMessage ... start loading spinner";
         emit loadingStarted();
-
-        QFuture<QString> prompt = QtConcurrent::run(
+        
+        QtConcurrent::run(
             [this, text]()
             {
-                if (ragEnabled_ && ragService_)
-                {
+                QString prompt;
+                if (ragService_ && !ragService_->isEmpty() && ragEnabled_)
+                {                
                     qDebug() << "ChatController::sendMessage ... use ragService";
                     QString context = ragService_->retrieveContext(text);
                     if (!context.isEmpty())
                     {
                         qDebug() << "ChatController::sendMessage ... ragService: find context: " << context;
-                        return QString("Uses the following context to answer the user question:\n%1\n\nUser Question: %2").arg(context).arg(text);
+                        prompt = QString("Uses the following context to answer the user question:\n%1\n\nUser Question: %2").arg(context).arg(text);
                     }
                 }
-                return text;
-            });
+                
+                qDebug() << "ChatController::sendMessage ... prompt:" << (!prompt.isEmpty() ? prompt : text);
+                return !prompt.isEmpty() ? prompt : text;
+            }
+        ).then(
+            [this, api](QString prompt) 
+            {
+                qDebug() << "ChatController::sendMessage ... post ... prompt: " << prompt;
 
-        qDebug() << "ChatController::sendMessage ... post ...";
-
-        // Add assets (images, audio)
-        currentChat_->setAssets(pendingAssets_);
-        llmServices_->post(api, currentChat_, prompt.result(), true);
-        clearAssets();
+                // Add assets (images, audio)
+                currentChat_->setAssets(pendingAssets_);
+                llmServices_->post(api, currentChat_, prompt, true);
+                clearAssets();
+            }
+        );
     }
 }
 

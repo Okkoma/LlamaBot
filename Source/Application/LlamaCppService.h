@@ -439,4 +439,5 @@ private:
 
     std::mutex modelMutex_;
     LlamaModelData* embeddingModel_{nullptr};       ///< Modèle pour les embeddings
+    LlamaModelData* currentModel_{nullptr};
 };
