@@ -80,7 +80,7 @@ Rectangle {
                                 if (assetDelegate.assetData && assetDelegate.assetData.base64) {
                                     return assetDelegate.assetData.base64
                                 }
-                                return ""
+                                return ChatController.getMimeTypeIconFor(assetDelegate.assetData.name);
                             }
                             asynchronous: false
                             

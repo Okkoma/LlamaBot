@@ -209,19 +209,18 @@ public:
     Q_INVOKABLE void resetSettings();
 
     /**
-     * @brief Ajoute un asset au chat courant
-     * @param assetPath chemin de l'asset
+     * @brief Ajoute des assets au chat courant
+     * @param urls liste des urls
      */
-    Q_INVOKABLE void addAsset(const QString& assetPath);
-    
+    Q_INVOKABLE void addAssets(const QStringList& urls);
+
     /**
      * @brief Ajoute un asset au chat courant
      * @param assetContent contenu de l'asset base64
      */
     Q_INVOKABLE void addAssetBase64(const QString& assetContent);
 
-    // Helper pour conversion
-    Q_INVOKABLE QString imageToBase64(const QString& imagePath) const;
+    Q_INVOKABLE QString getMimeTypeIconFor(const QString& fileName) const;
 
     Q_INVOKABLE void removeAsset(int index);
     Q_INVOKABLE void clearAssets();
@@ -308,6 +307,8 @@ private:
      */
     void connectAPIsSignals();
 
+    void addFileAsset(const QString& filePath);
+    
     LLMServices* llmServices_;    ///< Service LLM pour les opérations de chat
     RAGService* ragService_;      ///< Service RAG pour la recherche augmentée
     ChatStorage* localStore_;     ///< Stockage local (SQLite)

@@ -108,6 +108,18 @@ Item {
                     }
                 }
 
+                DropArea {
+                    id : dropAssetZone
+                    anchors.fill: parent
+
+                    onDropped: (dropEvent) => {
+                        console.log("dropEvent: ", dropEvent.formats, dropEvent.urls);
+                        if (dropEvent.hasUrls) {
+                            ChatController.addAssets(dropEvent.urls)
+                        }
+                    }
+                }
+
                 Menu {
                     id: contextMenu
                     MenuItem { text: "Cut"; enabled: inputField.selectedText.length > 0; onTriggered: inputField.cut() }
@@ -118,26 +130,9 @@ Item {
                         onTriggered: {
                             // Vérifier d'abord si le presse-papier contient des fichiers/images
                             if (Clipboard.hasUrls()) {
-                                var urls = Clipboard.getUrls()
-                                if (urls.length > 0) {
-                                    // Vérifier si c'est une image
-                                    var filePath = urls[0]
-                                    var extension = filePath.split('.').pop().toLowerCase()
-                                    if (extension === "png" || extension === "jpg" || extension === "jpeg" || 
-                                        extension === "gif" || extension === "webp") {
-                                        ChatController.addAsset(filePath)
-                                    } else {
-                                        // Pour les autres fichiers, on pourrait les traiter différemment
-                                        // ou simplement coller le chemin comme texte
-                                        inputField.paste()
-                                    }
-                                }
+                                ChatController.addAssets(Clipboard.getUrls())
                             } else if (Clipboard.hasImage()) {
-                                // Image collée directement depuis le presse-papier
-                                var base64Image = Clipboard.getImageAsBase64()
-                                if (base64Image) {
-                                    ChatController.addAssetBase64(base64Image)
-                                }
+                                ChatController.addAssetBase64(Clipboard.getImageAsBase64());
                             } else {
                                 // Coller du texte normalement
                                 inputField.paste()

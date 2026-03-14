@@ -336,7 +336,7 @@ void OllamaService::postInternal(Chat* chat, const QString& content, bool stream
             for (auto& asset : assets)
             {
                 QVariantMap map = asset.toMap();
-                if (map["type"].toString() == "image")
+                if (map["type"].toString().startsWith("image"))
                 {
                     QString image = map["base64"].toString();
                     imagesArray.append(image.sliced(image.indexOf(";base64,",Qt::CaseInsensitive) + 8));

@@ -10,6 +10,7 @@
 #include "Clipboard.h"
 #include "ModelStore.h"
 #include "ThemeManager.h"
+#include "IconThemeImageProvider.h"
 
 #include "Application.h"
 
@@ -37,6 +38,9 @@ Application::Application(int& argc, char** argv) :
     // Initialize QML
     qDebug() << "LlamaBot - initialize ... ui";
     qmlEngine_ = new QQmlApplicationEngine(this);
+
+    // Enregistrement du provider d'icones
+    qmlEngine_->addImageProvider(QStringLiteral("icon"), new IconThemeImageProvider);
 
     qDebug() << "LlamaBot - initialize ... services";
     services_.initialize();

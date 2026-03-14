@@ -580,54 +580,18 @@ void ChatController::setAutoExpandContext(bool enabled)
         llmServices_->setAutoExpandContext(enabled);
 }
 
-QString ChatController::imageToBase64(const QString& imagePath) const
+QString toBase64(const QString& filePath, const QString& mimeType)
 {
-    QFile file(imagePath);
+    QFile file(filePath);
     if (!file.exists() || !file.open(QIODevice::ReadOnly))
         return QString();
     
     QByteArray fileData = file.readAll();
     file.close();
     
-    // Détecter le type MIME
-    QString mimeType = "image/png";
-    QString extension = QFileInfo(imagePath).suffix().toLower();
-    if (extension == "jpg" || extension == "jpeg")
-        mimeType = "image/jpeg";
-    else if (extension == "gif")
-        mimeType = "image/gif";
-    else if (extension == "webp")
-        mimeType = "image/webp";
-    
     return QString("data:%1;base64,%2")
         .arg(mimeType)
         .arg(QString::fromLatin1(fileData.toBase64()));
-}
-
-void ChatController::addAsset(const QString& assetPath)
-{
-    if (assetPath.isEmpty())
-        return;
-    
-    qDebug() << "ChatController::addAsset:" << assetPath;
-
-    // Convertir l'image en base64
-    QString base64Image = imageToBase64(assetPath);
-    if (base64Image.isEmpty())
-    {
-        qWarning() << "Impossible de convertir l'image en base64:" << assetPath;
-        return;
-    }
-    
-    // Ajouter à la liste temporaire
-    QVariantMap asset;
-    asset["type"] = "image";
-    asset["base64"] = base64Image;
-    asset["path"] = assetPath;
-    asset["name"] = QFileInfo(assetPath).fileName();
-    pendingAssets_.append(asset);
-
-    emit pendingAssetsChanged();
 }
 
 void ChatController::addAssetBase64(const QString& assetContent)
@@ -635,7 +599,7 @@ void ChatController::addAssetBase64(const QString& assetContent)
     if (assetContent.isEmpty())
         return;
 
-    qDebug() << "ChatController::assetContent:" << assetContent;
+    qDebug() << "ChatController::addImageBase64Asset: " << assetContent;
     
     QVariantMap asset;
     asset["type"] = "image";
@@ -645,6 +609,59 @@ void ChatController::addAssetBase64(const QString& assetContent)
     pendingAssets_.append(asset);
 
     emit pendingAssetsChanged();
+}
+
+void ChatController::addFileAsset(const QString& filePath)
+{
+    if (filePath.isEmpty())
+        return;
+
+    QUrl url(filePath);
+    if (!url.isLocalFile())
+    {
+        qDebug() << "ChatController::addFileAsset: is not localfile " << filePath;
+        return;
+    }
+
+    qDebug() << "ChatController::addAsset:" << filePath;
+
+    QString localFile = url.toLocalFile();
+    QString mimeType = QMimeDatabase().mimeTypeForFile(localFile).name();
+    // Si image : convertir en base64
+    QString base64;
+    if (mimeType.startsWith("image"))
+    {
+        base64 = toBase64(localFile, mimeType);
+        if (base64.isEmpty())
+        {
+            qWarning() << "Impossible de convertir l'image en base64:" << localFile;
+            return;
+        }
+    }
+
+    // Ajouter à la liste temporaire
+    QVariantMap asset;
+    asset["type"] = mimeType;
+    asset["base64"] = base64;
+    asset["path"] = localFile;
+    asset["name"] = QFileInfo(localFile).fileName();
+    pendingAssets_.append(asset);
+}
+
+QString ChatController::getMimeTypeIconFor(const QString &fileName) const
+{
+    return QString("image://icon/%1").arg(QMimeDatabase().mimeTypeForFile(fileName).iconName());
+}
+
+void ChatController::addAssets(const QStringList& urls)
+{
+    auto oldsize = pendingAssets_.size();
+
+    for (const QString& url : urls)
+        addFileAsset(url);
+
+    if (oldsize != pendingAssets_.size())
+        emit pendingAssetsChanged();
 }
 
 void ChatController::removeAsset(int index)

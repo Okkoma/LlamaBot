@@ -109,6 +109,12 @@ public:
      */
     QString getCollectionStatus() const;
 
+    /**
+     * @brief Retourne si RagService est vide
+     * @return true si est vide, false sinon
+     */
+    bool isEmpty() const { return !vectorStore_.count(); }
+    
 signals:
     /**
      * @brief Signal émis lorsque l'état de la collection change
