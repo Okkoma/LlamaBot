@@ -910,8 +910,6 @@ void LlamaCppService::clearData(LlamaCppChatData* data)
 
 void LlamaCppService::clearModelInMemory(const QString& modelName)
 {
-    std::lock_guard<std::mutex> lock(modelMutex_);
-
     if (auto it = models_.find(modelName); it != models_.end())
     {
         LlamaModelData& model = it->second;

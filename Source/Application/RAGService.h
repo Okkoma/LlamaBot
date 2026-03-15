@@ -64,7 +64,7 @@ public:
      * 
      * Traite le fichier et ajoute son contenu à la base vectorielle.
      */
-    Q_INVOKABLE void ingestFile(LLMService* service, const QString& filePath);
+    Q_INVOKABLE void ingestFile(const QString& filePath);
     
     /**
      * @brief Ingère un répertoire dans la base de connaissances
@@ -73,7 +73,7 @@ public:
      * 
      * Traite tous les fichiers du répertoire et les ajoute à la base vectorielle.
      */
-    Q_INVOKABLE void ingestDirectory(LLMService* service, const QString& dirPath);
+    Q_INVOKABLE void ingestDirectory(const QString& dirPath);
     
     /**
      * @brief Efface la collection actuelle

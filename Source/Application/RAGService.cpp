@@ -6,6 +6,9 @@
 
 #include "DocumentProcessor.h"
 
+#include "ApplicationServices.h"
+#include "LLMServices.h"
+
 #include "RAGService.h"
 
 RAGService::RAGService(QObject* parent) :
@@ -24,22 +27,29 @@ void RAGService::resetSettings()
     QSettings().setValue("ragEnabled",  false);
 }
 
-void RAGService::ingestFile(LLMService* service, const QString& filePath)
+void RAGService::ingestFile(const QString& filePath)
 {
     status_ = "Ingesting " + QFileInfo(filePath).fileName() + "...";
     emit collectionStatusChanged();
+
+    LLMService* service = ApplicationServices::get<LLMServices>()->get(LLMEnum::LLMType::LlamaCpp);
+
+    service->setState(isEmbedding);
 
     QFuture<void> f = QtConcurrent::run(
         [this, service, filePath]()
         {
             processFileInternal(service, filePath);
+            service->setState(isWaiting);
         });
 }
 
-void RAGService::ingestDirectory(LLMService* service, const QString& dirPath)
+void RAGService::ingestDirectory(const QString& dirPath)
 {
     status_ = "Ingesting directory...";
     emit collectionStatusChanged();
+
+    LLMService* service = ApplicationServices::get<LLMServices>()->get(LLMEnum::LLMType::LlamaCpp);
 
     service->setState(isEmbedding);
 
