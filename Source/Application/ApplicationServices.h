@@ -20,7 +20,7 @@ public:
 
     template<typename T> static void add(QObject* parent)
     {
-        services_.emplace(std::make_pair(T::staticMetaObject.className(), std::unique_ptr<T>(new T(parent))));
+        services_.emplace(std::make_pair(T::staticMetaObject.className(), std::make_unique<T>(parent)));
     }
 
     void initialize();

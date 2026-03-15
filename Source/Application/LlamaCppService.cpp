@@ -4,8 +4,10 @@
 
 #include <QtConcurrent/QtConcurrent>
 
+#include "ApplicationServices.h"
 #include "ErrorSystem.h"
 
+#include "RAGService.h"
 #include "OllamaService.h"
 
 #include "LlamaCppService.h"
@@ -1032,31 +1034,6 @@ void LlamaCppService::setModelInternal(LlamaCppChatData* data, const QString& mo
     qDebug() << "LlamaCppService::setModelInternal ... end!";
 }
 
-void LlamaCppService::setModel(Chat* chat, QString modelName)
-{
-    qDebug() << "LlamaCppService::setModel ..." << modelName;
-
-    LlamaCppChatData* data = getData(chat);
-    if (!data)
-        data = createData(chat);
-    data->chat_ = chat;
-
-    if (modelName.isEmpty())
-        modelName = data->model_ ? data->model_->modelName_ : chat->getCurrentModel();
-
-    if (state_ == isWaiting && !modelName.isEmpty() && (!data->model_ || modelName != data->model_->modelName_))    
-    {
-        qDebug() << "LlamaCppService::setModel ... => setModelInternal ...";
-
-        QFuture<void> f = QtConcurrent::run(
-            [this, data, modelName]()
-            {
-                setModelInternal(data, modelName);
-            }
-        );
-    }
-}
-
 void LlamaCppService::deleteModel(const LLMModel& model)
 {
     qDebug() << "LlamaCppService::deleteModel ... " << model.toString();
@@ -1077,7 +1054,7 @@ void LlamaCppService::post(Chat* chat, const QString& content, bool streamed)
 
     LlamaCppChatData* data = getData(chat);
     if (!data)
-    {   
+    {
         qDebug() << "LlamaCppService::post ... create data";
         data = createData(chat);
         if (!data)
@@ -1088,8 +1065,9 @@ void LlamaCppService::post(Chat* chat, const QString& content, bool streamed)
     }
     data->chat_ = chat;
 
-    QFuture<void> f = QtConcurrent::run(
-        [this, data, chat]() 
+    RAGService* ragService = ApplicationServices::get<RAGService>();
+
+    QtConcurrent::run([this, data, chat]
         {
             if (state_ == isWaiting)
             {
@@ -1101,9 +1079,27 @@ void LlamaCppService::post(Chat* chat, const QString& content, bool streamed)
                 qDebug() << "LlamaCppService::post ... => setModelInternal ... already running ... skip and wait !";
                 while (state_ == isLoading) QThread::msleep(100);
             }
+        })        
+        .then(
+        [this, ragService, content]()
+        {
+            QString prompt;
+            if (ragService && !ragService->isEmpty() && ragService->isEnabled())
+            {
+                qDebug() << "LlamaCppService::post ... use ragService";
+                QString context = ragService->retrieveContext(this, content);
+                if (!context.isEmpty())
+                {
+                    qDebug() << "LlamaCppService::post ... ragService: find context: " << context;
+                    prompt = QString("Uses the following context to answer the user question:\n%1\n\nUser Question: %2").arg(context).arg(content);
+                }
+            }
+            
+            qDebug() << "LlamaCppService::post ... prompt:" << (!prompt.isEmpty() ? prompt : content);
+            return !prompt.isEmpty() ? prompt : content;
         })
         .then(
-        [this, data, chat, content, streamed]() 
+        [this, data, chat, streamed](QString prompt) 
         {
             if (!data || !data->model_)
             {
@@ -1129,8 +1125,8 @@ void LlamaCppService::post(Chat* chat, const QString& content, bool streamed)
                 return;
             }
             
-            chat->updateContent(content);
-            data->generateProcess_->start(chat, content, streamed);
+            chat->updateContent(prompt);
+            data->generateProcess_->start(chat, prompt, streamed);
         });
 }
 

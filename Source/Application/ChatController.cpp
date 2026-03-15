@@ -3,40 +3,32 @@
 #include <QBuffer>
 #include <QtConcurrent/QtConcurrent>
 
+#include "ApplicationServices.h"
 #include "LLMService.h"
 #include "ChatImpl.h"
 #include "ChatStorageLocal.h"
 #include "ChatStorageDistant.h"
+#include "RAGService.h"
 
 #include "ChatController.h"
+
 
 ChatController::ChatController(QObject* parent) :
     QObject(parent),
     currentChat_(nullptr),
     chatCounter_(0)
 {
-    qDebug() << "ChatController()";
+    initialize();
 }
 
-ChatController::ChatController(LLMServices* llmservices, QObject* parent) :
-    QObject(parent),
-    llmServices_(llmservices),
-    currentChat_(nullptr),
-    chatCounter_(0)
+void ChatController::initialize()
 {
-    initialize(llmservices);
-}
-
-void ChatController::initialize(LLMServices* llmservices)
-{
-    llmServices_ = llmservices;
-    ragService_ = new RAGService(llmservices, this);
+    llmServices_ = ApplicationServices::get<LLMServices>();
 
     // Try to load existing chats
-    localStore_ = new ChatStorageLocal(llmservices);
-    cloudStore_ = new ChatStorageDistant(llmservices);
+    localStore_ = new ChatStorageLocal(llmServices_);
+    cloudStore_ = new ChatStorageDistant(llmServices_);
 
-    loadSettings();
     loadChats();
 
     // specific case for first run
@@ -207,10 +199,10 @@ void ChatController::sendMessage(const QString& text)
 
     qDebug() << "ChatController::sendMessage ...";
 
-    LLMService* api = llmServices_->get(currentChat_->getCurrentApi());
-    if (api)
+    LLMService* service = llmServices_->get(currentChat_->getCurrentApi());
+    if (service)
     {
-        if (api->getState() > isWaiting)
+        if (service->getState() != isWaiting)
         {
             qDebug() << "ChatController::sendMessage ... service not ready !";
             return;
@@ -220,36 +212,13 @@ void ChatController::sendMessage(const QString& text)
 
         qDebug() << "ChatController::sendMessage ... start loading spinner";
         emit loadingStarted();
-        
-        QtConcurrent::run(
-            [this, text]()
-            {
-                QString prompt;
-                if (ragService_ && !ragService_->isEmpty() && ragEnabled_)
-                {                
-                    qDebug() << "ChatController::sendMessage ... use ragService";
-                    QString context = ragService_->retrieveContext(text);
-                    if (!context.isEmpty())
-                    {
-                        qDebug() << "ChatController::sendMessage ... ragService: find context: " << context;
-                        prompt = QString("Uses the following context to answer the user question:\n%1\n\nUser Question: %2").arg(context).arg(text);
-                    }
-                }
-                
-                qDebug() << "ChatController::sendMessage ... prompt:" << (!prompt.isEmpty() ? prompt : text);
-                return !prompt.isEmpty() ? prompt : text;
-            }
-        ).then(
-            [this, api](QString prompt) 
-            {
-                qDebug() << "ChatController::sendMessage ... post ... prompt: " << prompt;
 
-                // Add assets (images, audio)
-                currentChat_->setAssets(pendingAssets_);
-                llmServices_->post(api, currentChat_, prompt, true);
-                clearAssets();
-            }
-        );
+        qDebug() << "ChatController::sendMessage ... post ... prompt: " << text;
+
+        // Add assets (images, audio)
+        currentChat_->setAssets(pendingAssets_);
+        llmServices_->post(service, currentChat_, text, true);
+        clearAssets();
     }
 }
 
@@ -500,16 +469,10 @@ void ChatController::refreshModels()
     emit availableModelsChanged();
 }
 
-void ChatController::loadSettings()
-{
-    QSettings settings;
-    setRagEnabled(settings.value("ragEnabled", false).toBool());
-}
-
 void ChatController::resetSettings()
 {
     llmServices_->resetSettings();
-    setRagEnabled(false);
+    ApplicationServices::get<RAGService>()->resetSettings();
     refreshModels();
 }
 
@@ -555,16 +518,6 @@ void ChatController::loadChats()
         currentChat_ = chats_.last();
         emit currentChatChanged();
         emit chatListChanged();
-    }
-}
-
-void ChatController::setRagEnabled(bool enabled)
-{
-    if (ragEnabled_ != enabled)
-    {
-        ragEnabled_ = enabled;
-        QSettings().setValue("ragEnabled", ragEnabled_);
-        emit ragEnabledChanged();
     }
 }
 
@@ -680,12 +633,4 @@ void ChatController::clearAssets()
         pendingAssets_.clear();
         emit pendingAssetsChanged();
     }
-}
-
-void ChatController::ragIngestDir(const QString& path)
-{
-    if (!ragService_)
-        return;
-
-    ragService_->ingestDirectory(llmServices_->get(LLMEnum::LLMType::LlamaCpp), path);
 }

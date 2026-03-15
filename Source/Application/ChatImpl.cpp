@@ -98,8 +98,6 @@ void ChatImpl::setModel(const QString& model)
         qDebug() << "ChatImpl::setModel: use" << model;
 
         LLMService* api = llmservices_->get(currentApi_);
-        if (api && api->isReady())
-            api->setModel(this, model);
 
         if (currentModel_ != model)
         {

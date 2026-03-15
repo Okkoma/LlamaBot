@@ -3,12 +3,11 @@
 #include "LLMServices.h"
 #include "LlamaCppService.h"
 #include "OllamaService.h"
+#include "RAGService.h"
 
 #include "ModelSource.h"
 #include "OllamaModelSource.h"
 #include "HuggingFaceModelSource.h"
-
-#include "ThemeManager.h"
 
 #include "ApplicationServices.h"
 
@@ -37,7 +36,10 @@ void ApplicationServices::initialize()
     ModelSource::registerSource<OllamaModelSource>("Ollama");
     ModelSource::registerSource<HuggingFaceModelSource>("HuggingFace");
 
-    // add llm services
+    // add llm & RAG services
     add<LLMServices>(this);
+    add<RAGService>(this);
+
     qDebug() << "ApplicationServices: add LLMServices:" << get<LLMServices>();
+    qDebug() << "ApplicationServices: add RAGService:" << get<RAGService>();
 }

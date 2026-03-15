@@ -531,3 +531,10 @@ bool OllamaService::handleMessageError(Chat* chat, const QString& message)
 
     return false;
 }
+
+std::vector<float> OllamaService::getEmbedding(const QString& text)
+{
+    // utilise llamacpp embeddings
+    // TODO : can ollama do it ?
+    return llmservices_->get(LLMEnum::LLMType::LlamaCpp)->getEmbedding(text);
+}

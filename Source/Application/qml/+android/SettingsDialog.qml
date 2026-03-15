@@ -93,10 +93,10 @@ Dialog {
             Switch {
                 id: ragToggle
                 text: "Enable RAG"
-                checked: ChatController ? ChatController.ragEnabled : false
+                checked: RAGService ? RAGService.enabled : false
                 onToggled: {
-                    if (ChatController)
-                        ChatController.ragEnabled = checked;
+                    if (RAGService)
+                        RAGService.enabled = checked;
                 }
                 ToolTip.visible: hovered
                 ToolTip.text: "Retrieve context from indexed documents"
@@ -118,14 +118,14 @@ Dialog {
                 Button {
                     text: "🗑️ Clear Index"
                     onClicked: {
-                        if (ChatController && ChatController.ragService)
-                            ChatController.ragService.clearCollection();
+                        if (RAGService)
+                            RAGService.clearCollection();
                     }
                 }
             }
 
             Label {
-                text: ChatController && ChatController.ragService ? ChatController.ragService.collectionStatus : "N/A"
+                text: RAGService ? RAGService.collectionStatus : "N/A"
                 font.pixelSize: 12
                 color: ThemeManager.textColor
                 Layout.fillWidth: true
@@ -209,7 +209,7 @@ Dialog {
             // Convert file:// URL to local path
             var path = selectedFolder.toString();
             path = path.replace(/^(file:\/{2})/, "");
-            ChatController.ragIngestDir(path);
+            RAGService.ingestDirectory(path);
         }
     }
 }

@@ -155,10 +155,10 @@ ApplicationWindow {
                 // RAG Status Indicator
                 ToolButton {
                     text: "📚"
-                    visible: ChatController ? ChatController.ragEnabled : false
+                    visible: RAGService ? RAGService.enabled : false
                     enabled: false
                     ToolTip.visible: hovered
-                    ToolTip.text: "RAG Active: " + (ChatController && ChatController.ragService ? ChatController.ragService.collectionStatus : "N/A")
+                    ToolTip.text: "RAG Active: " + (RAGService && RAGService.enabled ? RAGService.collectionStatus : "N/A")
                     opacity: 0.7
                 }
 

@@ -24,17 +24,18 @@ class RAGService : public QObject
 {
     Q_OBJECT
     Q_PROPERTY(QString collectionStatus READ getCollectionStatus NOTIFY collectionStatusChanged)
+    Q_PROPERTY(int topK READ getTopK WRITE setTopK NOTIFY topKChanged)
+    Q_PROPERTY(bool enabled READ isEnabled WRITE setEnable NOTIFY enableChanged)
 
     QML_ELEMENT
-    QML_UNCREATABLE("RAGService is provided by ChatController")
+    QML_UNCREATABLE("RAGService is provided by ApplicationServices")
     
 public:
     /**
      * @brief Constructeur de RAGService
-     * @param LLMServices Services LLM à utiliser
      * @param parent Objet parent Qt (optionnel)
      */
-    explicit RAGService(LLMServices* LLMServices, QObject* parent = nullptr);
+    explicit RAGService(QObject* parent = nullptr);
     
     /**
      * @brief Destructeur de RAGService
@@ -43,9 +44,22 @@ public:
      */
     ~RAGService();
 
+    /**
+     * @brief Active/désactive le service
+     * @param enable état d'activation
+     */    
+    void setEnable(bool enable) { enabled_ = enable; }
+
+    /**
+     * @brief Retourne si RagService est activé
+     * @return true si est activé, false sinon
+     */
+    bool isEnabled() const { return enabled_; }
+
     // Ingestion
     /**
      * @brief Ingère un fichier dans la base de connaissances
+     * @param service LLMService à utiliser
      * @param filePath Chemin vers le fichier à ingérer
      * 
      * Traite le fichier et ajoute son contenu à la base vectorielle.
@@ -54,6 +68,7 @@ public:
     
     /**
      * @brief Ingère un répertoire dans la base de connaissances
+     * @param service LLMService à utiliser
      * @param dirPath Chemin vers le répertoire à ingérer
      * 
      * Traite tous les fichiers du répertoire et les ajoute à la base vectorielle.
@@ -70,25 +85,25 @@ public:
     // Retrieval
     /**
      * @brief Récupère le contexte pour une requête
+     * @param service LLMService à utiliser
      * @param query Requête de recherche
-     * @param topK Nombre de résultats à retourner (par défaut: 3)
      * @return Contexte formaté pour le prompt
      * 
      * Recherche les documents pertinents et retourne un contexte
      * formaté pour être utilisé dans un prompt LLM.
      */
-    Q_INVOKABLE QString retrieveContext(const QString& query, int topK = 3);
+    Q_INVOKABLE QString retrieveContext(LLMService* service, const QString& query);
 
     // Search returning raw results (useful for UI showing sources)
     /**
      * @brief Effectue une recherche dans la base de connaissances
+     * @param service LLMService à utiliser
      * @param query Requête de recherche
-     * @param topK Nombre de résultats à retourner (par défaut: 3)
      * @return Liste des résultats de recherche
      * 
      * Effectue une recherche vectorielle et retourne les résultats bruts.
      */
-    std::vector<SearchResult> search(const QString& query, int topK = 3);
+    std::vector<SearchResult> search(LLMService* service, const QString& query);
 
     // Persistence
     /**
@@ -110,16 +125,34 @@ public:
     QString getCollectionStatus() const;
 
     /**
+     * @brief définit le nombre de resultats de recherche attendus
+     *  @param topK Nombre de resultats de recherche attendus
+    */
+    void setTopK(int topK) { topK_ = topK; }
+
+    /**
+     * @brief Retourne le nombre de resultats de recherche attendus
+     * @return Nombre de resultats attendus
+     */    
+    int getTopK() const { return topK_; }
+
+    /**
      * @brief Retourne si RagService est vide
      * @return true si est vide, false sinon
      */
     bool isEmpty() const { return !vectorStore_.count(); }
-    
+
+    void resetSettings();
+
 signals:
     /**
      * @brief Signal émis lorsque l'état de la collection change
      */
     void collectionStatusChanged();
+    
+    void topKChanged();
+
+    void enableChanged();
     
     /**
      * @brief Signal émis lorsque l'ingestion est terminée
@@ -137,16 +170,17 @@ signals:
 private:
     /**
      * @brief Traite un fichier en interne
+     * @param service LLMService à utiliser
      * @param filePath Chemin vers le fichier à traiter
      * 
      * Méthode interne pour le traitement des fichiers.
      */
-    void processFileInternal(const QString& filePath);
+    void processFileInternal(LLMService* service, const QString& filePath);
 
-    LLMServices* llmServices_;      ///< Services LLM utilisés
     VectorStore vectorStore_;      ///< Base de données vectorielle
     QString status_;               ///< État actuel du service
-
+    int topK_{5};                  ///< nombre de resultats de recherche
+    bool enabled_{false};
     // In-memory embedding cache or similar could go here
     // For now simple direct calls
 };

@@ -241,6 +241,13 @@ public:
     const std::vector<LLMModel>& getAvailableModels() override;
     
     /**
+     * @brief Génère un embedding pour un texte
+     * @param text Texte à encoder
+     * @return Vecteur contenant l'embedding
+     */    
+    std::vector<float> getEmbedding(const QString& text) override;
+
+    /**
      * @brief Retourne le manifest d'un modèle Ollama
      * @param ollamaDir Répertoire Ollama
      * @param model Nom du modèle

@@ -57,22 +57,18 @@ qt_add_qml_module(LlamaBotQml
         qml/OllamaServiceModifier.qml
         qml/SettingsDialog.qml
         qml/+android/ChatDrawer.qml
-        qml/+android/InputArea.qml        
+        qml/+android/InputArea.qml
         qml/+android/Main.qml
         qml/+android/MessageDelegate.qml
         qml/+android/ModelStoreDialog.qml
         qml/+android/SettingsDialog.qml
         
     SOURCES
-        Application.h
-        Application.cpp
+        Application.h Application.cpp
         Chat.h
-        ChatController.h
-        ChatController.cpp
-        ThemeManager.h
-        ThemeManager.cpp
-        Clipboard.h
-        Clipboard.cpp
+        ChatController.h ChatController.cpp
+        ThemeManager.h ThemeManager.cpp
+        Clipboard.h Clipboard.cpp
         ModelSource.h ModelSource.cpp
         ModelStore.h ModelStore.cpp
         HuggingFaceModelSource.h HuggingFaceModelSource.cpp

@@ -229,13 +229,6 @@ public:
     ~LlamaCppService() override;
 
     /**
-     * @brief Définit le modèle pour un chat
-     * @param chat Chat cible
-     * @param model Nom du modèle (optionnel)
-     */
-    void setModel(Chat* chat, QString model = "") override;
-    
-    /**
      * @brief Effacer le modèle du stockage local
      * @param model le modèle
      */

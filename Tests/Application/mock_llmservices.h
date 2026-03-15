@@ -16,7 +16,10 @@ public:
     {
         return models_;
     }
-
+    std::vector<float> getEmbedding(const QString& text) override
+    {
+        return {};
+    }
     void addModel(const QString& name, const QString& num_params="7B", const QString& filePath="") 
     {
         LLMModel model;

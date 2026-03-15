@@ -18,6 +18,9 @@ class LLMServices : public QObject
 {
     Q_OBJECT
 
+    QML_ELEMENT
+    QML_UNCREATABLE("LLMServices is provided by ApplicationServices")
+
     friend class RAGService;
 
 public:

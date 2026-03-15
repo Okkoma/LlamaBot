@@ -1,21 +1,28 @@
 #include <QDebug>
 #include <QDir>
 #include <QDirIterator>
+#include <QSettings>
 #include <QtConcurrent/QtConcurrent>
 
 #include "DocumentProcessor.h"
-#include "LLMServices.h"
 
 #include "RAGService.h"
 
-RAGService::RAGService(LLMServices* llmservices, QObject* parent) :
-    QObject(parent), llmServices_(llmservices), status_("Ready")
+RAGService::RAGService(QObject* parent) :
+    QObject(parent), status_("Ready")
 {
     // Try to load default collection on startup
     loadCollection();
+
+    enabled_ = QSettings().value("ragEnabled", false).toBool();
 }
 
 RAGService::~RAGService() {}
+
+void RAGService::resetSettings()
+{
+    QSettings().setValue("ragEnabled",  false);
+}
 
 void RAGService::ingestFile(LLMService* service, const QString& filePath)
 {
@@ -23,9 +30,9 @@ void RAGService::ingestFile(LLMService* service, const QString& filePath)
     emit collectionStatusChanged();
 
     QFuture<void> f = QtConcurrent::run(
-        [this, filePath]()
+        [this, service, filePath]()
         {
-            processFileInternal(filePath);
+            processFileInternal(service, filePath);
         });
 }
 
@@ -44,7 +51,7 @@ void RAGService::ingestDirectory(LLMService* service, const QString& dirPath)
             int docs = 0;
             while (it.hasNext())
             {
-                processFileInternal(it.next());
+                processFileInternal(service, it.next());
                 docs++;
             }
 
@@ -60,11 +67,8 @@ void RAGService::ingestDirectory(LLMService* service, const QString& dirPath)
         });
 }
 
-void RAGService::processFileInternal(const QString& filePath)
+void RAGService::processFileInternal(LLMService* service, const QString& filePath)
 {
-    if (!llmServices_)
-        return;
-
     // 1. Process Doc
     std::vector<DocumentChunk> chunks = DocumentProcessor::processFile(filePath);
 
@@ -72,7 +76,7 @@ void RAGService::processFileInternal(const QString& filePath)
     for (const auto& chunk : chunks)
     {
         // Blocking call to get embedding (ensure your LLMServices::getEmbedding is thread-safe or handles validation)
-        std::vector<float> emb = llmServices_->getEmbedding(chunk.content);
+        std::vector<float> emb = service->getEmbedding(chunk.content);
 
         if (!emb.empty())
         {
@@ -121,9 +125,9 @@ bool RAGService::loadCollection()
     return ok;
 }
 
-QString RAGService::retrieveContext(const QString& query, int topK)
+QString RAGService::retrieveContext(LLMService* service, const QString& query)
 {
-    auto results = search(query, topK);
+    auto results = search(service, query);
     QString context;
     for (const auto& res : results)
     {
@@ -132,17 +136,14 @@ QString RAGService::retrieveContext(const QString& query, int topK)
     return context;
 }
 
-std::vector<SearchResult> RAGService::search(const QString& query, int topK)
+std::vector<SearchResult> RAGService::search(LLMService* service, const QString& query)
 {
-    if (!llmServices_)
-        return {};
-
     // Generate query embedding
-    std::vector<float> queryEmb = llmServices_->getEmbedding(query);
+    std::vector<float> queryEmb = service->getEmbedding(query);
     if (queryEmb.empty())
         return {};
 
-    return vectorStore_.search(queryEmb, topK);
+    return vectorStore_.search(queryEmb, topK_);
 }
 
 QString RAGService::getCollectionStatus() const

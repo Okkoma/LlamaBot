@@ -50,6 +50,12 @@ qt_add_executable(Test_Ollama
     ../../Source/Application/LLMServices.cpp
     ../../Source/Application/LLMService.h
     ../../Source/Application/LLMService.cpp
+    ../../Source/Application/RAGService.h
+    ../../Source/Application/RAGService.cpp
+    ../../Source/Application/VectorStore.h
+    ../../Source/Application/VectorStore.cpp
+    ../../Source/Application/DocumentProcessor.h
+    ../../Source/Application/DocumentProcessor.cpp    
     ../../Source/Application/Chat.h
     ../../Source/Application/ChatImpl.h
     ../../Source/Application/ChatImpl.cpp
@@ -62,7 +68,7 @@ qt_add_executable(Test_Ollama
     mock_services.cpp
     tst_ollama.cpp
 )
-target_link_libraries(Test_Ollama PRIVATE Qt6::Core Qt6::Qml Qt6::Widgets Qt6::Network Qt6::Test)
+target_link_libraries(Test_Ollama PRIVATE Qt6::Core Qt6::Qml Qt6::Widgets Qt6::Network Qt6::Test poppler-qt6)
 add_test(NAME Test_Ollama COMMAND Test_Ollama)
 
 qt_add_executable(Test_LlamaCpp
@@ -72,6 +78,12 @@ qt_add_executable(Test_LlamaCpp
     ../../Source/Application/LLMServices.cpp
     ../../Source/Application/LLMService.h
     ../../Source/Application/LLMService.cpp
+    ../../Source/Application/RAGService.h
+    ../../Source/Application/RAGService.cpp
+    ../../Source/Application/VectorStore.h
+    ../../Source/Application/VectorStore.cpp
+    ../../Source/Application/DocumentProcessor.h
+    ../../Source/Application/DocumentProcessor.cpp    
     ../../Source/Application/Chat.h
     ../../Source/Application/ChatImpl.h
     ../../Source/Application/ChatImpl.cpp
@@ -88,7 +100,7 @@ qt_add_executable(Test_LlamaCpp
 )
 # Note: LlamaCpp needs llama.cpp headers/libs if real generation is tested, 
 # but for basic service logic we might get away with it if mocks/stubs are used or if focused on config.
-target_link_libraries(Test_LlamaCpp PRIVATE Qt6::Core Qt6::Qml Qt6::Widgets Qt6::Network Qt6::Test llama LlamaBotCommon)
+target_link_libraries(Test_LlamaCpp PRIVATE Qt6::Core Qt6::Qml Qt6::Widgets Qt6::Network Qt6::Test poppler-qt6 llama LlamaBotCommon)
 add_test(NAME Test_LlamaCpp COMMAND Test_LlamaCpp)
 
 qt_add_executable(Test_StorageLocal

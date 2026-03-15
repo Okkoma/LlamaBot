@@ -20,8 +20,6 @@ class ChatController : public QObject
     Q_PROPERTY(Chat* currentChat READ currentChat NOTIFY currentChatChanged)
     Q_PROPERTY(QVariantList chatList READ chatList NOTIFY chatListChanged)
     Q_PROPERTY(int currentChatIndex READ currentChatIndex NOTIFY currentChatChanged)
-    Q_PROPERTY(bool ragEnabled READ ragEnabled WRITE setRagEnabled NOTIFY ragEnabledChanged)
-    Q_PROPERTY(RAGService* ragService READ ragService CONSTANT)
     Q_PROPERTY(int defaultContextSize READ getDefaultContextSize WRITE setDefaultContextSize NOTIFY defaultContextSizeChanged)
     Q_PROPERTY(bool autoExpandContext READ getAutoExpandContext WRITE setAutoExpandContext NOTIFY autoExpandContextChanged)
     Q_PROPERTY(QVariantList pendingAssets READ pendingAssets NOTIFY pendingAssetsChanged)
@@ -35,14 +33,7 @@ class ChatController : public QObject
 public:
     explicit ChatController(QObject* parent = nullptr);
 
-    /**
-     * @brief Constructeur du contrôleur de chat
-     * @param service Service LLM à utiliser pour les opérations de chat
-     * @param parent Objet parent Qt (optionnel)
-     */
-    explicit ChatController(LLMServices* service, QObject* parent = nullptr);
-    
-    void initialize(LLMServices* llmservices);
+    void initialize();
     
     /**
      * @brief Destructeur du contrôleur de chat
@@ -225,8 +216,6 @@ public:
     Q_INVOKABLE void removeAsset(int index);
     Q_INVOKABLE void clearAssets();
     QVariantList pendingAssets() const { return pendingAssets_; }
-
-    Q_INVOKABLE void ragIngestDir(const QString& path);
     
 signals:
     /**
@@ -278,9 +267,6 @@ signals:
     void pendingAssetsChanged();
 
 private:
-
-    void loadSettings();
-
     /**
      * @brief Retourne le chemin du fichier de sauvegarde des chats
      * @return Chemin complet du fichier de sauvegarde
@@ -310,47 +296,22 @@ private:
     void addFileAsset(const QString& filePath);
     
     LLMServices* llmServices_;    ///< Service LLM pour les opérations de chat
-    RAGService* ragService_;      ///< Service RAG pour la recherche augmentée
     ChatStorage* localStore_;     ///< Stockage local (SQLite)
     ChatStorage* cloudStore_;     ///< Stockage cloud (Psql)
     QList<Chat*> chats_;          ///< Liste des chats gérés par le contrôleur
     Chat* currentChat_;           ///< Chat actuellement sélectionné
     int chatCounter_;             ///< Compteur pour générer des noms de chat uniques
-    bool ragEnabled_ = false;     ///< Indique si le RAG est activé
     QVariantList pendingAssets_;  ///< Liste temporaire des assets en attente
     QString currentModel_;        ///< nom du modele courant
     QString currentAPI_;          ///< nom du service courant
 
 public:
-    /**
-     * @brief Retourne l'état du RAG
-     * @return true si le RAG est activé, false sinon
-     */
-    bool ragEnabled() const { return ragEnabled_; }
-    
-    /**
-     * @brief Active ou désactive le RAG
-     * @param enabled État souhaité pour le RAG
-     */
-    void setRagEnabled(bool enabled);
-    
-    /**
-     * @brief Retourne le service RAG
-     * @return Pointeur vers le service RAG
-     */
-    RAGService* ragService() const { return ragService_; }
-
     int getDefaultContextSize() const { return llmServices_->getDefaultContextSize(); }
     void setDefaultContextSize(int size);
     bool getAutoExpandContext() const { return llmServices_->getAutoExpandContext(); }
     void setAutoExpandContext(bool enabled);
 
 signals:
-    /**
-     * @brief Signal émis lorsque l'état du RAG change
-     */
-    void ragEnabledChanged();
-
     /**
      * @brief Signal émis lorsque la taille de contexte par défaut change
      */

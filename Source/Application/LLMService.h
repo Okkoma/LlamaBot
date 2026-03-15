@@ -53,7 +53,6 @@ public:
     
     virtual bool isReady() const = 0;
 
-    virtual void setModel(Chat* chat, QString model = "") {}
     virtual void deleteModel(const LLMModel& model) {}
 
     void setApiKey(QString value);
@@ -103,7 +102,7 @@ public:
         return LLMService::createService(llmservices, params);
     }
 
-    virtual std::vector<float> getEmbedding(const QString& text) { return {}; }
+    virtual std::vector<float> getEmbedding(const QString& text) = 0;
     virtual const std::vector<LLMModel>& getAvailableModels() = 0;
     
     void markAvailableModelsDirty()
